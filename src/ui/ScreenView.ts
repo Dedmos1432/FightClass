@@ -9,10 +9,15 @@ export class ScreenView {
   private unsubscribe: (() => void) | null = null;
   private previousFocus: HTMLElement | null = null;
 
+  get hasDialog(): boolean { return this.dialog !== null; }
+
   constructor(readonly services: GameServices, screen: string, content: string) {
+    const world = screen === 'lobby' || screen === 'gym' || screen === 'dojo';
+    const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ' };
+    const location = locations[screen];
     this.root.dataset.screen = screen;
     this.root.innerHTML = `
-      <div class="screen">
+      <div class="screen ${world ? 'exploration-screen' : ''}">
         <header class="topbar">
           <a class="brand" href="#" aria-label="Класс удара — главное меню">
             <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -26,8 +31,8 @@ export class ScreenView {
         </header>
         ${content}
         <footer class="footer">
-          <span class="build-label"><i></i> ЭТАП 01 <span class="footer-divider">/</span> ${screen === 'menu' ? 'ГЛАВНОЕ МЕНЮ' : 'ВХОД В ЛОББИ'}</span>
-          <span class="keyboard-hint"><kbd>Tab</kbd> выбор <kbd>Enter</kbd> подтвердить</span>
+          <span class="build-label"><i></i> ЭТАП 02 <span class="footer-divider">/</span> ${location ?? 'ГЛАВНОЕ МЕНЮ'}</span>
+          <span class="keyboard-hint">${world ? '<kbd>A</kbd><kbd>D</kbd> движение <kbd>E</kbd> действие' : '<kbd>Tab</kbd> выбор <kbd>Enter</kbd> подтвердить'}</span>
           <span class="version">ЛОКАЛЬНАЯ ВЕРСИЯ <b>${GAME.version}</b></span>
         </footer>
       </div>`;
@@ -121,11 +126,11 @@ export class ScreenView {
     this.focus('.confirm-actions [data-close]');
   }
 
-  private openDialog(content: string): void {
-    if (this.dialog) return;
+  openDialog(content: string, modifier = ''): HTMLDialogElement | null {
+    if (this.dialog) return null;
     this.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = document.createElement('dialog');
-    dialog.className = 'dialog';
+    dialog.className = `dialog ${modifier}`;
     dialog.setAttribute('aria-labelledby', 'dialog-title');
     dialog.innerHTML = content;
     this.root.append(dialog);
@@ -141,9 +146,10 @@ export class ScreenView {
     });
     this.services.audio.play('open');
     dialog.showModal();
+    return dialog;
   }
 
-  private closeDialog(): void {
+  closeDialog(): void {
     this.dialog?.close();
     this.dialog?.remove();
     this.dialog = null;

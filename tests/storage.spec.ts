@@ -3,6 +3,8 @@ import { GAME } from '../src/config/game';
 import { SaveService, isSessionSave } from '../src/services/SaveService';
 import { SettingsService } from '../src/services/SettingsService';
 import { StorageService, type StorageLike } from '../src/services/StorageService';
+import { LOBBY_OBJECTS, nearestLobbyObject, WORLD } from '../src/config/lobby';
+import { STYLES } from '../src/config/styles';
 
 class MemoryStorage implements StorageLike {
   readonly values = new Map<string, string>();
@@ -108,4 +110,65 @@ test('учитывается системное уменьшение движе�
   expect(settings.current.animatedBackground).toBe(false);
   settings.update({ animatedBackground: true });
   expect(new SettingsService(storage, true).current.animatedBackground).toBe(true);
+});
+
+test('сохранения этапа 1 получают состояние лобби без потери идентификатора', () => {
+  const backing = new MemoryStorage();
+  const legacy = { version: 1, id: 'stage-one', createdAt: '2026-10-17T10:00:00.000Z', updatedAt: '2026-10-17T10:00:00.000Z', location: 'lobby', currentClass: 1 };
+  backing.setItem(GAME.storage.session, JSON.stringify(legacy));
+  const saves = new SaveService(new StorageService(backing));
+  expect(saves.current?.id).toBe('stage-one');
+  expect(saves.lobbyState).toEqual({ x: WORLD.spawnX, facing: 'right', style: 'boxing' });
+  saves.updateLobby({ x: 470, style: 'mma' });
+  const restored = new SaveService(new StorageService(backing));
+  expect(restored.current?.id).toBe('stage-one');
+  expect(restored.lobbyState).toMatchObject({ x: 470, style: 'mma' });
+});
+
+test('позиция, направление и стиль сохраняются независимо друг от друга', () => {
+  const backing = new MemoryStorage();
+  const saves = new SaveService(new StorageService(backing));
+  saves.startNew();
+  saves.updateLobby({ style: 'freestyle' });
+  saves.updateLobby({ x: 1500, facing: 'left' });
+  expect(new SaveService(new StorageService(backing)).lobbyState).toEqual({ x: 1500, facing: 'left', style: 'freestyle' });
+});
+
+test('координаты ограничены комнатой, недопустимые параметры игнорируются', () => {
+  const saves = new SaveService(new StorageService(new MemoryStorage()));
+  expect(saves.updateLobby({ x: 800 })).toBe(false);
+  saves.startNew();
+  saves.updateLobby({ x: -200 });
+  expect(saves.lobbyState.x).toBe(WORLD.minX);
+  saves.updateLobby({ x: 9999 });
+  expect(saves.lobbyState.x).toBe(WORLD.maxX);
+  saves.updateLobby({ x: Number.NaN });
+  expect(saves.lobbyState.x).toBe(WORLD.maxX);
+});
+
+test('схема проверяет новые поля лобби и не отдаёт изменяемые ссылки', () => {
+  const saves = new SaveService(new StorageService(new MemoryStorage()));
+  saves.startNew();
+  const snapshot = saves.current!;
+  snapshot.player!.x = 300;
+  expect(saves.lobbyState.x).toBe(WORLD.spawnX);
+  for (const player of [{ x: -1, facing: 'left', style: 'boxing' }, { x: 800, facing: 'up', style: 'boxing' }, { x: 800, facing: 'left', style: 'other' }]) {
+    expect(isSessionSave({ ...snapshot, player })).toBe(false);
+  }
+});
+
+test('в лобби ровно две двери и одна доска, взаимодействия доступны только рядом', () => {
+  expect(LOBBY_OBJECTS.filter((object) => object.kind === 'door')).toHaveLength(2);
+  expect(LOBBY_OBJECTS.filter((object) => object.kind === 'board')).toHaveLength(1);
+  for (const object of LOBBY_OBJECTS) expect(nearestLobbyObject(object.x)?.id).toBe(object.id);
+  expect(nearestLobbyObject(WORLD.minX)).toBeNull();
+  expect(nearestLobbyObject(710)).toBeNull();
+});
+
+test('набор содержит четыре базовых стиля по три приёма и один свободный', () => {
+  const base = STYLES.filter((style) => style.id !== 'freestyle');
+  expect(base).toHaveLength(4);
+  base.forEach((style) => expect(style.moves).toHaveLength(3));
+  expect(new Set(base.flatMap((style) => [...style.moves])).size).toBe(12);
+  expect(STYLES.filter((style) => style.id === 'freestyle')).toHaveLength(1);
 });

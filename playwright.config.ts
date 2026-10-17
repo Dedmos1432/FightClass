@@ -18,7 +18,8 @@ export default defineConfig({
     { name: 'storage', testMatch: 'storage.spec.ts' },
     {
       name: 'chrome',
-      testMatch: 'menu.spec.ts',
+      testMatch: /(menu|lobby)\.spec\.ts/,
+      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',

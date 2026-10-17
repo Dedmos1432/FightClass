@@ -1,6 +1,6 @@
 export const GAME = {
   title: 'Класс удара',
-  version: '0.1.0',
+  version: '0.2.0',
   background: '#10130f',
   storage: {
     session: 'fightclass3.session.v1',
@@ -11,5 +11,7 @@ export const GAME = {
 export const SCENES = {
   boot: 'Boot',
   menu: 'MainMenu',
-  lobby: 'LobbyEntry',
+  lobby: 'Lobby',
+  gym: 'Gym',
+  dojo: 'Dojo',
 } as const;
