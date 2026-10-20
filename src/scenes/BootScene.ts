@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import arenaUrl from '../../resourse/задники/Подпольная арена боёв.png?url';
-import { SCENES } from '../config/game';
+import { GAME, SCENES } from '../config/game';
 import type { GameServices } from '../core/GameServices';
 
 export class BootScene extends Phaser.Scene {
@@ -13,7 +13,7 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     const ui = document.querySelector<HTMLElement>('#ui')!;
     ui.dataset.screen = 'loading';
-    ui.innerHTML = '<div class="loading-screen"><span class="brand-mark"><i></i><i></i><i></i></span><p>КЛАСС УДАРА</p><progress aria-label="Загрузка игры" max="1" value="0"></progress><small>ПОДГОТОВКА ЗАЛА</small></div>';
+    ui.innerHTML = `<div class="loading-screen"><span class="brand-mark"><i></i><i></i><i></i></span><p>${GAME.title.toUpperCase()}</p><progress aria-label="Загрузка игры" max="1" value="0"></progress><small>ПОДГОТОВКА ЗАЛА</small></div>`;
     this.load.on(Phaser.Loader.Events.PROGRESS, (value: number) => {
       ui.querySelector('progress')?.setAttribute('value', String(value));
     });

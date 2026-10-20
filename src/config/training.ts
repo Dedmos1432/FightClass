@@ -1,0 +1,17 @@
+export const BENCH = {
+  x: 1180,
+  radius: 135,
+  scale: 0.8,
+  footOrigin: 435 / 448,
+  prepareMs: 1700,
+  unrackMs: 450,
+  lowerMs: 650,
+  rackMs: 400,
+  getUpMs: 1500,
+  rackFrame: 64,
+  tapGain: 0.23,
+  decayPerSecond: 0.11,
+  minTapIntervalMs: 100,
+  hpGrowth: 2,
+  staminaGrowth: 1.5,
+} as const;

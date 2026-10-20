@@ -15,10 +15,10 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'storage', testMatch: 'storage.spec.ts' },
+    { name: 'storage', testMatch: /(storage|training|combat-core)\.spec\.ts/ },
     {
       name: 'chrome',
-      testMatch: /(menu|lobby)\.spec\.ts/,
+      testMatch: /(menu|lobby|gym|combat)\.spec\.ts/,
       workers: 1,
       use: {
         ...devices['Desktop Chrome'],

@@ -35,6 +35,18 @@ export class ExplorationPlayer {
 
   stop(): void { this.play('idle'); }
 
+  setVisible(visible: boolean): void {
+    this.sprite.setVisible(visible);
+    this.shadow.setVisible(visible);
+  }
+
+  place(x: number, facing: Facing): void {
+    this.sprite.x = x;
+    this.shadow.x = x;
+    this.facing = facing;
+    this.stop();
+  }
+
   private play(state: 'idle' | 'walk'): void {
     const key = `player-${state}-${this.facing}`;
     if (key === this.animation) return;

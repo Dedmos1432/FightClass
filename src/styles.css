@@ -36,12 +36,9 @@ svg { width: 22px; height: 22px; flex: 0 0 auto; }
 .screen { min-height: 100svh; display: flex; flex-direction: column; padding: 0 clamp(24px, 5.3vw, 104px); }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 30px 0; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; align-items: center; gap: 14px; font-size: 14px; font-weight: 800; letter-spacing: 2.2px; }
-.brand small { display: block; color: #9b9e8c; font: 9px var(--mono); letter-spacing: 2px; padding-top: 6px; }
 .brand-mark { display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 39px; height: 39px; border: 1px solid var(--accent); transform: skew(-9deg); }
 .brand-mark i { display: block; width: 4px; height: 23px; background: var(--accent); }
 .top-actions { display: flex; gap: 10px; align-items: center; }
-.offline-label { font: 10px var(--mono); letter-spacing: 1.6px; color: #b9bcad; margin-right: 19px; }
-.offline-label i { display: inline-block; width: 5px; height: 5px; margin: 0 8px 1px 0; background: var(--accent); box-shadow: 0 0 10px #c5de6e55; }
 .icon-button { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; background: rgba(19, 25, 19, .45); border: 1px solid var(--line); color: #c4c9b5; transition: background .15s, border-color .15s; }
 .icon-button:hover { background: #d8e31b18; border-color: #b0bd78; color: var(--accent); }
 .icon-button:disabled { opacity: .3; }
@@ -151,12 +148,10 @@ body[data-motion='false'] *, body[data-motion='false'] *::before, body[data-moti
   .screen { padding: 0 24px; }
   .topbar { padding: 21px 0; }
   .brand { font-size: 12px; gap: 11px; letter-spacing: 1.5px; }
-  .brand small { font-size: 7px; letter-spacing: 1.2px; }
   .brand-mark { width: 32px; height: 34px; gap: 4px; }
   .brand-mark i { width: 3px; height: 20px; }
   .top-actions { gap: 7px; }
   .icon-button { width: 34px; height: 34px; }
-  .offline-label { display: none; }
   #ui::before { background: linear-gradient(90deg, #0a100dee, #0b120c99), linear-gradient(0deg, #081009e8, transparent 85%); }
   .menu-layout { display: block; flex: 1; padding: 38px 0 30px; }
   .menu-main { max-width: 500px; margin: auto; }
@@ -199,7 +194,6 @@ body[data-motion='false'] *, body[data-motion='false'] *::before, body[data-moti
 .exploration-screen { height: 100svh; min-height: 500px; overflow: hidden; padding: 0 clamp(20px, 3.5vw, 70px); pointer-events: none; }
 .exploration-screen .topbar { padding: 18px 0; pointer-events: auto; }
 .exploration-screen .brand { font-size: 12px; }
-.exploration-screen .brand small { font-size: 8px; }
 .exploration-screen .brand-mark { width: 33px; height: 34px; }
 .exploration-screen .brand-mark i { height: 20px; width: 3px; }
 .exploration-screen .footer { padding: 15px 0; }
@@ -350,4 +344,127 @@ body[data-motion='false'] *, body[data-motion='false'] *::before, body[data-moti
   .location-heading h1 { font-size: 20px; }
   .location-heading p, .location-heading .eyebrow { display: none; }
   .interaction-area { bottom: 57px; }
+}
+
+/* The training panel sits beside the bench, keeping the full animation visible. */
+#ui[data-training='active'] .interaction-area { display: none; }
+.bench-panel { position: absolute; left: 0; bottom: 70px; width: min(400px, calc(100vw - 40px)); background: #111d10ee; border: 1px solid #9eb87677; border-top: 2px solid var(--accent); padding: 20px; pointer-events: auto; box-shadow: 0 12px 50px #0006; }
+.bench-panel-top { display: flex; align-items: center; justify-content: space-between; }
+.bench-panel-top .eyebrow { font-size: 9px; }
+.bench-help { background: transparent; border: 1px solid #90a66b77; width: 25px; height: 25px; color: #bbce93; font: 12px var(--mono); }
+.bench-help:hover { background: #d8e39118; }
+.bench-rep-line { display: flex; align-items: center; gap: 18px; margin: 16px 0 13px; }
+.bench-rep-line > strong { font: 63px/.95 'GameDisplay', Impact, sans-serif; color: #e6edcf; }
+.bench-rep-line > span { color: #96ac7c; font: 8px var(--mono); letter-spacing: 1px; }
+.bench-rep-line small { display: block; margin-top: 9px; color: var(--accent); font: 12px 'Segoe UI', sans-serif; letter-spacing: 0; }
+#bench-status { min-height: 17px; font-size: 12px; color: #d6e2c2; margin-bottom: 17px; }
+.bench-progress-label { display: flex; justify-content: space-between; color: #8fa774; font: 8px var(--mono); letter-spacing: .8px; }
+.bench-progress-label output { color: var(--accent); font-size: 10px; }
+.bench-progress { height: 7px; background: #a4bc7a22; margin-top: 8px; }
+.bench-progress > span { display: block; height: 100%; background: var(--accent); width: 0; }
+#bench-next-gain { font-size: 9px; line-height: 1.8; color: #8fa777; margin: 11px 0 16px; }
+.bench-panel-actions { display: flex; gap: 8px; }
+.bench-panel-actions > button { flex: 1; min-height: 43px; font-size: 11px; padding: 8px; gap: 8px; }
+.bench-panel-actions kbd { font-size: 10px; margin: 0; }
+#bench-tap kbd { border-color: #25321c55; color: #28371e; background: #0001; }
+.bench-panel-actions button:disabled { opacity: .4; }
+.bench-footnote { color: #698450; font-size: 9px; line-height: 1.6; margin-top: 12px; }
+.bench-panel[data-paused='true'] #bench-status { color: #d2b88a; }
+.bench-tutorial { width: min(560px, calc(100vw - 32px)); }
+.bench-tutorial h2 { font-size: 29px; line-height: 1.2; }
+.bench-lesson { list-style: none; padding: 0; margin: 24px 0 18px; display: grid; gap: 18px; }
+.bench-lesson li { display: flex; gap: 17px; padding-top: 16px; border-top: 1px solid var(--line); }
+.bench-lesson li > b { font: 25px 'GameDisplay', Impact, sans-serif; color: var(--accent); }
+.bench-lesson strong { display: block; font-size: 14px; }
+.bench-lesson small { display: block; color: #9bad88; font-size: 11px; line-height: 1.8; margin-top: 6px; }
+.bench-lesson-note { font-size: 11px; line-height: 1.8; color: #a4bc83; background: #d8e39109; border: 1px solid #91ac622a; padding: 14px; margin: 0 0 22px; }
+.bench-result-count { display: flex; align-items: center; gap: 20px; padding: 25px 0 20px; }
+.bench-result-count strong { font: 74px/.95 'GameDisplay', Impact, sans-serif; color: var(--accent); }
+.bench-result-count span { font: 10px var(--mono); color: #9fb888; letter-spacing: 1px; }
+.bench-result-stats { display: flex; gap: 35px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 18px 0; }
+.bench-result-stats span { display: block; font: 8px var(--mono); color: #8ea275; letter-spacing: .5px; }
+.bench-result-stats strong { display: flex; align-items: center; gap: 13px; font: 30px var(--mono); margin-top: 8px; }
+.bench-result-stats i { font: 14px var(--mono); font-style: normal; color: var(--accent); }
+#gym-progress-note { display: inline-block; margin-top: 5px; color: #8ea775; }
+@media (max-width: 760px) {
+  .bench-panel { bottom: 68px; width: min(350px, calc(100vw - 32px)); padding: 15px; }
+  .bench-rep-line > strong { font-size: 46px; }
+  .bench-rep-line { margin: 12px 0; }
+  .bench-rep-line > span { font-size: 7px; }
+  #bench-status { font-size: 10px; margin-bottom: 12px; }
+  .bench-tutorial h2 { font-size: 25px; }
+}
+@media (max-height: 650px) and (min-width: 761px) {
+  .bench-panel { width: 340px; bottom: 56px; padding: 13px 16px; }
+  .bench-rep-line { margin: 8px 0; }
+  .bench-rep-line > strong { font-size: 41px; }
+  #bench-status { margin-bottom: 10px; font-size: 10px; }
+  #bench-next-gain { margin: 8px 0; }
+  .bench-footnote { margin-top: 8px; font-size: 8px; }
+}
+
+/* Stage 4: combat HUD and custom animation loadout. */
+.freestyle-editor { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 18px; }
+.freestyle-editor h3 { font-size: 16px; margin: 0 0 9px; color: var(--accent); }
+.freestyle-editor p, .freestyle-editor > small { color: var(--muted); font-size: 11px; line-height: 1.7; }
+.freestyle-editor label { display: grid; grid-template-columns: 90px 1fr; align-items: center; gap: 12px; margin: 12px 0; font-size: 11px; }
+.freestyle-editor select { min-width: 0; width: 100%; padding: 10px; color: #e5e9d0; background: #192117; border: 1px solid #67754b; font: inherit; }
+#ui[data-screen="fight"]::before { background: linear-gradient(0deg,#0a100de8,transparent 32%,transparent 65%,#0a100dc9); }
+.fight-hud { display: grid; grid-template-columns: 1fr 160px 1fr; gap: 30px; margin: 18px 0 0; z-index: 2; }
+.fight-card { min-width: 0; padding: 16px 20px; border: 1px solid var(--line); background: #10190eea; }
+.fight-name { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 12px; font-size: 13px; }
+.fight-name > span { color: #a7b395; font-size: 11px; }
+.enemy-card .fight-name { flex-direction: row-reverse; }
+.enemy-card .fight-health span, .enemy-card .fight-stamina span { margin-left: auto; }
+.fight-health { position: relative; height: 26px; border: 1px solid #bac78a44; background: #293025; overflow: hidden; }
+.fight-health > span { display: block; height: 100%; background: #c9da8d; transition: width .08s linear; }
+.enemy-card .fight-health > span { background: #bf8e74; }
+.fight-health b { position: absolute; inset: 0; display: grid; place-items: center; font: bold 12px var(--mono); color: white; text-shadow: 0 1px 3px #030603,0 1px 3px #030603; }
+.fight-stamina { height: 5px; margin-top: 9px; background: #2c3428; }
+.fight-stamina > span { display: block; height: 100%; background: #92b4b4; }
+.streak-card { text-align: center; display: flex; align-items: center; flex-direction: column; justify-content: center; }
+.streak-card > span { font: 9px var(--mono); color: var(--accent); letter-spacing: 1px; }
+.streak-card > strong { font: 50px/1.1 'GameDisplay',sans-serif; }
+.streak-card > small { font: 8px var(--mono); color: #b5bda8; letter-spacing: 1px; }
+.combat-layer { flex: 1; display: flex; flex-direction: column; pointer-events: none; position: relative; min-height: 360px; }
+#combat-focus { position: absolute; inset: 0; outline: none; pointer-events: auto; }
+.fight-round { text-align: center; padding-top: 22px; z-index: 1; }
+.fight-round > span { font: 10px var(--mono); letter-spacing: 2px; color: var(--accent); }
+.fight-round > p { color: #b1b5a4; font-size: 11px; margin-top: 7px; }
+.fight-announcement { position: absolute; left: 0; right: 0; top: 31%; text-align: center; font: 42px 'GameDisplay',sans-serif; color: #e7edba; text-shadow: 0 3px 18px #030603; }
+.fight-bottom { margin-top: auto; display: flex; gap: 25px; align-items: center; justify-content: space-between; padding: 20px 0; z-index: 1; }
+.fight-bottom button { pointer-events: auto; }
+.attack-legend { display: flex; gap: 25px; }
+.attack-legend > span { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 4px 8px; max-width: 160px; }
+.attack-legend kbd { grid-row: span 2; font-size: 13px; padding: 6px; color: var(--accent); }
+.attack-legend b { font-size: 11px; font-weight: 500; }
+.attack-legend small { font: 8px var(--mono); color: #a4b096; }
+.fight-run-info { display: flex; flex-direction: column; gap: 7px; color: #dce5b4; font: 10px var(--mono); }
+.fight-run-info small { color: #a2aa96; font-size: 9px; }
+.fight-help { color: #bac4ac; font-size: 13px; line-height: 1.9; }
+.run-result { display: flex; gap: 20px; padding: 24px 0; justify-content: space-between; }
+.run-result > span { display: flex; flex-direction: column; gap: 9px; font-size: 12px; color: #b7c0a4; }
+.run-result strong { font: 40px 'GameDisplay',sans-serif; color: var(--accent); }
+@media (max-width: 900px) {
+  .fight-hud { grid-template-columns: 1fr 95px 1fr; gap: 10px; }
+  .fight-card { padding: 12px; }
+  .fight-name { font-size: 11px; flex-wrap: wrap; gap: 4px; }
+  .fight-name > span { font-size: 9px; }
+  .attack-legend { gap: 12px; }
+  .fight-run-info small { display: none; }
+  .fight-bottom { flex-wrap: wrap; gap: 12px; }
+  .fight-announcement { font-size: 30px; }
+}
+@media (max-width: 550px) {
+  .fight-hud { grid-template-columns: 1fr 60px 1fr; gap: 5px; }
+  .fight-card { padding: 8px; }
+  .streak-card > span { font-size: 7px; letter-spacing: 0; }
+  .streak-card > strong { font-size: 34px; }
+  .fight-round { padding-top: 12px; }
+  .fight-round > p { max-width: 280px; margin: 8px auto; }
+  .attack-legend { width: 100%; justify-content: space-between; }
+  .attack-legend > span { max-width: 30%; grid-template-columns: 20px 1fr; gap: 4px; }
+  .attack-legend b { font-size: 9px; }
+  .fight-health b { font-size: 10px; }
+  .freestyle-editor label { grid-template-columns: 1fr; gap: 6px; }
 }

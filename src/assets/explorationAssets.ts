@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GAME } from '../config/game';
 import lobbyUrl from '../../assets/backgrounds/lobby.png?url';
 import gymUrl from '../../resourse/задники/качалка.png?url';
 import dojoUrl from '../../resourse/задники/зал боевых искусств.png?url';
@@ -17,7 +18,7 @@ export function playerTextureKey(state: string, direction: string, frame: number
 export function preloadExploration(scene: Phaser.Scene, room: RoomId): void {
   const ui = document.querySelector<HTMLElement>('#ui')!;
   ui.dataset.screen = 'loading';
-  ui.innerHTML = '<div class="loading-screen"><span class="brand-mark"><i></i><i></i><i></i></span><p>КЛАСС УДАРА</p><progress aria-label="Загрузка локации" max="1" value="0"></progress><small>ОТКРЫВАЕМ ДВЕРИ КЛУБА</small></div>';
+  ui.innerHTML = `<div class="loading-screen"><span class="brand-mark"><i></i><i></i><i></i></span><p>${GAME.title.toUpperCase()}</p><progress aria-label="Загрузка локации" max="1" value="0"></progress><small>ОТКРЫВАЕМ ДВЕРИ КЛУБА</small></div>`;
   const onProgress = (value: number): void => { ui.querySelector('progress')?.setAttribute('value', String(value)); };
   const onError = (): void => {
     ui.dataset.screen = 'load-error';

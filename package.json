@@ -1,9 +1,9 @@
 {
   "name": "fightclass3",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
-  "description": "Класс удара — одиночный 2D-файтинг. Этап 2: лобби.",
+  "description": "Fight Class — одиночный 2D-файтинг. Этап 4: бесконечные бои.",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",

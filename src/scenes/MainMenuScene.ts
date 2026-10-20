@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SCENES } from '../config/game';
+import { GAME, SCENES } from '../config/game';
 import type { GameServices } from '../core/GameServices';
 import { ScreenView } from '../ui/ScreenView';
 import { icons } from '../ui/icons';
@@ -19,7 +19,7 @@ export class MainMenuScene extends Phaser.Scene {
       <section class="menu-layout" aria-labelledby="game-title">
         <div class="menu-main">
           <div class="eyebrow intro-tag"><span></span> ДОКАЖИ, ЧЕГО ТЫ СТОИШЬ</div>
-          <h1 id="game-title">КЛАСС<br /><span>УДАРА</span><b class="title-dot">.</b></h1>
+          <h1 id="game-title" aria-label="${GAME.title}">FIGHT<br /><span>CLASS</span><b class="title-dot">.</b></h1>
           <p class="hero-description">Каждый начинает с первого класса.<br />Вершины достигают те, кто не сдаётся.</p>
           <nav class="menu-buttons" aria-label="Главное меню">
             <button class="menu-button primary" id="start-game"><span class="button-number">01</span>${icons.play}<span class="button-text">Начать игру<small>Твоя история начинается здесь</small></span><span class="button-arrow">${icons.arrow}</span></button>

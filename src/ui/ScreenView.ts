@@ -12,26 +12,26 @@ export class ScreenView {
   get hasDialog(): boolean { return this.dialog !== null; }
 
   constructor(readonly services: GameServices, screen: string, content: string) {
-    const world = screen === 'lobby' || screen === 'gym' || screen === 'dojo';
-    const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ' };
+    const world = screen === 'lobby' || screen === 'gym' || screen === 'dojo' || screen === 'fight';
+    const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ', fight: 'БЕСКОНЕЧНАЯ СЕРИЯ' };
     const location = locations[screen];
     this.root.dataset.screen = screen;
+    delete this.root.dataset.training;
     this.root.innerHTML = `
       <div class="screen ${world ? 'exploration-screen' : ''}">
         <header class="topbar">
-          <a class="brand" href="#" aria-label="Класс удара — главное меню">
+          <a class="brand" href="#" aria-label="${GAME.title} — главное меню">
             <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span>КЛАСС УДАРА<small>ОДИНОЧНЫЙ ФАЙТИНГ</small></span>
+            <span>${GAME.title.toUpperCase()}</span>
           </a>
           <div class="top-actions">
-            <span class="offline-label"><i></i> ОДИНОЧНАЯ ИГРА</span>
             <button class="icon-button" id="mute-button" type="button" title="Звук интерфейса"></button>
             <button class="icon-button" id="fullscreen-button" type="button" aria-label="Полный экран" title="Полный экран · F">${icons.fullscreen}</button>
           </div>
         </header>
         ${content}
         <footer class="footer">
-          <span class="build-label"><i></i> ЭТАП 02 <span class="footer-divider">/</span> ${location ?? 'ГЛАВНОЕ МЕНЮ'}</span>
+          <span class="build-label"><i></i> ЭТАП 04 <span class="footer-divider">/</span> ${location ?? 'ГЛАВНОЕ МЕНЮ'}</span>
           <span class="keyboard-hint">${world ? '<kbd>A</kbd><kbd>D</kbd> движение <kbd>E</kbd> действие' : '<kbd>Tab</kbd> выбор <kbd>Enter</kbd> подтвердить'}</span>
           <span class="version">ЛОКАЛЬНАЯ ВЕРСИЯ <b>${GAME.version}</b></span>
         </footer>

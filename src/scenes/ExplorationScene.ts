@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { COMBAT } from '../config/combat';
 import { SCENES } from '../config/game';
 import { LOBBY_OBJECTS, nearestLobbyObject, WORLD, type LobbyObject } from '../config/lobby';
 import type { GameServices } from '../core/GameServices';
@@ -8,6 +9,8 @@ import { ExplorationInput } from '../input/ExplorationInput';
 import { ExplorationView } from '../ui/ExplorationView';
 import { showRanking } from '../ui/RankingView';
 import { RoomBackdrop } from './RoomBackdrop';
+import { preloadGym } from '../assets/gymAssets';
+import { BenchTrainingController } from '../training/BenchTrainingController';
 
 export class ExplorationScene extends Phaser.Scene {
   private player: ExplorationPlayer | null = null;
@@ -19,6 +22,7 @@ export class ExplorationScene extends Phaser.Scene {
   private saveElapsed = 0;
   private savedX = 0;
   private moving = false;
+  private bench: BenchTrainingController | null = null;
 
   constructor(private readonly services: GameServices, private readonly room: RoomId) {
     super(SCENES[room]);
@@ -29,10 +33,14 @@ export class ExplorationScene extends Phaser.Scene {
     this.player = null; this.controls = null; this.view = null;
     this.nearest = null; this.saveElapsed = 0; this.moving = false;
     this.markers.clear();
+    this.bench = null;
   }
 
   preload(): void {
-    if (this.services.saves.current) preloadExploration(this, this.room);
+    if (this.services.saves.current) {
+      preloadExploration(this, this.room);
+      if (this.room === 'gym') preloadGym(this);
+    }
   }
 
   create(): void {
@@ -46,9 +54,19 @@ export class ExplorationScene extends Phaser.Scene {
     this.player = new ExplorationPlayer(this, Phaser.Math.Clamp(x, WORLD.minX, WORLD.maxX), state.facing);
     this.savedX = this.player.x;
     if (this.room === 'lobby') this.addLobbyMarkers(backdrop);
-    else this.addExitMarker();
+    else {
+      this.addExitMarker();
+      if (this.room === 'dojo') {
+        this.markers.set('start', this.add.ellipse(COMBAT.centerX, WORLD.floorY + 3, 290, 42, 0xd8e391, 0.08)
+          .setStrokeStyle(2, 0xd8e391, 0.65).setDepth(3));
+        this.add.text(COMBAT.centerX, WORLD.floorY - 440, 'E · БЕСКОНЕЧНАЯ СЕРИЯ', {
+          fontFamily: 'Consolas, monospace', fontSize: '24px', color: '#e4eac9', backgroundColor: '#182016bb', padding: { x: 16, y: 12 },
+        }).setOrigin(0.5).setDepth(2);
+      }
+    }
     this.view = new ExplorationView(this.services, this.room, () => this.interact());
-    this.controls = new ExplorationInput(() => Boolean(this.view?.hasDialog) || document.hidden,
+    if (this.room === 'gym') this.bench = new BenchTrainingController(this, this.player, this.view);
+    this.controls = new ExplorationInput(() => Boolean(this.view?.hasDialog) || Boolean(this.bench?.active) || document.hidden,
       () => this.interact(), () => this.escape());
     this.view.on('#back-menu', 'click', () => this.returnToMenu());
     this.view.on('.brand', 'click', (event) => { event.preventDefault(); this.returnToMenu(); });
@@ -59,6 +77,7 @@ export class ExplorationScene extends Phaser.Scene {
     this.refreshInteraction();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.persistPosition();
+      this.bench?.destroy(); this.bench = null;
       this.controls?.destroy();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.resize, this);
       this.view?.destroy();
@@ -69,7 +88,8 @@ export class ExplorationScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     if (!this.player || !this.controls || !this.view) return;
     const direction = this.controls.direction;
-    this.player.update(direction, delta);
+    if (!this.bench?.active) this.player.update(direction, delta);
+    this.bench?.update(delta);
     this.view.syncPlayer(this.player, delta);
     this.refreshInteraction();
     this.saveElapsed += delta;
@@ -109,8 +129,10 @@ export class ExplorationScene extends Phaser.Scene {
       this.markers.forEach((marker, key) => marker.setVisible(key === this.nearest?.id));
     } else {
       const nearExit = Math.abs(this.player.x - 160) <= WORLD.interactionRadius;
-      this.view.setInteraction(nearExit ? 'Вернуться в лобби' : null);
+      const nearFight = this.room === 'dojo' && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius;
+      this.view.setInteraction(this.bench?.active ? null : this.bench?.nearby ? 'Начать жим лёжа' : nearFight ? this.services.saves.activeRun ? 'Продолжить серию боёв' : 'Начать серию боёв' : nearExit ? 'Вернуться в лобби' : null);
       this.markers.get('exit')?.setAlpha(nearExit ? 1 : 0.35);
+      this.markers.get('start')?.setAlpha(nearFight ? 1 : 0.35);
     }
   }
 
@@ -119,6 +141,10 @@ export class ExplorationScene extends Phaser.Scene {
     this.controls?.clear();
     this.player.stop();
     if (this.room !== 'lobby') {
+      if (this.bench?.nearby) { this.bench.tryStart(); return; }
+      if (this.room === 'dojo' && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius) {
+        this.services.saves.beginEndless(); this.services.audio.play('open'); this.scene.start(SCENES.fight); return;
+      }
       if (Math.abs(this.player.x - 160) <= WORLD.interactionRadius) this.returnToLobby();
       return;
     }
@@ -130,16 +156,19 @@ export class ExplorationScene extends Phaser.Scene {
   }
 
   private escape(): void {
-    if (this.room === 'lobby') this.returnToMenu();
+    if (this.bench?.active) this.bench.stop();
+    else if (this.room === 'lobby') this.returnToMenu();
     else this.returnToLobby();
   }
 
   private returnToLobby(): void {
+    if (this.bench?.active) { this.bench.stop(() => this.returnToLobby()); return; }
     this.services.audio.play();
     this.scene.start(SCENES.lobby);
   }
 
   private returnToMenu(): void {
+    if (this.bench?.active) { this.bench.stop(() => this.returnToMenu()); return; }
     this.persistPosition();
     this.services.saves.touch();
     this.services.audio.play();
