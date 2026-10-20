@@ -12,4 +12,6 @@ export const COMBAT = {
   dodgeCost: 25, dodgeDuration: 450, dodgeSpeed: 640, dodgeInvulnerableFrom: 65, dodgeInvulnerableTo: 290,
   comboBufferMs: 170, maxCombo: 3, intermissionMs: 1800, countdownMs: 1800,
   damageGrowth: 3, rosterSize: 15,
+  roundDurationMs: 90_000, enemyBoostAfterMs: 15_000,
+  enemyDamageBoost: .10, boostNoticeMs: 3000,
 } as const;

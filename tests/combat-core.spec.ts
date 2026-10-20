@@ -10,6 +10,7 @@ import { SaveService, isSessionSave } from '../src/services/SaveService';
 import { StorageService, type StorageLike } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
 import { readFileSync } from 'node:fs';
+import { enemyBoosted, roundElapsed, roundEnemyDamage, roundOutcome, roundRemaining } from '../src/combat/RoundRules';
 const manifest = JSON.parse(readFileSync(new URL('../src/assets/combatManifest.json', import.meta.url), 'utf8'));
 
 const battle = (x=700,enemyX=920) => new CombatWorld(
@@ -178,4 +179,77 @@ test('прибавка +6 урона теперь требует четыре п
   const next=saves.advanceEndless(run.id)!;expect(next.elapsedMs).toBe(123456);expect(next.roundStartedMs).toBe(123456);expect(next.hp).toBe(37);
   const restored=new SaveService(new StorageService(storage)).activeRun!;
   expect(opponentAt(restored.wins,restored.id,restored.roundStartedMs)).toEqual(opponentAt(next.wins,next.id,next.roundStartedMs));
+});
+
+test('усиление один раз на 15-й секунде даёт ровно 10% общего урона во всех слотах',() => {
+  expect(enemyBoosted(14_999)).toBe(false); expect(enemyBoosted(15_000)).toBe(true);
+  for(let i=0;i<15;i++) {
+    const base=opponentAt(i).damage;
+    expect(roundEnemyDamage(base,14_999)).toBe(base);
+    for(const time of [15_000,30_000,45_000,89_999]) expect(roundEnemyDamage(base,time)).toBeCloseTo(base*1.1);
+  }
+  for(const slot of [0,1,2] as AttackSlot[]) {
+    const w=battle(); w.enemy.damage=roundEnemyDamage(6,15_000);
+    expect(w.attack(w.enemy,slot)).toBe(true); advance(w,ATTACK_SLOTS[slot].startup+1);
+    expect(w.player.hp).toBeCloseTo(193.4);
+  }
+});
+
+test('90 секунд: сравнивается процент HP, ничья допустима, нокаут имеет приоритет',() => {
+  const p={hp:60,maxHP:200}, e={hp:22,maxHP:55};
+  expect(roundOutcome(89_999,p,e)).toBeNull();
+  expect(roundOutcome(90_000,p,e)).toBe('enemy');
+  expect(roundOutcome(90_000,{hp:30,maxHP:100},{hp:55,maxHP:200})).toBe('player');
+  expect(roundOutcome(90_000,{hp:50,maxHP:100},{hp:25,maxHP:50})).toBe('draw');
+  expect(roundOutcome(100,{...p,hp:0},e)).toBe('enemy');
+  expect(roundOutcome(100,p,{...e,hp:0})).toBe('player');
+  expect(roundOutcome(90_000,{...p,hp:0},{...e,hp:0})).toBe('enemy');
+});
+
+test('таймер и усиление восстанавливаются из времени текущего боя без повторного бонуса',() => {
+  const {saves,storage}=newSave(), run=saves.beginEndless()!;
+  saves.checkpointEndless(run.id,{...run,elapsedMs:15_400});
+  const reloaded=new SaveService(new StorageService(storage)), restored=reloaded.activeRun!;
+  expect(roundElapsed(restored)).toBe(15_400); expect(roundRemaining(roundElapsed(restored))).toBe(74_600);
+  const base=opponentAt(restored.wins,restored.id,restored.roundStartedMs).damage;
+  expect(roundEnemyDamage(base,roundElapsed(restored))).toBeCloseTo(base*1.1);
+  expect(roundElapsed({elapsedMs:123_456,roundStartedMs:120_000})).toBe(3456);
+  expect(roundElapsed({})).toBe(0); expect(roundRemaining(100_000)).toBe(0);
+});
+
+test('победа по времени переносит HP без лечения и сбрасывает таймер и усиление для следующего бота',() => {
+  const {saves}=newSave(), run=saves.beginEndless()!;
+  const enemy=opponentAt(0,run.id);
+  saves.checkpointEndless(run.id,{...run,hp:50,stamina:37,enemyHP:enemy.maxHP*.2,elapsedMs:89_999});
+  expect(saves.advanceEndless(run.id)).toBeNull(); expect(saves.finishEndless(run.id)).toBeNull();
+  saves.checkpointEndless(run.id,{...saves.activeRun!,elapsedMs:90_000});
+  expect(saves.finishEndless(run.id)).toBeNull();
+  const next=saves.advanceEndless(run.id)!;
+  expect(next.hp).toBe(50); expect(next.stamina).toBe(37); expect(next.wins).toBe(1);
+  expect(next.enemyHP).toBe(opponentAt(1,run.id,90_000).maxHP);
+  expect(roundRemaining(roundElapsed(next))).toBe(90_000); expect(enemyBoosted(roundElapsed(next))).toBe(false);
+  expect(saves.stats.damage).toBe(10); expect(saves.advanceEndless(run.id)).toBeNull();
+});
+
+test('поражение по проценту HP выдаёт награду за прошлые победы один раз и сохраняет живого игрока',() => {
+  const {saves,storage}=newSave(), run=saves.beginEndless()!;
+  saves.checkpointEndless(run.id,{...run,enemyHP:0}); const next=saves.advanceEndless(run.id)!;
+  const enemy=opponentAt(1,run.id,next.roundStartedMs);
+  saves.checkpointEndless(run.id,{...next,hp:25,enemyHP:enemy.maxHP*.75,elapsedMs:89_999});
+  expect(saves.finishEndless(run.id)).toBeNull();
+  saves.checkpointEndless(run.id,{...saves.activeRun!,elapsedMs:90_000});
+  expect(saves.advanceEndless(run.id)).toBeNull();
+  expect(saves.finishEndless(run.id)).toEqual({wins:1,gain:3,damage:13});
+  expect(saves.stats.currentHP).toBe(25); expect(saves.finishEndless(run.id)).toBeNull();
+  const loaded=new SaveService(new StorageService(storage));
+  expect(loaded.endless).toMatchObject({totalWins:1,runs:1,lastWins:1}); expect(loaded.activeRun).toBeNull();
+});
+
+test('ничья завершает серию, не добавляет победу и не выдаёт награду повторно',() => {
+  const {saves}=newSave(), run=saves.beginEndless()!, enemy=opponentAt(0,run.id);
+  saves.checkpointEndless(run.id,{...run,hp:50,enemyHP:enemy.maxHP/2,elapsedMs:90_000});
+  expect(saves.advanceEndless(run.id)).toBeNull();
+  expect(saves.finishEndless(run.id)).toEqual({wins:0,gain:0,damage:10});
+  expect(saves.endless).toMatchObject({totalWins:0,bestStreak:0,runs:1});
+  expect(saves.stats.currentHP).toBe(50); expect(saves.finishEndless(run.id)).toBeNull();
 });

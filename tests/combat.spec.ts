@@ -46,13 +46,74 @@ test('только E в центре запускает бой; движение
   await page.waitForTimeout(500);await page.keyboard.press('j');await expect(arena(page)).toHaveAttribute('data-player-action','attack');
   await page.screenshot({path:'test-results/fight-stage-4.png'});
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toBeVisible();
-  const before=await arena(page).getAttribute('data-player-hp');await page.waitForTimeout(500);
+  const before=await arena(page).getAttribute('data-player-hp'), timeBefore=await arena(page).getAttribute('data-round-ms');await page.waitForTimeout(500);
   expect(await arena(page).getAttribute('data-player-hp')).toBe(before);
+  expect(await arena(page).getAttribute('data-round-ms')).toBe(timeBefore);
   await page.getByRole('button',{name:'Сохранить и выйти в лобби'}).click();await room(page,'lobby');
   const id=(await save(page)).activeRun.id;
   await page.reload();await page.locator('#continue-game').click();await startFight(page);
   expect((await save(page)).activeRun.id).toBe(id);expect(errors).toEqual([]);
 });
+
+test('таймер, одно усиление +10%, уведомление, пауза и перезагрузка не обнуляют время и бонус',async({page})=>{
+  const enemy=opponentAt(0,'run-test'), baseDamage=enemy.damage;
+  await seed(page,{elapsedMs:14_000,roundStartedMs:0,playerX:COMBAT.minX,enemyX:COMBAT.maxX});
+  await startFight(page);
+  await expect(arena(page)).toHaveAttribute('data-enemy-boosted','false');
+  await expect(arena(page)).toHaveAttribute('data-enemy-damage',String(baseDamage));
+  await page.keyboard.down('Space');
+  await expect(page.locator('#fight-announcement')).toHaveText('ПРОТИВНИК СТАЛ СИЛЬНЕЕ');
+  await expect(arena(page)).toHaveAttribute('data-enemy-damage',String(Math.round(baseDamage*1.1*100)/100));
+  await expect(page.locator('#fight-pressure')).toContainText('УРОН +10% ДО КОНЦА БОЯ');
+  await page.screenshot({path:'test-results/fight-timer-boost.png'});
+  await expect(page.locator('#fight-announcement')).toBeEmpty();
+  await page.keyboard.up('Space');await page.keyboard.press('Escape');
+  const remaining=await arena(page).getAttribute('data-remaining-ms');
+  await page.waitForTimeout(400);expect(await arena(page).getAttribute('data-remaining-ms')).toBe(remaining);
+  await page.getByRole('button',{name:'Сохранить и выйти в лобби'}).click();await room(page,'lobby');
+  const saved=await save(page), roundMs=saved.activeRun.elapsedMs-saved.activeRun.roundStartedMs;
+  expect(roundMs).toBeGreaterThan(15_000);
+  await page.reload();await page.locator('#continue-game').click();
+  await enterDojo(page);await center(page);await page.keyboard.press('e');await room(page,'fight');
+  await expect(arena(page)).toHaveAttribute('data-phase','countdown');
+  await expect(arena(page)).toHaveAttribute('data-round-ms',String(roundMs));
+  await expect(arena(page)).toHaveAttribute('data-enemy-boosted','true');
+  await expect(arena(page)).toHaveAttribute('data-enemy-damage',String(Math.round(baseDamage*1.1*100)/100));
+  await expect(arena(page)).toHaveAttribute('data-phase','fighting');await page.keyboard.down('Space');
+  await expect.poll(async()=>Number(await arena(page).getAttribute('data-round-ms')),{timeout:20000}).toBeGreaterThan(30_100);
+  await page.keyboard.up('Space');
+  await expect(page.locator('#fight-announcement')).toBeEmpty();
+  await expect(arena(page)).toHaveAttribute('data-enemy-damage',String(Math.round(baseDamage*1.1*100)/100));
+});
+
+for(const outcome of ['player','enemy','draw'] as const) {
+  test(`90 секунд: ${outcome} — решение по проценту HP без фиктивного нокаута`,async({page})=>{
+    const enemy=opponentAt(2,'run-test');
+    const hp=outcome==='player'?80:50;
+    await seed(page,{wins:2,hp,enemyHP:enemy.maxHP*(outcome==='player'?.2:outcome==='enemy'?.6:.5),
+      elapsedMs:89_500,roundStartedMs:0,playerX:COMBAT.minX,enemyX:COMBAT.maxX});
+    await startFight(page);await expect(page.locator('#fight-timer')).toHaveText('00:01');
+    if(outcome==='player') {
+      await expect(page.locator('#fight-announcement')).toHaveText('ВРЕМЯ · ПОБЕДА ПО HP');
+      await expect(arena(page)).toHaveAttribute('data-wins','3');
+      await expect(arena(page)).toHaveAttribute('data-phase','countdown');
+      await expect(page.locator('#fight-timer')).toHaveText('01:30');
+      await expect(arena(page)).toHaveAttribute('data-enemy-boosted','false');
+      const saved=await save(page);expect(saved.activeRun.hp).toBe(hp);expect(saved.activeRun.roundStartedMs).toBe(90_000);
+      expect(saved.stats.damage).toBe(10);expect(saved.activeRun.wins).toBe(3);
+    } else {
+      await expect(page.locator('#result-return')).toBeVisible();
+      await expect(page.getByRole('dialog')).toContainText(outcome==='draw'?'ничья':'больше HP в процентах');
+      await expect(page.locator('#fight-timer')).toHaveText('00:00');
+      const saved=await save(page);expect(saved.activeRun).toBeUndefined();expect(saved.stats.currentHP).toBe(hp);
+      expect(saved.endless).toMatchObject({totalWins:2,runs:1,lastWins:2});expect(saved.stats.damage).toBe(14);
+      await page.screenshot({path:`test-results/fight-timeout-${outcome}.png`});
+      await page.locator('#result-return').click();await room(page,'lobby');
+      await page.reload();await page.locator('#continue-game').click();
+      expect((await save(page)).endless.runs).toBe(1);expect((await save(page)).stats.damage).toBe(14);
+    }
+  });
+}
 
 test('победа заменяет бота, не лечит игрока и не выдаёт награду до поражения',async({page})=>{
   await seed(page,{hp:37,enemyHP:1,playerX:800,enemyX:1010});

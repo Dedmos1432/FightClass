@@ -424,13 +424,17 @@ body[data-motion='false'] *, body[data-motion='false'] *::before, body[data-moti
 .fight-stamina > span { display: block; height: 100%; background: #92b4b4; }
 .streak-card { text-align: center; display: flex; align-items: center; flex-direction: column; justify-content: center; }
 .streak-card > span { font: 9px var(--mono); color: var(--accent); letter-spacing: 1px; }
-.streak-card > strong { font: 50px/1.1 'GameDisplay',sans-serif; }
+.streak-card > strong { font: 28px/1.1 'GameDisplay',sans-serif; }
+.streak-card > time { margin-bottom: 8px; font: bold 34px/1 var(--mono); font-variant-numeric: tabular-nums; color: #e3edaf; }
+.streak-card > time[data-urgent="true"] { color: #e9a284; }
 .streak-card > small { font: 8px var(--mono); color: #b5bda8; letter-spacing: 1px; }
 .combat-layer { flex: 1; display: flex; flex-direction: column; pointer-events: none; position: relative; min-height: 360px; }
 #combat-focus { position: absolute; inset: 0; outline: none; pointer-events: auto; }
 .fight-round { text-align: center; padding-top: 22px; z-index: 1; }
 .fight-round > span { font: 10px var(--mono); letter-spacing: 2px; color: var(--accent); }
 .fight-round > p { color: #b1b5a4; font-size: 11px; margin-top: 7px; }
+.fight-round > #fight-pressure { color: #c9d99b; font: 9px var(--mono); letter-spacing: .5px; }
+.fight-round > #fight-pressure[data-boosted="true"] { color: #edaa88; }
 .fight-announcement { position: absolute; left: 0; right: 0; top: 31%; text-align: center; font: 42px 'GameDisplay',sans-serif; color: #e7edba; text-shadow: 0 3px 18px #030603; }
 .fight-bottom { margin-top: auto; display: flex; gap: 25px; align-items: center; justify-content: space-between; padding: 20px 0; z-index: 1; }
 .fight-bottom button { pointer-events: auto; }
@@ -450,6 +454,7 @@ body[data-motion='false'] *, body[data-motion='false'] *::before, body[data-moti
   .fight-card { padding: 12px; }
   .fight-name { font-size: 11px; flex-wrap: wrap; gap: 4px; }
   .fight-name > span { font-size: 9px; }
+  .streak-card > time { font-size: 25px; }
   .attack-legend { gap: 12px; }
   .fight-run-info small { display: none; }
   .fight-bottom { flex-wrap: wrap; gap: 12px; }
@@ -459,7 +464,8 @@ body[data-motion='false'] *, body[data-motion='false'] *::before, body[data-moti
   .fight-hud { grid-template-columns: 1fr 60px 1fr; gap: 5px; }
   .fight-card { padding: 8px; }
   .streak-card > span { font-size: 7px; letter-spacing: 0; }
-  .streak-card > strong { font-size: 34px; }
+  .streak-card > strong { font-size: 24px; }
+  .streak-card > time { font-size: 19px; }
   .fight-round { padding-top: 12px; }
   .fight-round > p { max-width: 280px; margin: 8px auto; }
   .attack-legend { width: 100%; justify-content: space-between; }

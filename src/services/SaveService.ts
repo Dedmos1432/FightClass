@@ -2,6 +2,7 @@ import { COMBAT } from '../config/combat';
 import { defaultLoadout, isLoadout, type Loadout } from '../combat/moves';
 import { damageFor, freshEndless, isEndless, isActiveRun, type EndlessProgress, type ActiveRun } from '../combat/EndlessProgress';
 import { opponentAt } from '../combat/Opponents';
+import { roundElapsed, roundOutcome } from '../combat/RoundRules';
 import { GAME } from '../config/game';
 import { WORLD } from '../config/lobby';
 import { isStyleId, type StyleId } from '../config/styles';
@@ -124,7 +125,7 @@ export class SaveService {
 
   advanceEndless(id: string): Readonly<ActiveRun> | null {
     const run = this.activeRun;
-    if (!this.session || !run || run.id !== id || run.enemyHP > 0 || run.hp <= 0) return null;
+    if (!this.session || !run || run.id !== id || this.runOutcome(run) !== 'player') return null;
     const enemy = opponentAt(run.wins + 1,run.id,run.elapsedMs);
     this.session.activeRun = { ...run, roundStartedMs: run.elapsedMs ?? 0, wins: run.wins + 1, enemyHP: enemy.maxHP, enemyStamina: enemy.stamina,
       playerX: COMBAT.playerStart, enemyX: COMBAT.enemyStart };
@@ -133,15 +134,22 @@ export class SaveService {
 
   finishEndless(id: string): { wins: number; gain: number; damage: number } | null {
     const run = this.activeRun;
-    if (!this.session || !run || run.id !== id || run.hp > 0) return null;
+    if (!this.session || !run || run.id !== id) return null;
+    const outcome = this.runOutcome(run);
+    if (outcome !== 'enemy' && outcome !== 'draw') return null;
     const previous = this.endless, before = damageFor(previous);
     const progress = { ...previous, totalWins: previous.totalWins + run.wins, bestStreak: Math.max(previous.bestStreak, run.wins),
       runs: previous.runs + 1, lastWins: run.wins };
     this.session.endless = progress;
     delete this.session.activeRun;
-    this.session.stats = { ...this.stats, damage: damageFor(progress), currentHP: 0, currentStamina: Math.floor(run.stamina) };
+    this.session.stats = { ...this.stats, damage: damageFor(progress), currentHP: Math.ceil(run.hp), currentStamina: Math.floor(run.stamina) };
     this.touch();
     return { wins: run.wins, gain: damageFor(progress) - before, damage: damageFor(progress) };
+  }
+
+  private runOutcome(run: Readonly<ActiveRun>) {
+    const enemy = opponentAt(run.wins, run.id, run.roundStartedMs);
+    return roundOutcome(roundElapsed(run), { hp: run.hp, maxHP: this.stats.maxHP }, { hp: run.enemyHP, maxHP: enemy.maxHP });
   }
 
   markBenchTutorialSeen(): void {

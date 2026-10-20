@@ -12,6 +12,7 @@ import { loadoutFor } from '../combat/moves';
 import { CombatFighterView } from '../characters/CombatFighterView';
 import { CombatInput } from '../input/CombatInput';
 import { CombatView } from '../ui/CombatView';
+import { enemyBoosted, roundElapsed, roundEnemyDamage, roundOutcome, roundRemaining, type SeriesEndReason } from '../combat/RoundRules';
 
 export class CombatScene extends Phaser.Scene {
   private world: CombatWorld | null = null;
@@ -25,6 +26,9 @@ export class CombatScene extends Phaser.Scene {
   private timer = 0;
   private savedElapsed = 0;
   private survivalMs = 0;
+  private roundMs = 0;
+  private boostNoticeMs = 0;
+  private endReason: SeriesEndReason = 'knockout';
   private runId = '';
   private wins = 0;
   private result: { wins: number; gain: number; damage: number } | null = null;
@@ -32,6 +36,7 @@ export class CombatScene extends Phaser.Scene {
   init(): void {
     this.world=null; this.view=null; this.controls=null; this.playerView=null; this.enemyView=null; this.brain=null;
     this.phase='countdown'; this.timer=COMBAT.countdownMs; this.savedElapsed=0; this.survivalMs=0; this.result=null;
+    this.roundMs=0; this.boostNoticeMs=0; this.endReason='knockout';
   }
   preload(): void { if (this.services.saves.activeRun) preloadCombat(this); }
   create(): void {
@@ -63,11 +68,13 @@ export class CombatScene extends Phaser.Scene {
     if (!run || !this.view) return;
     const stats=this.services.saves.stats;
     this.wins=run.wins; this.survivalMs=run.elapsedMs ?? 0;
+    this.roundMs=roundElapsed(run); this.boostNoticeMs=0;
     this.profile=opponentAt(run.wins,run.id,run.roundStartedMs);
     const p=fighter({ skin:'player',x:run.playerX,maxHP:stats.maxHP,hp:run.hp,stamina:stats.stamina,
       damage:stats.damage,speed:COMBAT.playerSpeed,canDodge:true });
     p.stamina=run.stamina;
     const e=enemyFighter(this.profile); e.hp=run.enemyHP; e.stamina=run.enemyStamina; e.x=run.enemyX;
+    e.damage=roundEnemyDamage(this.profile.damage,this.roundMs);
     p.facing=e.x>=p.x?1:-1; e.facing=p.facing===1?-1:1;
     this.world=new CombatWorld(p,e); this.brain=new BotBrain(this.profile,Math.random,this.survivalMs-(run.roundStartedMs ?? 0));
     this.playerView?.destroy(); this.enemyView?.destroy();
@@ -85,20 +92,43 @@ export class CombatScene extends Phaser.Scene {
         this.timer-=dt; v.announce(this.timer>1100 ? 'ГОТОВ?' : this.timer>450 ? 'ДЕРЖИ ДИСТАНЦИЮ' : 'БОЙ');
         if(this.timer<=0) { this.phase='fighting'; v.announce(''); }
       } else if (this.phase==='fighting') {
-        this.survivalMs+=dt;
+        const combatDt=Math.min(dt,roundRemaining(this.roundMs));
+        const wasBoosted=enemyBoosted(this.roundMs);
+        if(this.boostNoticeMs>0) {
+          this.boostNoticeMs=Math.max(0,this.boostNoticeMs-combatDt);
+          if(this.boostNoticeMs===0) v.announce('');
+        }
         w.player.direction=this.controls?.direction ?? 0; w.player.blocking=this.controls?.block ?? false;
-        this.brain?.update(w,dt); w.update(dt);
+        this.brain?.update(w,combatDt); w.update(combatDt);
+        this.survivalMs+=combatDt; this.roundMs+=combatDt;
         for(const event of w.events) this.effect(event.target.x,event.damage,event.type);
-        this.savedElapsed+=dt;
-        if(this.savedElapsed>=800 || w.events.length>0 || w.over) this.checkpoint();
-        if(w.player.hp<=0) {
-          this.result=this.services.saves.finishEndless(this.runId);
-          this.phase='defeat'; this.timer=1400; this.controls?.clear(); v.announce('НОКАУТ');
-        } else if(w.enemy.hp<=0) {
-          const next=this.services.saves.advanceEndless(this.runId);
-          if(next) this.wins=next.wins;
-          this.phase='intermission'; this.timer=COMBAT.intermissionMs; this.controls?.clear();
-          v.announce('ПОБЕДА · СЛЕДУЮЩИЙ СОПЕРНИК');
+        this.savedElapsed+=combatDt;
+        const outcome=roundOutcome(this.roundMs,w.player,w.enemy);
+        const boostedNow=!outcome && !wasBoosted && enemyBoosted(this.roundMs);
+        if(boostedNow) {
+          w.enemy.damage=roundEnemyDamage(this.profile.damage,this.roundMs);
+          this.boostNoticeMs=COMBAT.boostNoticeMs;
+          v.announce('ПРОТИВНИК СТАЛ СИЛЬНЕЕ');
+        }
+        if(this.savedElapsed>=800 || w.events.length>0 || outcome || boostedNow) this.checkpoint();
+        if(outcome) {
+          const timedOut=!w.over;
+          this.controls?.clear();
+          for(const f of [w.player,w.enemy]) {
+            f.direction=0; f.blocking=false; f.buffered=null;
+            if(timedOut) { f.action='idle'; f.elapsed=0; f.combo=0; }
+          }
+          if(outcome==='player') {
+            const next=this.services.saves.advanceEndless(this.runId);
+            if(next) this.wins=next.wins;
+            this.phase='intermission'; this.timer=COMBAT.intermissionMs;
+            v.announce(timedOut ? 'ВРЕМЯ · ПОБЕДА ПО HP' : 'ПОБЕДА · СЛЕДУЮЩИЙ СОПЕРНИК');
+          } else {
+            this.endReason=outcome==='draw' ? 'draw' : timedOut ? 'timeout' : 'knockout';
+            this.result=this.services.saves.finishEndless(this.runId);
+            this.phase='defeat'; this.timer=1400;
+            v.announce(outcome==='draw' ? 'ВРЕМЯ · НИЧЬЯ' : timedOut ? 'ВРЕМЯ · ПОРАЖЕНИЕ ПО HP' : 'НОКАУТ');
+          }
         }
       } else if(this.phase==='intermission' || this.phase==='defeat') {
         this.timer-=dt;
@@ -109,14 +139,14 @@ export class CombatScene extends Phaser.Scene {
           if(this.phase==='intermission') { this.buildRound(); this.phase='countdown'; this.timer=1000; }
           else {
             this.phase='result';
-            if(this.result) v.showResult(this.result,() => this.returnToLobby());
+            if(this.result) v.showResult(this.result,() => this.returnToLobby(),this.endReason);
             else this.returnToLobby();
           }
         }
       }
     }
     this.playerView?.update(stopped?0:dt); this.enemyView?.update(stopped?0:dt);
-    if(this.world) v.update(this.world,this.profile,this.wins,this.phase,this.brain?.state ?? 'approach');
+    if(this.world) v.update(this.world,this.profile,this.wins,this.phase,this.brain?.state ?? 'approach',this.roundMs);
     if(this.phase==='result' && !v.hasDialog) this.returnToLobby();
   }
   private checkpoint(): void {
