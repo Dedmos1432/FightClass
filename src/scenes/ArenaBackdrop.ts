@@ -9,7 +9,7 @@ export class ArenaBackdrop {
   constructor(private readonly scene: Phaser.Scene, private readonly services: GameServices) {
     this.image = scene.add.image(0, 0, 'arena').setOrigin(0.5);
     for (let index = 0; index < 36; index++) {
-      this.dust.push(scene.add.rectangle(0, 0, index % 4 === 0 ? 3 : 2, 2, 0xdce6ac, 0.18));
+      this.dust.push(scene.add.rectangle(0, 0, index % 4 === 0 ? 3 : 2, 2, 0xeee8d8, 0.18));
     }
     this.resize(scene.scale.gameSize);
     scene.scale.on(Phaser.Scale.Events.RESIZE, this.resize, this);

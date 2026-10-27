@@ -22,14 +22,15 @@ export class BenchTrainingView {
     this.panel.hidden = true;
     this.panel.setAttribute('aria-label', 'Жим лёжа');
     this.panel.innerHTML = `
-      <div class="bench-panel-top"><span class="eyebrow">ЖИМ ЛЁЖА</span><button class="bench-help" id="bench-help" aria-label="Обучение жиму">?</button></div>
-      <div class="bench-rep-line"><strong id="bench-reps">00</strong><span>ПОВТОРЕНИЙ ЗА ПОДХОД<small id="bench-gains">+0 HP · +0 выносливости</small></span></div>
+      <div class="bench-panel-top"><span class="eyebrow">ТРЕНИРОВОЧНЫЙ ЛИСТ</span><button class="bench-help" id="bench-help" aria-label="Обучение жиму">?</button></div>
+      <h2 class="bench-title">Жим лёжа</h2>
+      <div class="bench-rep-line"><strong id="bench-reps">00</strong><span>ПОВТОРЕНИЙ<small id="bench-gains">+0 HP · +0 выносливости</small></span></div>
       <p id="bench-status" role="status"></p>
-      <div class="bench-progress-label"><span>ТЕКУЩИЙ ЖИМ</span><output id="bench-percent">0%</output></div>
+      <div class="bench-progress-label"><span>ПОДЪЁМ ШТАНГИ</span><output id="bench-percent">0%</output></div>
       <div class="bench-progress" role="progressbar" aria-label="Прогресс жима" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="bench-progress-fill"></span></div>
       <p id="bench-next-gain"></p>
       <div class="bench-panel-actions"><button class="button primary" id="bench-tap"><kbd>E</kbd> Жать</button><button class="button secondary" id="bench-stop">Завершить <kbd>Esc</kbd></button></div>
-      <p class="bench-footnote">Нажимай повторно. Удержание E не засчитывается.</p>`;
+      <p class="bench-footnote">Повторные нажатия E. Удержание не засчитывается.</p>`;
     view.root.querySelector('.exploration-layer')!.append(this.panel);
     this.panel.querySelector('#bench-tap')!.addEventListener('click', tap);
     this.panel.querySelector('#bench-tap')!.addEventListener('keydown', (event) => { if ((event as KeyboardEvent).repeat) event.preventDefault(); });
@@ -39,8 +40,9 @@ export class BenchTrainingView {
 
   showTutorial(start?: () => void): void {
     const dialog = this.view.openDialog(`
-      <div class="dialog-top"><span class="eyebrow">${start ? 'ПЕРВОЕ ЗНАКОМСТВО СО СКАМЬЁЙ' : 'ТЕХНИКА ЖИМА'}</span><button class="icon-button" data-close aria-label="Закрыть обучение">${icons.close}</button></div>
-      <h2 id="dialog-title">Сильнее с каждым<br />повторением<span class="accent">.</span></h2>
+      <div class="dialog-top"><span class="eyebrow">${start ? 'ПЕРВАЯ ТРЕНИРОВКА' : 'ТЕХНИКА ЖИМА'}</span><button class="icon-button" data-close aria-label="Закрыть обучение">${icons.close}</button></div>
+      <h2 id="dialog-title">Сильнее с каждым<br />повторением</h2>
+      <div class="bench-rhythm" aria-hidden="true"><span>НЕ ДЕРЖИ. НАЖИМАЙ.</span><div><kbd>E</kbd><i>→</i><kbd>E</kbd><i>→</i><kbd>E</kbd><i>→</i><kbd>E</kbd></div></div>
       <ol class="bench-lesson">
         <li><b>01</b><span><strong>Займи положение</strong><small>Подойди к скамье и нажми E. Боец ляжет и возьмётся за штангу.</small></span></li>
         <li><b>02</b><span><strong>Нажимай E повторно</strong><small>Каждое нажатие поднимает штангу. Держи ритм: без нажатий прогресс снижается. Удерживать клавишу бесполезно.</small></span></li>
@@ -86,13 +88,13 @@ export class BenchTrainingView {
     if (!showResult) return;
     const stats = this.view.services.saves.stats;
     this.view.openDialog(`
-      <div class="dialog-top"><span class="eyebrow">РАБОТА НАД СОБОЙ</span><button class="icon-button" data-close aria-label="Закрыть результат">${icons.close}</button></div>
-      <h2 id="dialog-title">Подход завершён<span class="accent">.</span></h2>
+      <div class="dialog-top"><span class="eyebrow">ТРЕНИРОВОЧНАЯ ЗАПИСЬ</span><button class="icon-button" data-close aria-label="Закрыть результат">${icons.close}</button></div>
+      <h2 id="dialog-title">Подход завершён</h2>
       <div class="bench-result-count"><strong>${reps}</strong><span>ПОВТОРЕНИЙ</span></div>
       <div class="bench-result-stats"><div><span>МАКСИМУМ HP</span><strong>${stats.maxHP}<i>+${stats.maxHP - this.before.maxHP}</i></strong></div><div><span>ВЫНОСЛИВОСТЬ</span><strong>${stats.stamina}<i>+${stats.stamina - this.before.stamina}</i></strong></div></div>
       <p class="dialog-description">${reps ? 'Завершённые повторения и улучшения сохранены. Каждое следующее повторение приближает новый прирост.' : 'Ни одного полного повторения. Можно попробовать снова — прогресс не потерян.'}</p>
       <button class="button primary dialog-done" data-close>Вернуться к тренировкам ${icons.arrow}</button>
-    `);
+    `, 'bench-result');
   }
 
   destroy(): void { this.panel.remove(); delete this.view.root.dataset.training; }

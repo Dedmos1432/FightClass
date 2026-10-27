@@ -19,19 +19,19 @@ export class CombatView extends ScreenView {
   constructor(services: GameServices, readonly loadout: Loadout) {
     super(services, 'fight', `
       <section class="fight-hud" aria-label="Показатели поединка">
-        <div class="fight-card player-card"><div class="fight-name"><strong>ТВОЙ БОЕЦ</strong><span>${getStyle(services.saves.lobbyState.style).name}</span></div>
+        <div class="fight-card player-card"><div class="fight-corner-label"><span>ТВОЙ УГОЛ</span><span>HP</span></div><div class="fight-name"><strong>ТВОЙ БОЕЦ</strong><span>${getStyle(services.saves.lobbyState.style).name}</span></div>
           <div class="fight-health" role="progressbar" aria-label="HP игрока" aria-valuemin="0"><span></span><b id="fight-player-hp"></b></div>
           <div class="fight-stamina" role="progressbar" aria-label="Выносливость игрока" aria-valuemin="0"><span></span></div>
         </div>
-        <div class="streak-card"><time id="fight-timer" role="timer" aria-label="Оставшееся время боя">${clock(COMBAT.roundDurationMs)}</time><span>ПОБЕД В СЕРИИ</span><strong id="fight-wins">0</strong><small id="fight-record"></small></div>
-        <div class="fight-card enemy-card"><div class="fight-name"><strong id="enemy-name"></strong><span id="enemy-style"></span></div>
+        <div class="streak-card"><span class="fight-timer-label">ВРЕМЯ РАУНДА</span><time id="fight-timer" role="timer" aria-label="Оставшееся время боя">${clock(COMBAT.roundDurationMs)}</time><div class="streak-summary"><span>ПОБЕДЫ</span><strong id="fight-wins">0</strong></div><small id="fight-record"></small></div>
+        <div class="fight-card enemy-card"><div class="fight-corner-label"><span>СОПЕРНИК</span><span>HP</span></div><div class="fight-name"><strong id="enemy-name"></strong><span id="enemy-style"></span></div>
           <div class="fight-health" role="progressbar" aria-label="HP соперника" aria-valuemin="0"><span></span><b id="fight-enemy-hp"></b></div>
           <div class="fight-stamina" role="progressbar" aria-label="Выносливость соперника" aria-valuemin="0"><span></span></div>
         </div>
       </section>
       <section class="combat-layer"><div id="combat-focus" tabindex="0" role="application" aria-label="Поединок. A D движение, J K L атаки, пробел блок, Shift уклонение, Escape пауза"></div>
         <div class="fight-round"><span id="fight-round-label"></span><p id="fight-tactic"></p><p id="fight-pressure"></p></div>
-        <div class="fight-announcement" id="fight-announcement" role="status"></div>
+        <div class="fight-announcement" id="fight-announcement" role="status" aria-live="polite"></div>
         <div class="fight-bottom"><div class="attack-legend">${loadout.map((move, i) => `<span><kbd>${['J','K','L'][i]}</kbd><b>${moveById(move).name}</b><small>${ATTACK_SLOTS[i].stamina} выносл.</small></span>`).join('')}</div>
           <div class="fight-run-info"><span id="run-reward"></span><small>HP не восстанавливается между соперниками</small></div>
           <button class="button secondary small-button" id="fight-pause">Пауза <kbd>Esc</kbd></button>
@@ -41,7 +41,11 @@ export class CombatView extends ScreenView {
     this.focusArena();
   }
   focusArena(): void { this.focus('#combat-focus'); }
-  announce(text: string): void { this.root.querySelector('#fight-announcement')!.textContent = text; }
+  announce(text: string): void {
+    const announcement=this.root.querySelector<HTMLElement>('#fight-announcement')!;
+    announcement.textContent=text;
+    announcement.dataset.kind=text.includes('СИЛЬНЕЕ') ? 'warning' : 'round';
+  }
   update(world: CombatWorld, profile: Opponent, wins: number, phase: string, botState: string, roundMs: number): void {
     const p = world.player, e = world.enemy;
     for (const [side,f] of [['player',p],['enemy',e]] as const) {
@@ -76,27 +80,33 @@ export class CombatView extends ScreenView {
   showPause(onExit: () => void): void {
     if (this.hasDialog) return;
     this.openDialog(`
-      <div class="dialog-top"><span class="eyebrow">ПЕРЕВЕДИ ДЫХАНИЕ</span><button class="icon-button" data-close aria-label="Продолжить бой">${icons.close}</button></div>
-      <h2 id="dialog-title">Пауза<span class="accent">.</span></h2>
-      <p class="dialog-description">Серия сохранена. При выходе её можно продолжить в центре зала. Награда начисляется после завершения серии — при поражении или ничьей.</p>
-      <p class="fight-help">A / D — движение<br />J / K / L — три атаки<br />Пробел — держать блок<br />Shift — уклонение назад<br />В конце восстановления нажми следующую атаку для комбинации до трёх ударов.</p>
-      <p class="settings-note">На каждого соперника — ${COMBAT.roundDurationMs/1000} секунд. После первых ${COMBAT.enemyBoostAfterMs/1000} секунд он один раз получает +${boostPercent}% к урону. По истечении времени выигрывает боец с большим процентом HP; при равенстве серия завершается ничьей. Пауза останавливает таймер.</p>
+      <div class="dialog-top"><span class="eyebrow">БОЙ ПРИОСТАНОВЛЕН</span><button class="icon-button" data-close aria-label="Продолжить бой">${icons.close}</button></div>
+      <h2 id="dialog-title">Пауза</h2>
+      <p class="dialog-description">Время остановлено. Серия сохранена — её можно продолжить в центре зала.</p>
+      <div class="fight-help" aria-label="Управление бойцом">
+        <div><span><kbd>A</kbd><kbd>D</kbd></span><b>Движение</b></div>
+        <div><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span><b>Три атаки</b></div>
+        <div><kbd>Space</kbd><b>Держать блок</b></div>
+        <div><kbd>Shift</kbd><b>Уклонение назад</b></div>
+      </div>
+      <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов.</p>
+      <div class="fight-rule-note"><b>${COMBAT.roundDurationMs/1000} СЕКУНД НА СОПЕРНИКА</b><p>После первых ${COMBAT.enemyBoostAfterMs/1000} секунд — однократное усиление урона на ${boostPercent}%. Когда время выйдет, побеждает боец с большим процентом HP. Ничья или поражение завершают серию; награда за прошлые победы остаётся.</p></div>
       <button class="button primary dialog-done" data-close>Продолжить бой ${icons.arrow}</button>
-      <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`);
+      <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`, 'combat-pause');
     this.on('#pause-exit','click',onExit);
   }
   showResult(result: { wins: number; gain: number; damage: number }, onReturn: () => void, reason: SeriesEndReason = 'knockout'): void {
     this.announce('');
     const description=reason==='draw' ? 'Время вышло. Процент оставшегося HP одинаковый — ничья. Награда за прошлые победы сохраняется.'
       : reason==='timeout' ? 'Время вышло. У соперника осталось больше HP в процентах. Награда за прошлые победы сохраняется.'
-      : 'Поражение завершает подход. Заслуженное улучшение остаётся с тобой.';
+      : 'Бой завершён нокаутом. Награда за одержанные победы сохранена.';
     this.openDialog(`
-      <div class="dialog-top"><span class="eyebrow">СЕРИЯ ЗАВЕРШЕНА</span><span>${reason==='draw' ? 'НИЧЬЯ' : reason==='timeout' ? 'ВРЕМЯ' : 'K.O.'}</span></div>
-      <h2 id="dialog-title">Стань сильнее<span class="accent">.</span></h2>
+      <div class="dialog-top"><span class="eyebrow">ЗАПИСЬ О ПОЕДИНКЕ</span><span class="result-verdict">${reason==='draw' ? 'НИЧЬЯ' : reason==='timeout' ? 'ВРЕМЯ' : 'K.O.'}</span></div>
+      <h2 id="dialog-title">Серия завершена</h2>
       <p class="dialog-description">${description}</p>
-      <div class="run-result"><span>Побед<strong>${result.wins}</strong></span><span>Урон<strong>+${result.gain}</strong></span><span>Теперь<strong>${result.damage}</strong></span></div>
+      <div class="run-result"><span>ПОБЕДЫ<strong>${result.wins}</strong></span><span>ПРИРОСТ УРОНА<strong>+${result.gain}</strong></span><span>ОБЩИЙ УРОН<strong>${result.damage}</strong></span></div>
       <p class="settings-note">Рекорд: ${this.services.saves.endless.bestStreak}. Результат сохранён. Следующая серия начинается с полным HP.</p>
-      <button class="button primary dialog-done" id="result-return">Вернуться в лобби ${icons.arrow}</button>`);
+      <button class="button primary dialog-done" id="result-return">Вернуться в лобби ${icons.arrow}</button>`, 'combat-result');
     this.on('#result-return','click',onReturn);
   }
 }

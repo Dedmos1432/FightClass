@@ -8,20 +8,18 @@ export function showRanking(view: ScreenView): void {
   let selected: OpponentPreview = OPPONENT_PREVIEW[0];
   const dialog = view.openDialog(`
     <div class="dialog-top"><span class="eyebrow">ДОСКА СОПЕРНИКОВ / КАРЬЕРА</span><button class="icon-button" data-close aria-label="Закрыть рейтинг">${icons.close}</button></div>
-    <div class="ranking-heading"><h2 id="dialog-title">Путь к вершине<span class="accent">.</span></h2><span class="rank-class-badge">ТВОЙ КЛАСС <b>01</b></span></div>
-    <p class="dialog-description">Три класса. Девять имён. Начни с первого.</p>
+    <div class="ranking-heading"><h2 id="dialog-title">Список соперников</h2><span class="rank-class-badge"><span>ТВОЙ<br />КЛАСС</span><b>01</b></span></div>
+    <p class="ranking-preview-note"><b>ПРОСМОТР</b> Карьерные поединки пока недоступны. Здесь можно изучить бойцов и условия перехода.</p>
     <div class="ranking-tabs" role="group" aria-label="Класс соперников">${[1, 2, 3].map((tier) => `<button class="ranking-tab" data-tier="${tier}" aria-pressed="${tier === 1}">КЛАСС 0${tier}<span>${tier === 1 ? 'Текущий' : 'Заблокирован'}</span></button>`).join('')}</div>
     <div class="ranking-layout"><div id="opponent-list" class="opponent-list" role="group" aria-label="Соперники"></div><article id="opponent-profile" class="opponent-profile" aria-live="polite"></article></div>
     <div class="ranking-progress"><span>ПОБЕДЫ <b>0 / 3</b></span><p id="class-unlock"></p></div>
-    <p class="ranking-preview-note">Предварительный просмотр рейтинга. Карьерные поединки пока недоступны. Побеждённых соперников ещё нет.</p>
     <button class="button primary dialog-done" data-close>Вернуться в лобби ${icons.arrow}</button>
   `, 'ranking-dialog');
   if (!dialog) return;
 
   const renderProfile = (): void => {
     dialog.querySelector('#opponent-profile')!.innerHTML = `
-      <div class="opponent-monogram" aria-hidden="true">${selected.name.charAt(0)}<span>0${selected.rank}</span></div>
-      <span class="eyebrow">${selected.class === 1 && selected.rank === 3 ? 'ПЕРВЫЙ СОПЕРНИК' : 'ЗАБЛОКИРОВАН'}</span>
+      <div class="opponent-file-top"><div class="opponent-monogram" aria-hidden="true"><span>№</span>0${selected.rank}</div><div><span class="eyebrow">${selected.class === 1 && selected.rank === 3 ? 'ПЕРВЫЙ СОПЕРНИК' : 'ЗАБЛОКИРОВАН'}</span><p>КЛАСС 0${selected.class}</p></div></div>
       <h3>${selected.name} <span>«${selected.alias}»</span></h3>
       <p class="opponent-style">${getStyle(selected.style).name}</p>
       <dl class="opponent-stats"><div><dt>Здоровье</dt><dd>${selected.hp}</dd></div><div><dt>Выносливость</dt><dd>${selected.stamina}</dd></div><div><dt>Урон</dt><dd>${selected.damage}</dd></div></dl>

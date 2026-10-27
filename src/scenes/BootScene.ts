@@ -13,13 +13,13 @@ export class BootScene extends Phaser.Scene {
   preload(): void {
     const ui = document.querySelector<HTMLElement>('#ui')!;
     ui.dataset.screen = 'loading';
-    ui.innerHTML = `<div class="loading-screen"><span class="brand-mark"><i></i><i></i><i></i></span><p>${GAME.title.toUpperCase()}</p><progress aria-label="Загрузка игры" max="1" value="0"></progress><small>ПОДГОТОВКА ЗАЛА</small></div>`;
+    ui.innerHTML = `<div class="loading-screen"><span class="brand-mark" aria-hidden="true">FC</span><p>${GAME.title.toUpperCase()}</p><progress aria-label="Загрузка игры" max="1" value="0"></progress><small>ПОДГОТОВКА ЗАЛА</small></div>`;
     this.load.on(Phaser.Loader.Events.PROGRESS, (value: number) => {
       ui.querySelector('progress')?.setAttribute('value', String(value));
     });
     this.load.once(Phaser.Loader.Events.FILE_LOAD_ERROR, () => {
       this.failed = true;
-      ui.innerHTML = '<div class="loading-screen"><h1>Не удалось загрузить фон</h1><p>Проверь соединение с локальным сервером.</p><button class="button primary" id="retry-load">Повторить загрузку</button></div>';
+      ui.innerHTML = '<div class="loading-screen"><h1>Не удалось загрузить фон</h1><p>Проверь подключение и повтори загрузку.</p><button class="button primary" id="retry-load">Повторить загрузку</button></div>';
       ui.querySelector('#retry-load')?.addEventListener('click', () => window.location.reload());
     });
     this.load.image('arena', arenaUrl);

@@ -7,6 +7,8 @@ import { MainMenuScene } from './scenes/MainMenuScene';
 import { LobbyScene } from './scenes/LobbyScene';
 import { TrainingRoomScene } from './scenes/TrainingRoomScene';
 import './styles.css';
+import './ui/exploration.css';
+import './ui/combat-training.css';
 
 const services = new GameServices();
 

@@ -1,0 +1,238 @@
+/* Club navigation: compact ringside readouts, with the room left in view. */
+#ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .exploration-screen {
+  height: 100svh; min-height: 0; overflow: hidden; padding-inline: clamp(18px,3.5vw,64px); pointer-events: none;
+}
+#ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .topbar { min-height: 58px; padding-block: 8px; pointer-events: auto; }
+#ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .brand-mark { width: 28px; height: 31px; font-size: 20px; }
+#ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .brand-name { font-size: 14px; }
+#ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .brand-name small { display: none; }
+#ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .footer { padding-block: 12px; }
+.world-hud {
+  display: flex; align-items: center; align-self: flex-start; gap: 22px; max-width: 100%;
+  padding: 13px 20px 13px 15px; margin-top: 8px; color: var(--paper); background: #17191af2;
+  border-left: 3px solid var(--accent); border-bottom: 1px solid #eee8d833; pointer-events: auto;
+}
+.fighter-class { display: flex; align-items: center; gap: 10px; padding-right: 18px; border-right: 1px solid #eee8d833; flex-shrink: 0; }
+.fighter-class > b { font: 36px/1 var(--display); font-weight: 600; letter-spacing: -1px; }
+.fighter-class > span { font: 10px/1.3 var(--body); letter-spacing: .9px; }
+.fighter-class small { display: block; color: #a5a69f; font-size: 8px; letter-spacing: .3px; margin-top: 5px; }
+.world-vitals { display: flex; gap: 22px; }
+.stat-meter { width: 154px; min-width: 0; }
+.stat-meter > div:first-child { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.stat-meter span { color: #c7c7bc; font: 9px var(--body); letter-spacing: .65px; }
+.stat-meter strong { font: bold 13px var(--mono); white-space: nowrap; }
+.stat-meter i { font: 10px var(--mono); font-style: normal; color: #979a93; }
+.meter-track { height: 4px; margin-top: 9px; background: #eee8d826; }
+.meter-track > span { display: block; height: 100%; width: 100%; background: #a9b2ab; }
+.hp-meter .meter-track > span { background: var(--paper); }
+.damage-stat { display: flex; flex-direction: column; gap: 3px; border-left: 1px solid #eee8d833; padding-left: 19px; }
+.damage-stat > span { color: #b7b9af; font: 9px var(--body); letter-spacing: .7px; }
+.damage-stat strong { font: 25px/1 var(--display); }
+.style-picker { display: flex; align-items: center; gap: 22px; align-self: stretch; margin-left: 6px; padding: 0 0 0 20px; background: transparent; border-left: 1px solid #eee8d833; text-align: left; color: var(--paper); }
+.style-picker > span { color: #a5a69f; font: 9px var(--body); letter-spacing: .7px; }
+.style-picker strong { display: block; color: var(--paper); font: 600 15px var(--body); letter-spacing: 0; margin-top: 4px; }
+.style-picker svg { width: 17px; height: 17px; color: var(--accent); transition: transform .15s; }
+.style-picker:hover svg { transform: translateX(3px); }
+.style-picker:hover strong { color: #fff; }
+.exploration-layer { position: relative; flex: 1; min-height: 0; }
+.world-focus { position: absolute; inset: 0; outline: none; pointer-events: auto; }
+.world-focus:focus-visible { outline: none; }
+.location-heading { position: absolute; top: 23px; left: 0; color: var(--paper); text-shadow: 0 2px 9px #000; max-width: 340px; }
+.location-heading .eyebrow { font: 9px var(--body); letter-spacing: 1.4px; color: #c6c7bc; }
+.location-heading h1 { font: 500 29px/1.15 var(--display); letter-spacing: .3px; margin: 5px 0 0; }
+.room-stage-note { display: block; color: #c9cabf; font: 11px/1.65 var(--body); max-width: 305px; margin-top: 10px; }
+#gym-progress-note { color: #f0e8d6; font-variant-numeric: tabular-nums; }
+.interaction-area { position: absolute; left: 50%; bottom: 65px; transform: translateX(-50%); text-align: center; max-width: calc(100vw - 32px); }
+.interaction-button {
+  display: flex; align-items: center; gap: 14px; padding: 7px 18px 7px 7px; min-height: 53px;
+  background: var(--paper); color: var(--ink); border: 1px solid #fff7; box-shadow: 3px 3px 0 #080909a6;
+  text-align: left; pointer-events: auto; font: 600 13px var(--body); transition: background .15s,transform .15s;
+}
+.interaction-button > kbd { display: inline-grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; background: var(--accent); color: var(--paper); border: 0; margin: 0; padding: 0; font: bold 20px var(--mono); }
+.interaction-button > span { white-space: nowrap; }
+.interaction-button > svg { width: 18px; height: 18px; margin-left: 10px; }
+.interaction-button:hover { background: #faf6e9; transform: translateY(-2px); }
+.interaction-area > p { padding: 9px 13px; color: #e0dfd3; background: #17191ad9; font: 11px/1.5 var(--body); }
+.world-actions { position: absolute; bottom: 10px; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+.world-actions > div { display: flex; gap: 8px; pointer-events: auto; }
+.world-save { display: inline-flex; align-items: center; gap: 7px; color: #d2d2c5; font: 10px/1.4 var(--body); text-shadow: 0 1px 4px #000; }
+.world-save svg { width: 13px; height: 13px; }
+.world-actions .small-button { min-height: 34px; padding: 7px 11px; gap: 7px; color: var(--paper); background: #17191ad9; border: 1px solid #eee8d84d; font-size: 11px; }
+.world-actions .small-button svg { width: 14px; height: 14px; }
+.world-actions .small-button:hover { color: #fff; border-color: var(--paper); background: var(--ink); }
+
+/* Techniques are a personal training record rather than a set of promotional cards. */
+.styles-dialog { width: min(820px,calc(100vw - 32px)); }
+.styles-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.styles-heading > span { display: flex; align-items: center; gap: 8px; color: var(--accent); font: 500 30px/1 var(--display); }
+.styles-heading > span small { font: 9px var(--body); letter-spacing: .7px; }
+.style-workspace { display: grid; grid-template-columns: 1.08fr 1fr; gap: 26px; margin-top: 24px; }
+.style-options { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; align-content: start; }
+.style-option { position: relative; display: block; cursor: pointer; }
+.style-option > input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.style-choice { display: flex; align-items: center; gap: 14px; min-height: 71px; padding: 12px 13px 12px 10px; border-top: 1px solid #17191a36; color: var(--ink); }
+.style-option:last-child .style-choice { border-bottom: 1px solid #17191a36; }
+.style-number { font: 500 25px/1 var(--display); color: #8b887e; }
+.style-choice-name { min-width: 0; flex: 1; }
+.style-choice strong { display: block; font: 500 18px/1.2 var(--display); letter-spacing: .2px; }
+.style-choice small { display: block; color: #66665d; font: 10px/1.5 var(--body); margin-top: 5px; }
+.style-check { color: var(--accent); opacity: 0; flex-shrink: 0; }
+.style-check svg { width: 17px; height: 17px; }
+.style-option:hover .style-choice { background: #17191a08; }
+.style-option > input:checked + .style-choice { background: var(--ink); color: var(--paper); border-top-color: var(--ink); }
+.style-option > input:checked + .style-choice .style-number { color: var(--accent); }
+.style-option > input:checked + .style-choice small { color: #d0cdc1; }
+.style-option > input:checked + .style-choice .style-check { opacity: 1; }
+.style-option > input:focus-visible + .style-choice { outline: 2px solid var(--accent); outline-offset: -2px; }
+.style-notes { min-width: 0; }
+.style-rules { padding: 12px 0 0; border-top: 3px solid var(--ink); }
+.style-rules .eyebrow { color: var(--ink); }
+.style-rules dl { margin: 15px 0 0; }
+.style-rules dl > div { display: grid; grid-template-columns: 75px 1fr; gap: 12px; border-bottom: 1px solid #17191a21; padding: 9px 0; }
+.style-rules dt { font: bold 10px/1.5 var(--mono); }
+.style-rules dd { margin: 0; color: #62635c; font: 11px/1.5 var(--body); }
+.style-info { color: #62635c; font: 11px/1.6 var(--body); padding: 17px 0; }
+.freestyle-editor { padding-top: 18px; }
+.freestyle-editor h3 { font: 500 21px var(--display); margin: 0 0 4px; }
+.freestyle-editor p,.freestyle-editor > small { color: #62635c; font: 11px/1.55 var(--body); }
+.freestyle-editor label { display: block; margin: 13px 0; }
+.freestyle-editor label > span { display: flex; align-items: center; gap: 6px; font: 10px var(--body); margin-bottom: 6px; }
+.freestyle-editor kbd { display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0; padding: 0; font: bold 11px var(--mono); color: var(--paper); background: var(--ink); border: 0; }
+.freestyle-editor select { width: 100%; min-width: 0; min-height: 38px; padding: 8px; font: 11px var(--body); color: var(--ink); border: 1px solid #17191a60; background: #fff7; border-radius: 0; }
+
+/* Opponent board: a printed roster and an individual fighter file. */
+.ranking-dialog { width: min(940px,calc(100vw - 32px)); }
+.ranking-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.rank-class-badge { display: inline-flex; align-items: center; gap: 9px; color: var(--accent); border: 2px solid var(--accent); padding: 5px 10px; transform: rotate(-3deg); flex-shrink: 0; }
+.rank-class-badge > span { font: bold 8px/1.3 var(--body); letter-spacing: .7px; }
+.rank-class-badge b { font: 500 30px/1 var(--display); }
+.ranking-preview-note { display: flex; align-items: baseline; gap: 10px; color: #63645c; font: 11px/1.6 var(--body); margin-top: 18px; }
+.ranking-preview-note b { color: var(--accent); font: bold 9px var(--mono); letter-spacing: .6px; }
+.ranking-tabs { display: flex; border-bottom: 2px solid var(--ink); margin: 23px 0 22px; }
+.ranking-tab { flex: 1; padding: 11px 14px; color: #686960; background: transparent; text-align: left; font: 500 17px var(--display); letter-spacing: .2px; }
+.ranking-tab > span { display: block; font: 10px var(--body); margin-top: 3px; letter-spacing: 0; }
+.ranking-tab:hover { background: #17191a0b; }
+.ranking-tab[aria-pressed='true'] { background: var(--ink); color: var(--paper); }
+.ranking-tab[aria-pressed='true'] > span { color: #bfc0b5; }
+.ranking-layout { display: grid; grid-template-columns: 1fr 1.05fr; gap: 28px; }
+.opponent-list { display: flex; flex-direction: column; }
+.opponent-row { display: flex; align-items: center; gap: 14px; padding: 18px 11px; text-align: left; border-top: 1px solid #17191a3d; background: transparent; color: var(--ink); }
+.opponent-row:last-child { border-bottom: 1px solid #17191a3d; }
+.opponent-row > b { font: 500 32px/1 var(--display); color: #89897f; }
+.opponent-row > span { min-width: 0; font: 600 14px/1.3 var(--body); }
+.opponent-row small { display: block; color: #72736a; font: 10px/1.5 var(--body); margin-top: 6px; }
+.opponent-row > i { margin-left: auto; color: #74746c; font: normal 8px/1.4 var(--mono); letter-spacing: .25px; }
+.opponent-row:hover { background: #17191a0a; }
+.opponent-row[aria-pressed='true'] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.opponent-row[aria-pressed='true'] > b { color: var(--accent); }
+.opponent-row[aria-pressed='true'] small { color: #c2c2b8; }
+.opponent-row[aria-pressed='true'] > i { color: #e6a69c; }
+.opponent-profile { min-width: 0; padding: 0 0 0 24px; border-left: 1px solid #17191a3d; color: var(--ink); }
+.opponent-file-top { display: flex; align-items: center; gap: 17px; padding: 8px 0 16px; border-bottom: 3px solid var(--ink); }
+.opponent-monogram { display: flex; align-items: flex-start; gap: 5px; font: 500 58px/.9 var(--display); }
+.opponent-monogram > span { font: bold 14px/1.5 var(--mono); }
+.opponent-file-top .eyebrow { color: var(--accent); font: bold 9px/1.5 var(--body); letter-spacing: .8px; }
+.opponent-file-top p { color: #66675d; font: 10px var(--mono); margin-top: 7px; }
+.opponent-profile h3 { font: 500 28px/1.2 var(--display); margin: 17px 0 6px; }
+.opponent-profile h3 > span { display: block; color: #77776c; font: 500 19px/1.3 var(--display); margin-top: 4px; }
+.opponent-style { font: 12px var(--body); color: #62635b; }
+.opponent-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; padding: 14px 0; margin: 16px 0 12px; border-block: 1px solid #17191a3d; }
+.opponent-stats dt { color: #707166; font: 9px var(--body); }
+.opponent-stats dd { margin: 5px 0 0; font: 500 25px var(--display); }
+.opponent-tactic { font: 12px/1.65 var(--body); }
+.opponent-fairness { color: #6d6e63; font: 10px/1.55 var(--body); margin-top: 12px; }
+.ranking-progress { display: grid; grid-template-columns: auto 1fr; gap: 24px; align-items: center; border-top: 2px solid var(--ink); margin-top: 25px; padding: 16px 0 20px; }
+.ranking-progress > span { font: bold 10px var(--mono); white-space: nowrap; }
+.ranking-progress b { color: var(--accent); margin-left: 8px; }
+.ranking-progress p { color: #68695f; font: 11px/1.55 var(--body); }
+
+@media (max-width: 1100px) {
+  .world-hud { gap: 17px; padding: 11px 14px; }
+  .fighter-class { padding-right: 15px; }
+  .fighter-class > span { display: none; }
+  .world-vitals { gap: 17px; }
+  .stat-meter { width: 140px; }
+  .style-picker { gap: 13px; padding-left: 16px; }
+}
+@media (max-width: 760px) {
+  #ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .exploration-screen { padding-inline: 16px; }
+  #ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .topbar { padding-block: 8px; }
+  .world-hud { align-self: stretch; display: grid; grid-template-columns: 30px 1fr auto; gap: 10px 13px; padding: 10px 12px; margin-top: 3px; }
+  .fighter-class { border: 0; padding: 0; }
+  .fighter-class > b { font-size: 30px; }
+  .world-vitals { min-width: 0; gap: 14px; }
+  .stat-meter { width: auto; flex: 1; }
+  .stat-meter span { font-size: 7px; letter-spacing: .2px; }
+  .stat-meter strong { font-size: 10px; }
+  .stat-meter i { font-size: 8px; }
+  .meter-track { margin-top: 7px; height: 3px; }
+  .damage-stat { padding-left: 12px; gap: 1px; }
+  .damage-stat > span { font-size: 7px; }
+  .damage-stat strong { font-size: 22px; }
+  .style-picker { grid-column: 2 / -1; align-items: center; justify-content: space-between; align-self: auto; padding: 5px 0 0; margin: 0; border: 0; border-top: 1px solid #eee8d826; }
+  .style-picker > span { display: flex; align-items: baseline; gap: 10px; font-size: 8px; }
+  .style-picker strong { margin: 0; font-size: 12px; }
+  .style-picker svg { width: 14px; height: 14px; }
+  .location-heading { top: 17px; max-width: 260px; }
+  .location-heading h1 { font-size: 24px; }
+  .location-heading .eyebrow { font-size: 8px; letter-spacing: .8px; }
+  .room-stage-note { font-size: 10px; max-width: 250px; margin-top: 8px; }
+  .interaction-button { min-height: 47px; gap: 10px; padding: 6px 12px 6px 6px; font-size: 11px; }
+  .interaction-button > kbd { width: 32px; height: 32px; font-size: 17px; }
+  .interaction-button > svg { width: 15px; margin-left: 0; }
+  .interaction-area > p { font-size: 10px; }
+  .world-save { max-width: 150px; font-size: 9px; }
+  .world-actions { gap: 8px; bottom: 8px; }
+  .world-actions > div { gap: 5px; }
+  .world-actions .small-button { min-height: 32px; padding: 7px; font-size: 10px; gap: 5px; }
+  .world-actions .small-button svg { width: 12px; }
+  .style-workspace { grid-template-columns: 1fr; gap: 20px; margin-top: 18px; }
+  .style-choice { min-height: 62px; padding-block: 10px; }
+  .style-choice strong { font-size: 17px; }
+  .style-rules dl { margin-top: 8px; }
+  .styles-heading > span { font-size: 24px; }
+  .styles-heading > span small { font-size: 7px; }
+  .ranking-layout { grid-template-columns: 1fr; gap: 22px; }
+  .ranking-heading { align-items: start; gap: 10px; }
+  .ranking-heading h2 { max-width: 75%; }
+  .rank-class-badge { padding: 4px 6px; gap: 5px; }
+  .rank-class-badge b { font-size: 26px; }
+  .rank-class-badge > span { font-size: 6px; }
+  .ranking-preview-note { align-items: start; gap: 8px; }
+  .ranking-preview-note b { padding-top: 4px; font-size: 8px; }
+  .ranking-tabs { margin-top: 17px; }
+  .ranking-tab { padding: 10px; font-size: 15px; }
+  .ranking-tab > span { font-size: 9px; }
+  .opponent-profile { border: 0; padding-left: 0; }
+  .opponent-row { padding-block: 13px; }
+  .opponent-row > b { font-size: 29px; }
+  .ranking-progress { grid-template-columns: 1fr; gap: 9px; }
+}
+@media (max-width: 380px) {
+  .world-hud { column-gap: 10px; padding-inline: 9px; }
+  .world-vitals { gap: 10px; }
+  .stat-meter > div:first-child { flex-wrap: wrap; gap: 2px; }
+  .stat-meter span { font-size: 7px; }
+  .stat-meter strong { font-size: 10px; }
+  .world-actions .small-button svg { display: none; }
+  .world-save { max-width: 130px; }
+  .interaction-button > span { white-space: normal; }
+  .interaction-area { width: max-content; max-width: calc(100vw - 32px); }
+  .styles-heading > span { display: none; }
+}
+@media (max-height: 550px) and (min-width: 600px) {
+  #ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .topbar { padding-block: 8px; }
+  #ui:is([data-screen='lobby'],[data-screen='gym'],[data-screen='dojo']) .footer { padding-block: 7px; }
+  .world-hud { padding-block: 7px; gap: 15px; margin-top: 0; }
+  .fighter-class > b { font-size: 25px; }
+  .damage-stat strong { font-size: 21px; }
+  .location-heading { top: 10px; }
+  .location-heading .eyebrow,.room-stage-note { display: none; }
+  .location-heading h1 { font-size: 21px; }
+  .interaction-area { bottom: 45px; }
+  .interaction-button { min-height: 40px; padding: 5px 12px 5px 5px; font-size: 11px; }
+  .interaction-button > kbd { width: 28px; height: 28px; font-size: 16px; }
+  .world-actions { bottom: 5px; }
+  .world-actions .small-button { min-height: 29px; padding-block: 5px; }
+  .world-save { font-size: 9px; }
+}

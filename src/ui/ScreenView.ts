@@ -21,8 +21,8 @@ export class ScreenView {
       <div class="screen ${world ? 'exploration-screen' : ''}">
         <header class="topbar">
           <a class="brand" href="#" aria-label="${GAME.title} — главное меню">
-            <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span>${GAME.title.toUpperCase()}</span>
+            <span class="brand-mark" aria-hidden="true">FC</span>
+            <span class="brand-name">${GAME.title.toUpperCase()}<small>БОЙЦОВСКИЙ КЛУБ</small></span>
           </a>
           <div class="top-actions">
             <button class="icon-button" id="mute-button" type="button" title="Звук интерфейса"></button>
@@ -31,9 +31,9 @@ export class ScreenView {
         </header>
         ${content}
         <footer class="footer">
-          <span class="build-label"><i></i> ЭТАП 04 <span class="footer-divider">/</span> ${location ?? 'ГЛАВНОЕ МЕНЮ'}</span>
+          <span class="build-label">${location ?? 'ГЛАВНОЕ МЕНЮ'}</span>
           <span class="keyboard-hint">${world ? '<kbd>A</kbd><kbd>D</kbd> движение <kbd>E</kbd> действие' : '<kbd>Tab</kbd> выбор <kbd>Enter</kbd> подтвердить'}</span>
-          <span class="version">ЛОКАЛЬНАЯ ВЕРСИЯ <b>${GAME.version}</b></span>
+          <span class="version">FIGHT CLASS <b>v${GAME.version}</b></span>
         </footer>
       </div>`;
     this.on('#mute-button', 'click', () => {
@@ -84,9 +84,9 @@ export class ScreenView {
     if (this.dialog) return;
     const { volume, muted, animatedBackground } = this.services.settings.current;
     this.openDialog(`
-      <div class="dialog-top"><span class="eyebrow">ПАРАМЕТРЫ ИГРЫ</span><button class="icon-button" data-close aria-label="Закрыть настройки">${icons.close}</button></div>
-      <h2 id="dialog-title">Настройки<span class="accent">.</span></h2>
-      <p class="dialog-description">Твой ритм. Твои правила.</p>
+      <div class="dialog-top"><span class="eyebrow">FIGHT CLASS / ПАРАМЕТРЫ</span><button class="icon-button" data-close aria-label="Закрыть настройки">${icons.close}</button></div>
+      <h2 id="dialog-title">Настройки</h2>
+      <p class="dialog-description">Звук и движение фона.</p>
       <div class="setting-row volume-row">
         <label for="volume">Громкость интерфейса<small>Короткие звуки нажатий</small></label>
         <output id="volume-value" for="volume">${Math.round(volume * 100)}%</output>
