@@ -8,6 +8,8 @@ import { type Loadout, moveById } from '../combat/moves';
 import type { Opponent } from '../combat/Opponents';
 import { rewardFor } from '../combat/EndlessProgress';
 import { enemyBoosted, roundRemaining, type SeriesEndReason } from '../combat/RoundRules';
+import type { CareerOpponent } from '../career/Roster';
+import { careerScore, careerWinsNeeded, type CareerScore, type CareerResult } from '../career/Progress';
 
 const clock = (ms: number): string => {
   const seconds=Math.ceil(ms/1000);
@@ -16,8 +18,10 @@ const clock = (ms: number): string => {
 const boostPercent = Math.round(COMBAT.enemyDamageBoost*100);
 
 export class CombatView extends ScreenView {
-  constructor(services: GameServices, readonly loadout: Loadout) {
-    super(services, 'fight', `
+  private score=careerScore({});
+  private roundNumber=1;
+  constructor(services: GameServices, readonly loadout: Loadout, private readonly career?: CareerOpponent) {
+    super(services, career ? 'career-fight' : 'fight', `
       <section class="fight-hud" aria-label="Показатели поединка">
         <div class="fight-card player-card"><div class="fight-corner-label"><span>ТВОЙ УГОЛ</span><span>HP</span></div><div class="fight-name"><strong>ТВОЙ БОЕЦ</strong><span>${getStyle(services.saves.lobbyState.style).name}</span></div>
           <div class="fight-health" role="progressbar" aria-label="HP игрока" aria-valuemin="0"><span></span><b id="fight-player-hp"></b></div>
@@ -38,9 +42,16 @@ export class CombatView extends ScreenView {
         </div>
       </section>`);
     this.root.querySelector('.keyboard-hint')!.innerHTML = '<kbd>A</kbd><kbd>D</kbd> движение <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> атаки <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
+    if (career) {
+      this.root.querySelector('.streak-summary > span')!.textContent = 'СЧЁТ';
+      this.root.querySelector('.fight-run-info > small')!.textContent = 'Новый раунд — полные HP и выносливость';
+      for(const side of ['player','enemy']) this.root.querySelector(`.${side}-card`)!.insertAdjacentHTML('beforeend',
+        `<div class="career-round-marks" id="${side}-round-marks" role="img">${Array.from({length:careerWinsNeeded(career.id)},()=>'<i aria-hidden="true"></i>').join('')}</div>`);
+    }
     this.focusArena();
   }
   focusArena(): void { this.focus('#combat-focus'); }
+  setCareerScore(score: CareerScore, roundNumber: number): void { this.score={...score}; this.roundNumber=roundNumber; }
   announce(text: string): void {
     const announcement=this.root.querySelector<HTMLElement>('#fight-announcement')!;
     announcement.textContent=text;
@@ -59,30 +70,37 @@ export class CombatView extends ScreenView {
     }
     this.root.querySelector('#enemy-name')!.textContent = profile.name;
     this.root.querySelector('#enemy-style')!.textContent = `${getStyle(profile.style).name} · ${profile.variantName}`;
-    this.root.querySelector('#fight-wins')!.textContent = String(wins);
-    this.root.querySelector('#fight-record')!.textContent = `РЕКОРД ${this.services.saves.endless.bestStreak}`;
-    this.root.querySelector('#fight-round-label')!.textContent = `БОЙ ${wins + 1} · ${profile.difficulty < 4 ? 'НАЧАЛЬНЫЙ' : profile.difficulty < 10 ? 'ОПЫТНЫЙ' : 'МАСТЕР'}`;
-    this.root.querySelector('#fight-tactic')!.textContent = `${profile.tactic}${profile.canDodge ? '' : ' Kim не уклоняется.'}`;
-    const remaining=roundRemaining(roundMs), boosted=enemyBoosted(roundMs);
+    this.root.querySelector('#fight-wins')!.textContent = this.career ? `${this.score.playerRounds} : ${this.score.enemyRounds}` : String(wins);
+    this.root.querySelector('#fight-record')!.textContent = this.career ? `ДО ${careerWinsNeeded(this.career.id)} ПОБЕД` : `РЕКОРД ${this.services.saves.endless.bestStreak}`;
+    this.root.querySelector('#fight-round-label')!.textContent = this.career ? `РАУНД ${this.roundNumber} · ${this.career.boss ? 'БОСС' : 'КАРЬЕРА'} · КЛАСС 0${this.career.tier}` : `БОЙ ${wins + 1} · ${profile.difficulty < 4 ? 'НАЧАЛЬНЫЙ' : profile.difficulty < 10 ? 'ОПЫТНЫЙ' : 'МАСТЕР'}`;
+    if(this.career) for(const [side,count] of [['player',this.score.playerRounds],['enemy',this.score.enemyRounds]] as const) {
+      const marks=this.root.querySelector<HTMLElement>(`#${side}-round-marks`)!;
+      marks.setAttribute('aria-label',`Раунды ${side==='player' ? 'игрока' : 'соперника'}: ${count} из ${careerWinsNeeded(this.career.id)}`);
+      marks.querySelectorAll<HTMLElement>('i').forEach((mark,i)=>{mark.dataset.won=String(i<count);});
+    }
+    this.root.querySelector('#fight-tactic')!.textContent = `${profile.tactic}${profile.canDodge || this.career ? '' : ' Kim не уклоняется.'}`;
+    const remaining=roundRemaining(roundMs), boosted=!this.career && enemyBoosted(roundMs);
     const timer=this.root.querySelector<HTMLElement>('#fight-timer')!;
     timer.textContent=clock(remaining); timer.dataset.urgent=String(remaining<=15_000);
     const pressure=this.root.querySelector<HTMLElement>('#fight-pressure')!;
-    pressure.textContent=boosted ? `СОПЕРНИК УСИЛЕН · УРОН +${boostPercent}% ДО КОНЦА БОЯ`
+    pressure.textContent=this.career ? '90 СЕКУНД · ПРИ ИСТЕЧЕНИИ ВРЕМЕНИ РЕШАЕТ ПРОЦЕНТ HP' : boosted ? `СОПЕРНИК УСИЛЕН · УРОН +${boostPercent}% ДО КОНЦА БОЯ`
       : `УСИЛЕНИЕ ЧЕРЕЗ ${clock(Math.max(0,COMBAT.enemyBoostAfterMs-roundMs))} · УРОН +${boostPercent}%`;
     pressure.dataset.boosted=String(boosted);
-    this.root.querySelector('#run-reward')!.textContent = `Урон ${p.damage} · Награда за серию +${rewardFor(this.services.saves.endless,wins)}`;
+    this.root.querySelector('#run-reward')!.textContent = this.career ? `Урон ${p.damage} · Побед в карьере ${this.services.saves.career.victories.length} / 12` : `Урон ${p.damage} · Награда за серию +${rewardFor(this.services.saves.endless,wins)}`;
     const data = this.root.querySelector<HTMLElement>('#combat-focus')!.dataset;
     Object.assign(data, { phase, playerHp:String(p.hp), enemyHp:String(e.hp), playerX:p.x.toFixed(1), enemyX:e.x.toFixed(1),
       playerAction:p.action, enemyAction:e.action, enemySkin:e.skin, enemyVariant:profile.id, botState, playerFacing:String(p.facing), enemyFacing:String(e.facing), enemyCanDodge:String(e.canDodge),
       wins:String(wins), slot:String(p.slot), combo:String(p.combo), stamina:Math.floor(p.stamina).toString(),
-      roundMs:String(roundMs), remainingMs:String(remaining), enemyBoosted:String(boosted), enemyDamage:String(e.damage) });
+      roundMs:String(roundMs), remainingMs:String(remaining), enemyBoosted:String(boosted), enemyDamage:String(e.damage), mode:this.career ? 'career' : 'endless', boss:String(this.career?.boss ?? false) });
+    if(this.career) Object.assign(data,{playerRounds:String(this.score.playerRounds),enemyRounds:String(this.score.enemyRounds),
+      drawnRounds:String(this.score.drawnRounds),roundNumber:String(this.roundNumber),targetRounds:String(careerWinsNeeded(this.career.id))});
   }
   showPause(onExit: () => void): void {
     if (this.hasDialog) return;
     this.openDialog(`
       <div class="dialog-top"><span class="eyebrow">БОЙ ПРИОСТАНОВЛЕН</span><button class="icon-button" data-close aria-label="Продолжить бой">${icons.close}</button></div>
       <h2 id="dialog-title">Пауза</h2>
-      <p class="dialog-description">Время остановлено. Серия сохранена — её можно продолжить в центре зала.</p>
+      <p class="dialog-description">${this.career ? 'Время остановлено. Поединок сохранён — его можно продолжить через доску в лобби.' : 'Время остановлено. Серия сохранена — её можно продолжить в центре зала.'}</p>
       <div class="fight-help" aria-label="Управление бойцом">
         <div><span><kbd>A</kbd><kbd>D</kbd></span><b>Движение</b></div>
         <div><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span><b>Три атаки</b></div>
@@ -90,10 +108,33 @@ export class CombatView extends ScreenView {
         <div><kbd>Shift</kbd><b>Уклонение назад</b></div>
       </div>
       <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов.</p>
-      <div class="fight-rule-note"><b>${COMBAT.roundDurationMs/1000} СЕКУНД НА СОПЕРНИКА</b><p>После первых ${COMBAT.enemyBoostAfterMs/1000} секунд — однократное усиление урона на ${boostPercent}%. Когда время выйдет, побеждает боец с большим процентом HP. Ничья или поражение завершают серию; награда за прошлые победы остаётся.</p></div>
+      <div class="fight-rule-note"><b>${COMBAT.roundDurationMs/1000} СЕКУНД НА ${this.career ? 'РАУНД' : 'СОПЕРНИКА'}</b><p>${this.career ? `Матч до ${careerWinsNeeded(this.career.id)} побед в раундах для любого бойца. Счёт ${this.score.playerRounds} : ${this.score.enemyRounds}. По времени решает процент HP. Ничья не меняет счёт. Каждый новый раунд начинается с полными HP, выносливостью и новым таймером; счёт сохраняется при выходе.` : `После первых ${COMBAT.enemyBoostAfterMs/1000} секунд — однократное усиление урона на ${boostPercent}%. Когда время выйдет, побеждает боец с большим процентом HP. Ничья или поражение завершают серию; награда за прошлые победы остаётся.`}</p></div>
       <button class="button primary dialog-done" data-close>Продолжить бой ${icons.arrow}</button>
       <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`, 'combat-pause');
     this.on('#pause-exit','click',onExit);
+  }
+  showCareerResult(result: CareerResult, onBoard: () => void, onRetry: () => void): void {
+    if (!this.career) return;
+    this.announce('');
+    const won = result.outcome === 'player';
+    const verdict = result.outcome === 'draw' ? 'Ничья' : won ? 'Победа' : 'Поражение';
+    const explanation = result.reason === 'draw' ? 'Время вышло. Процент оставшегося HP одинаковый.'
+      : result.reason === 'timeout' ? 'Последний раунд решён по проценту HP.' : 'Последний раунд завершён нокаутом.';
+    const progress = result.completed ? 'Все 12 соперников побеждены. Карьера высшего класса завершена.'
+      : result.newVictory && this.career.rank === 4 ? `Открыт класс 0${result.newClass}. Следующий соперник ждёт на доске.`
+      : won ? 'Победа сохранена. Следующего соперника можно выбрать на доске.' : 'Прошлые победы сохранены. Можно повторить этот поединок с полным HP.';
+    this.openDialog(`
+      <div class="dialog-top"><span class="eyebrow">КАРЬЕРА · КЛАСС 0${this.career.tier}</span><span class="result-verdict">${result.reason === 'knockout' ? 'K.O.' : 'ВРЕМЯ'}</span></div>
+      <h2 id="dialog-title">${verdict}</h2>
+      <p class="dialog-description">${this.career.name} · ${explanation}</p>
+      <p class="career-final-score">РАУНДЫ <strong>${result.playerRounds ?? 0} : ${result.enemyRounds ?? 0}</strong><span>Матч до ${careerWinsNeeded(this.career.id)} побед</span></p>
+      <div class="run-result"><span>ПОБЕДЫ<strong>${this.services.saves.career.victories.length} / 12</strong></span><span>ТВОЙ КЛАСС<strong>0${result.newClass}</strong></span></div>
+      <p class="career-result-progress">${progress}</p>
+      <p class="settings-note">Урон прокачивается в бесконечных боях, HP и выносливость — на скамье.</p>
+      <button class="button primary dialog-done" id="career-result-board">К доске соперников ${icons.arrow}</button>
+      <button class="button secondary dialog-done" id="career-result-retry">${won ? 'Повторить поединок' : 'Попробовать ещё раз'}</button>`, 'combat-result career-result');
+    this.on('#career-result-board','click',onBoard);
+    this.on('#career-result-retry','click',onRetry);
   }
   showResult(result: { wins: number; gain: number; damage: number }, onReturn: () => void, reason: SeriesEndReason = 'knockout'): void {
     this.announce('');

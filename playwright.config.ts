@@ -1,7 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const preview = process.env.PLAYWRIGHT_PREVIEW === '1';
-const baseURL = preview ? 'http://127.0.0.1:4173' : 'http://127.0.0.1:5173';
+const port = Number(process.env.PLAYWRIGHT_PORT ?? (preview ? 4173 : 5173));
+const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: './tests',
@@ -15,10 +16,10 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'storage', testMatch: /(storage|training|combat-core)\.spec\.ts/ },
+    { name: 'storage', testMatch: /(storage|training|combat-core|career-core|career-ai|career-assets)\.spec\.ts/ },
     {
       name: 'chrome',
-      testMatch: /(menu|lobby|gym|combat)\.spec\.ts/,
+      testMatch: /(menu|lobby|gym|combat|career)\.spec\.ts/,
       workers: 1,
       use: {
         ...devices['Desktop Chrome'],
@@ -29,7 +30,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: preview ? 'npm run preview' : 'npm run dev',
+    command: `${preview ? 'npm run preview' : 'npm run dev'} -- --port ${port}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GAME } from './config/game';
 import { GameServices } from './core/GameServices';
 import { CombatScene } from './scenes/CombatScene';
+import { CareerScene } from './scenes/CareerScene';
 import { BootScene } from './scenes/BootScene';
 import { MainMenuScene } from './scenes/MainMenuScene';
 import { LobbyScene } from './scenes/LobbyScene';
@@ -9,6 +10,7 @@ import { TrainingRoomScene } from './scenes/TrainingRoomScene';
 import './styles.css';
 import './ui/exploration.css';
 import './ui/combat-training.css';
+import './ui/career.css';
 
 const services = new GameServices();
 
@@ -22,7 +24,7 @@ const game = new Phaser.Game({
   render: { antialias: false, powerPreference: 'low-power' },
   fps: { target: 60, limit: 60 },
   audio: { noAudio: true },
-  scene: [new BootScene(services), new MainMenuScene(services), new LobbyScene(services), new TrainingRoomScene(services, 'gym'), new TrainingRoomScene(services, 'dojo'), new CombatScene(services)],
+  scene: [new BootScene(services), new MainMenuScene(services), new LobbyScene(services), new TrainingRoomScene(services, 'gym'), new TrainingRoomScene(services, 'dojo'), new CombatScene(services), new CareerScene(services)],
 });
 
 const unsubscribe = services.settings.subscribe((settings) => {

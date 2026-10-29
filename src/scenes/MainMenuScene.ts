@@ -19,6 +19,7 @@ export class MainMenuScene extends Phaser.Scene {
     const stats = this.services.saves.stats;
     const endless = this.services.saves.endless;
     const run = this.services.saves.activeRun;
+    const classNumeral = ['I', 'II', 'III'][(saved?.currentClass ?? 1) - 1];
     const view = new ScreenView(this.services, 'menu', `
       <section class="menu-layout" aria-labelledby="game-title">
         <div class="menu-main">
@@ -33,10 +34,10 @@ export class MainMenuScene extends Phaser.Scene {
           <div class="save-note">ПРОГРЕСС СОХРАНЯЕТСЯ В ЭТОМ БРАУЗЕРЕ</div>
         </div>
         <aside class="menu-art" aria-label="Личное дело бойца">
-          <div class="poster-plane" aria-hidden="true"><span class="poster-heading">FIGHT CLASS<br />БОЙЦОВСКИЙ КЛУБ</span><span class="poster-numeral">I</span><span class="poster-serial">ТРЕНИРОВКА / ПОЕДИНОК / ПОВТОРИТЬ</span></div>
+          <div class="poster-plane" aria-hidden="true"><span class="poster-heading">FIGHT CLASS<br />БОЙЦОВСКИЙ КЛУБ</span><span class="poster-numeral">${classNumeral}</span><span class="poster-serial">ТРЕНИРОВКА / ПОЕДИНОК / ПОВТОРИТЬ</span></div>
           <img class="menu-fighter" src="${fighterUrl}" alt="" width="448" height="640" draggable="false" />
           <div class="menu-record">
-            <div class="record-heading"><span>ЛИЧНОЕ ДЕЛО</span><b>КЛАСС I</b></div>
+            <div class="record-heading"><span>ЛИЧНОЕ ДЕЛО</span><b>КЛАСС ${classNumeral}</b></div>
             <div class="record-stats"><span>ЗДОРОВЬЕ<strong>${stats.maxHP}</strong></span><span>ВЫНОСЛИВОСТЬ<strong>${stats.stamina}</strong></span><span>УРОН<strong>${stats.damage}</strong></span></div>
             <p>${run ? `Серия продолжается · побед: ${run.wins}` : saved ? `Личный рекорд · ${endless.bestStreak} побед в серии` : 'Новый боец. Запись на первый поединок.'}</p>
           </div>

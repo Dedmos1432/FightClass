@@ -8,6 +8,8 @@ import { WORLD } from '../config/lobby';
 import { isStyleId, type StyleId } from '../config/styles';
 import { StorageService } from './StorageService';
 import { freshTraining, isCharacterStats, isTrainingProgress, restoredStats, trainingAttributes, type CharacterStats, type TrainingProgress } from '../training/Progression';
+import { careerOpponent, type CareerClass } from '../career/Roster';
+import { careerAvailable, careerClass, careerComplete, careerScore, careerRoundNumber, careerMatchOutcome, cloneCareer, emptyCareerRecord, freshCareer, isCareerProgress, isCareerRun, type CareerCheckpoint, type CareerProgress, type CareerResult, type CareerRun, type CareerRoundResult } from '../career/Progress';
 
 export interface LobbyState {
   x: number;
@@ -24,13 +26,15 @@ export interface SessionSave {
   createdAt: string;
   updatedAt: string;
   location: 'lobby';
-  currentClass: 1;
+  currentClass: CareerClass;
   player?: LobbyState;
   training?: TrainingProgress;
   stats?: CharacterStats;
   freestyle?: Loadout;
   endless?: EndlessProgress;
   activeRun?: ActiveRun;
+  career?: CareerProgress;
+  activeCareer?: CareerRun;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -39,7 +43,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function isSessionSave(value: unknown): value is SessionSave {
   if (!isRecord(value)) return false;
-  return value.version === 1 && value.location === 'lobby' && value.currentClass === 1
+  return value.version === 1 && value.location === 'lobby' && [1,2,3].includes(Number(value.currentClass))
+    && typeof value.currentClass === 'number'
     && typeof value.id === 'string' && value.id.length > 0 && value.id.length <= 128
     && typeof value.createdAt === 'string' && Number.isFinite(Date.parse(value.createdAt))
     && typeof value.updatedAt === 'string' && Number.isFinite(Date.parse(value.updatedAt))
@@ -52,7 +57,10 @@ export function isSessionSave(value: unknown): value is SessionSave {
     && (value.stats === undefined || isCharacterStats(value.stats))
     && (value.freestyle === undefined || isLoadout(value.freestyle))
     && (value.endless === undefined || isEndless(value.endless))
-    && (value.activeRun === undefined || isActiveRun(value.activeRun));
+    && (value.activeRun === undefined || isActiveRun(value.activeRun))
+    && (value.career === undefined || isCareerProgress(value.career))
+    && (value.activeCareer === undefined || (isCareerRun(value.activeCareer)
+      && careerAvailable(isCareerProgress(value.career) ? value.career : freshCareer(), value.activeCareer.opponentId)));
 }
 
 export class SaveService {
@@ -65,7 +73,9 @@ export class SaveService {
     if (result.status === 'ok' && isSessionSave(result.value)) {
       const training = result.value.training ?? freshTraining();
       const endless = result.value.endless ?? freshEndless(Math.max(0, (result.value.stats?.damage ?? 10) - 10));
+      const career = result.value.career ?? freshCareer();
       this.session = { ...result.value, training: { ...training }, endless: { ...endless },
+        career: cloneCareer(career), currentClass: careerClass(career),
         freestyle: [...(result.value.freestyle ?? defaultLoadout())],
         stats: { ...restoredStats(training.totalReps, result.value.stats), damage: damageFor(endless) } };
       this.loadIssue = null;
@@ -84,6 +94,8 @@ export class SaveService {
       ...(this.session.stats ? { stats: { ...this.session.stats } } : {}),
       ...(this.session.endless ? { endless: { ...this.session.endless } } : {}),
       ...(this.session.activeRun ? { activeRun: { ...this.session.activeRun } } : {}),
+      ...(this.session.career ? { career: cloneCareer(this.session.career) } : {}),
+      ...(this.session.activeCareer ? { activeCareer: { ...this.session.activeCareer } } : {}),
       ...(this.session.freestyle ? { freestyle: [...this.session.freestyle] as Loadout } : {}),
     } : null;
   }
@@ -95,6 +107,79 @@ export class SaveService {
   get endless(): Readonly<EndlessProgress> { return { ...(this.session?.endless ?? freshEndless()) }; }
   get activeRun(): Readonly<ActiveRun> | null { return this.session?.activeRun ? { ...this.session.activeRun,
     elapsedMs: this.session.activeRun.elapsedMs ?? 0, roundStartedMs: this.session.activeRun.roundStartedMs ?? 0 } : null; }
+  get career(): Readonly<CareerProgress> { return cloneCareer(this.session?.career ?? freshCareer()); }
+  get activeCareer(): Readonly<CareerRun> | null { return this.session?.activeCareer ? { ...this.session.activeCareer, ...careerScore(this.session.activeCareer) } : null; }
+
+  beginCareer(opponentId: string): Readonly<CareerRun> | null {
+    if (!this.session || !careerAvailable(this.career,opponentId)) return null;
+    const active=this.activeCareer;
+    if(active) return active.opponentId===opponentId ? active : null;
+    const opponent=careerOpponent(opponentId)!;
+    const stats=this.stats, progress=this.career;
+    const previous=progress.records[opponentId] ?? emptyCareerRecord();
+    this.session.career={...progress,records:{...progress.records,[opponentId]:{...previous,attempts:previous.attempts+1}}};
+    this.session.activeCareer={id:crypto.randomUUID(),opponentId,playerMaxHP:stats.maxHP,playerMaxStamina:stats.stamina,playerDamage:stats.damage,
+      hp:stats.maxHP,stamina:stats.stamina,enemyHP:opponent.maxHP,enemyStamina:opponent.stamina,
+      playerX:COMBAT.playerStart,enemyX:COMBAT.enemyStart,elapsedMs:0,playerRounds:0,enemyRounds:0,drawnRounds:0};
+    this.session.stats={...stats,currentHP:stats.maxHP,currentStamina:stats.stamina};
+    this.touch(); return this.activeCareer;
+  }
+
+  checkpointCareer(id: string, state: CareerCheckpoint, expectedRound?: number): boolean {
+    const run=this.activeCareer;
+    if(!this.session || !run || run.id!==id || careerMatchOutcome(run)
+      || expectedRound!==undefined && expectedRound!==careerRoundNumber(run)) return false;
+    const next={...run,hp:state.hp,stamina:state.stamina,enemyHP:state.enemyHP,enemyStamina:state.enemyStamina,
+      playerX:state.playerX,enemyX:state.enemyX,elapsedMs:Math.max(run.elapsedMs,state.elapsedMs)};
+    if(!isCareerRun(next)) return false;
+    this.session.activeCareer=next;
+    this.session.stats={...this.stats,currentHP:Math.min(this.stats.maxHP,Math.ceil(next.hp)),
+      currentStamina:Math.min(this.stats.stamina,Math.floor(next.stamina))};
+    return this.touch();
+  }
+
+  resolveCareerRound(id: string, expectedRound: number): CareerRoundResult | null {
+    const run=this.activeCareer;
+    if(!this.session || !run || run.id!==id || careerMatchOutcome(run) || expectedRound!==careerRoundNumber(run)) return null;
+    const opponent=careerOpponent(run.opponentId)!;
+    const outcome=roundOutcome(run.elapsedMs,{hp:run.hp,maxHP:run.playerMaxHP},{hp:run.enemyHP,maxHP:opponent.maxHP});
+    if(!outcome) return null;
+    const score=careerScore(run);
+    if(outcome==='player') score.playerRounds++;
+    else if(outcome==='enemy') score.enemyRounds++;
+    else score.drawnRounds++;
+    const matchOver=Boolean(careerMatchOutcome({...run,...score}));
+    this.session.activeCareer=matchOver ? {...run,...score} : {...run,...score,
+      hp:run.playerMaxHP,stamina:run.playerMaxStamina,enemyHP:opponent.maxHP,enemyStamina:opponent.stamina,
+      playerX:COMBAT.playerStart,enemyX:COMBAT.enemyStart,elapsedMs:0};
+    const next=this.session.activeCareer;
+    this.session.stats={...this.stats,currentHP:Math.min(this.stats.maxHP,Math.ceil(next.hp)),
+      currentStamina:Math.min(this.stats.stamina,Math.floor(next.stamina))};
+    this.touch();
+    return {...score,outcome,roundNumber:expectedRound,matchOver,
+      reason:outcome==='draw' ? 'draw' : run.hp<=0 || run.enemyHP<=0 ? 'knockout' : 'timeout'};
+  }
+
+  finishCareer(id: string): CareerResult | null {
+    const run=this.activeCareer;
+    if(!this.session || !run || run.id!==id) return null;
+    const opponent=careerOpponent(run.opponentId)!;
+    const outcome=careerMatchOutcome(run);
+    if(!outcome) return null;
+    const progress=this.career, previous=progress.records[opponent.id] ?? emptyCareerRecord();
+    const newVictory=outcome==='player' && !progress.victories.includes(opponent.id);
+    const victories=newVictory ? [...progress.victories,opponent.id] : [...progress.victories];
+    const records={...progress.records,[opponent.id]:{...previous,
+      wins:previous.wins+Number(outcome==='player'),losses:previous.losses+Number(outcome==='enemy'),draws:previous.draws}};
+    const next={victories,records};
+    const result:CareerResult={opponentId:opponent.id,outcome,newVictory,newClass:careerClass(next),completed:careerComplete(next),elapsedMs:run.elapsedMs,
+      ...careerScore(run),reason:run.hp<=0 || run.enemyHP<=0 ? 'knockout' : 'timeout'};
+    this.session.career={...next,lastResult:result};
+    this.session.currentClass=result.newClass;
+    delete this.session.activeCareer;
+    this.session.stats={...this.stats,currentHP:Math.min(this.stats.maxHP,Math.ceil(run.hp)),currentStamina:Math.min(this.stats.stamina,Math.floor(run.stamina))};
+    this.touch(); return {...result};
+  }
 
   updateFreestyle(loadout: Loadout): boolean {
     if (!this.session || !isLoadout(loadout)) return false;
@@ -221,6 +306,7 @@ export class SaveService {
       stats: restoredStats(0),
       freestyle: defaultLoadout(),
       endless: freshEndless(),
+      career: freshCareer(),
     };
     this.storage.write(GAME.storage.session, this.session);
     return this.current!;

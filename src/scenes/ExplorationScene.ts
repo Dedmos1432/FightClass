@@ -23,17 +23,19 @@ export class ExplorationScene extends Phaser.Scene {
   private savedX = 0;
   private moving = false;
   private bench: BenchTrainingController | null = null;
+  private rankingOnEnter = false;
 
   constructor(private readonly services: GameServices, private readonly room: RoomId) {
     super(SCENES[room]);
   }
 
-  init(data: { spawnX?: number } = {}): void {
+  init(data: { spawnX?: number; ranking?: boolean } = {}): void {
     this.spawnX = typeof data.spawnX === 'number' && Number.isFinite(data.spawnX) ? data.spawnX : undefined;
     this.player = null; this.controls = null; this.view = null;
     this.nearest = null; this.saveElapsed = 0; this.moving = false;
     this.markers.clear();
     this.bench = null;
+    this.rankingOnEnter = data.ranking === true;
   }
 
   preload(): void {
@@ -75,6 +77,7 @@ export class ExplorationScene extends Phaser.Scene {
     this.resize(this.scale.gameSize);
     this.scale.on(Phaser.Scale.Events.RESIZE, this.resize, this);
     this.refreshInteraction();
+    if (this.room === 'lobby' && this.rankingOnEnter) this.openRanking();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.persistPosition();
       this.bench?.destroy(); this.bench = null;
@@ -151,8 +154,15 @@ export class ExplorationScene extends Phaser.Scene {
     const target = nearestLobbyObject(this.player.x);
     if (!target) return;
     this.persistPosition();
-    if (target.id === 'board') showRanking(this.view);
+    if (target.id === 'board') this.openRanking();
     else { this.services.audio.play('open'); this.scene.start(SCENES[target.id]); }
+  }
+
+  private openRanking(): void {
+    if (this.view) showRanking(this.view, () => {
+      this.services.audio.play('open');
+      this.scene.start(SCENES.career);
+    });
   }
 
   private escape(): void {

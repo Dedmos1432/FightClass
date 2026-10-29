@@ -12,8 +12,8 @@ export class ScreenView {
   get hasDialog(): boolean { return this.dialog !== null; }
 
   constructor(readonly services: GameServices, screen: string, content: string) {
-    const world = screen === 'lobby' || screen === 'gym' || screen === 'dojo' || screen === 'fight';
-    const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ', fight: 'БЕСКОНЕЧНАЯ СЕРИЯ' };
+    const world = ['lobby', 'gym', 'dojo', 'fight', 'career-fight'].includes(screen);
+    const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ', fight: 'БЕСКОНЕЧНАЯ СЕРИЯ', 'career-fight': 'КАРЬЕРНЫЙ ПОЕДИНОК' };
     const location = locations[screen];
     this.root.dataset.screen = screen;
     delete this.root.dataset.training;

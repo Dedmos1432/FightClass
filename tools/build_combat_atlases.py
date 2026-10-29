@@ -27,7 +27,19 @@ ENEMIES = {
  'kim': ('kim dong won', {'idle':'idle','walk':'move/move','retreat':'move/retreat','block':'block','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'cross','attack2':'low_kick'}),
  'kwon': ('kwon tae-young', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'gyaku tsuki','attack1':'mae_geri','attack2':'yoko_geri'}),
  'yeo': ('yeo eun-sol', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'cross','attack2':'low_kick'}),
+ 'shim': ('shim ha-min', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'cross','attack2':'low_kick'}),
+ 'bang': ('bang jung-eum', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'teep','attack1':'roundhouse_kick','attack2':'jumping_roundhouse'}),
+ 'jang': ('chun-soo jang', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'front_kick','attack1':'axe_kick','attack2':'spinning_back_kick'}),
+ 'cha': ('cha so-wol', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'teep','attack1':'roundhouse_kick','attack2':'jumping_roundhouse'}),
+ 'young': ('young woong', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'hook','attack2':'uppercut'}),
+ 'sunny': ('sunny jaa', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'teep','attack2':'low_kick'}),
+ 'lee': ('ja-kyung lee', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'hook','attack2':'low_kick'}),
+ 'yang': ('ki-hoon yang', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'cross','attack2':'low_kick'}),
+ 'maria': ('maria', {'idle':'idle','walk':'move/move_forward','retreat':'move/move_backward','block':'block','dodge':'dash','hit':'get_hit','ko':'defeat','attack0':'jab','attack1':'low_kick','attack2':'jumping_roundhouse_kick'}),
 }
+BODY_OFFSETS = {'player':41.5, 'kim':20.5, 'kwon':.5, 'yeo':4.5,
+ 'shim':8.5, 'bang':3.5, 'jang':8.5, 'cha':5.5, 'young':17,
+ 'sunny':1.5, 'lee':-8.5, 'yang':11.5, 'maria':7.5}
 manifest = {'characters':{}, 'frames':{}, 'pages':[]}
 SCALE = 0.56
 SIZE = 2048
@@ -74,7 +86,9 @@ for skin in ['player', *ENEMIES]:
     key=f'{skin}:{action}:{direction}:{logical}'
     page.alpha_composite(crop,(x,y))
     frames[key]={'frame':{'x':x,'y':y,'w':w,'h':h},'rotated':False,'trimmed':False,'spriteSourceSize':{'x':0,'y':0,'w':w,'h':h},'sourceSize':{'w':w,'h':h}}
-    offset = 41.5 if skin=='player' else 20.5 if skin=='kim' else .5 if skin=='kwon' else 4.5
+    # Fixed root across every action and canvas width. Offsets come from the
+    # mirrored idle stance, never the changing attack silhouette.
+    offset = BODY_OFFSETS[skin]
     anchorx=image.width/2 + (-offset if direction=='right' else offset)
     # Ground poses get a common sole line. Keep jump and fall silhouettes airborne.
     anchory=box[3] if box[3]>=590 else (604 if skin=='player' else 601)

@@ -1,11 +1,11 @@
 /* A bout score strip and a physical training slip. Keep the arena unobstructed. */
-#ui[data-screen='fight']::before { background: linear-gradient(180deg, #0a0b0bd9, transparent 35%, transparent 70%, #090a0bdd); }
-#ui[data-screen='fight'] .exploration-screen { --field-margin: clamp(18px, 3.5vw, 56px); height: 100svh; min-height: 0; overflow: hidden; padding-inline: var(--field-margin); pointer-events: none; }
-#ui[data-screen='fight'] .topbar { flex-shrink: 0; min-height: 56px; padding-block: 6px; pointer-events: auto; }
-#ui[data-screen='fight'] .brand-mark { width: 28px; height: 30px; font-size: 20px; }
-#ui[data-screen='fight'] .brand-name { font-size: 14px; }
-#ui[data-screen='fight'] .brand-name small { display: none; }
-#ui[data-screen='fight'] .footer { min-height: 36px; flex-shrink: 0; }
+#ui:is([data-screen='fight'], [data-screen='career-fight'])::before { background: linear-gradient(180deg, #0a0b0bd9, transparent 35%, transparent 70%, #090a0bdd); }
+#ui:is([data-screen='fight'], [data-screen='career-fight']) .exploration-screen { --field-margin: clamp(18px, 3.5vw, 56px); height: 100svh; min-height: 0; overflow: hidden; padding-inline: var(--field-margin); pointer-events: none; }
+#ui:is([data-screen='fight'], [data-screen='career-fight']) .topbar { flex-shrink: 0; min-height: 56px; padding-block: 6px; pointer-events: auto; }
+#ui:is([data-screen='fight'], [data-screen='career-fight']) .brand-mark { width: 28px; height: 30px; font-size: 20px; }
+#ui:is([data-screen='fight'], [data-screen='career-fight']) .brand-name { font-size: 14px; }
+#ui:is([data-screen='fight'], [data-screen='career-fight']) .brand-name small { display: none; }
+#ui:is([data-screen='fight'], [data-screen='career-fight']) .footer { min-height: 36px; flex-shrink: 0; }
 .fight-hud { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); flex-shrink: 0; align-items: start; column-gap: 26px; padding-top: 13px; position: relative; z-index: 2; }
 .fight-card { min-width: 0; padding-top: 5px; padding-bottom: 21px; }
 .fight-corner-label { display: flex; justify-content: space-between; align-items: center; color: #c4c1b6; font: 9px/1.2 var(--mono); letter-spacing: 1.8px; margin-bottom: 9px; }
@@ -126,8 +126,8 @@
   .attack-legend b { font-size: 10px; }
 }
 @media (max-width: 760px) {
-  #ui[data-screen='fight'] .exploration-screen { padding-inline: 16px; }
-  #ui[data-screen='fight'] .topbar { min-height: 48px; }
+  #ui:is([data-screen='fight'], [data-screen='career-fight']) .exploration-screen { padding-inline: 16px; }
+  #ui:is([data-screen='fight'], [data-screen='career-fight']) .topbar { min-height: 48px; }
   .fight-hud { grid-template-columns: minmax(0, 1fr) 94px minmax(0, 1fr); column-gap: 13px; padding-top: 11px; }
   .fight-corner-label { margin-bottom: 6px; font-size: 7px; letter-spacing: .8px; }
   .fight-name { margin-bottom: 8px; }
@@ -180,7 +180,7 @@
   .fight-help { grid-template-columns: 1fr; }
 }
 @media (max-height: 650px) and (min-width: 761px) {
-  #ui[data-screen='fight'] .topbar { min-height: 42px; }
+  #ui:is([data-screen='fight'], [data-screen='career-fight']) .topbar { min-height: 42px; }
   .fight-hud { padding-top: 9px; grid-template-columns: minmax(0, 1fr) 115px minmax(0, 1fr); }
   .fight-corner-label { font-size: 7px; margin-bottom: 5px; }
   .fight-name { margin-bottom: 8px; }

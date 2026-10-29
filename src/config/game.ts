@@ -1,6 +1,6 @@
 export const GAME = {
   title: 'Fight Class',
-  version: '0.4.0',
+  version: '0.5.0',
   background: '#121415',
   storage: {
     session: 'fightclass3.session.v1',
@@ -15,4 +15,5 @@ export const SCENES = {
   gym: 'Gym',
   dojo: 'Dojo',
   fight: 'Combat',
+  career: 'Career',
 } as const;

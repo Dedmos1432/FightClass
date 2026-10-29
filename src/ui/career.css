@@ -1,0 +1,40 @@
+.career-board-intro { color:#63645c; font:11px/1.6 var(--body); margin-top:16px; max-width:680px; }
+.career-pending { display:flex; align-items:center; gap:18px; margin-top:16px; padding:12px 14px; background:#17191a0c; border-left:3px solid var(--accent); }
+.career-pending p { flex:1; color:#55574f; font:11px/1.5 var(--body); }
+.career-pending .small-button { flex-shrink:0; background:var(--ink); color:var(--paper); padding:9px 12px; font-size:11px; }
+.career-fighter-title { position:relative; display:flex; align-items:center; min-height:112px; }
+.career-fighter-title > div:first-child { flex:1; z-index:1; }
+.career-fighter-title h3 { max-width:245px; margin:14px 0 8px; }
+.career-portrait { flex:0 0 100px; position:relative; height:112px; overflow:hidden; background:#17191a0c; border-bottom:2px solid var(--accent); }
+.career-portrait img { position:absolute; height:175px; max-width:none; left:50%; top:-13px; transform:translateX(-50%); image-rendering:pixelated; }
+.career-ranking .opponent-stats { margin-top:10px; }
+.career-ranking .opponent-row { min-height:86px; }
+.career-ranking .opponent-row[data-status='ПОБЕЖДЁН'] > i { color:#557156; }
+.career-ranking .opponent-row[aria-pressed='true'] > i { color:#e6a69c; }
+.career-fight-record { display:flex; flex-wrap:wrap; gap:5px 12px; color:#707166; font:8px/1.6 var(--mono); margin:12px 0; }
+.career-fight-record b { color:var(--ink); margin-left:3px; }
+.career-lock-note { color:var(--accent); font:10px/1.5 var(--body); margin:12px 0 0; }
+.career-start { width:100%; margin-top:15px; justify-content:space-between; }
+.career-total { display:flex; align-items:center; flex-wrap:wrap; gap:7px 12px; font:bold 9px/1.5 var(--mono); margin-bottom:15px; }
+.career-total > b { color:var(--accent); }
+.career-total > span { flex:1; color:#68695f; font:10px/1.5 var(--body); text-align:right; min-width:200px; }
+.career-result .run-result { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.career-result-progress { color:var(--ink); font:500 14px/1.7 var(--body); margin-block:14px; }
+.career-round-marks { display:flex; gap:7px; margin-top:26px; }
+.enemy-card .career-round-marks { justify-content:flex-end; }
+.career-round-marks i { display:block; width:8px; height:8px; border:1px solid #eee8d880; transform:rotate(45deg); }
+.career-round-marks i[data-won='true'] { background:var(--paper); border-color:var(--paper); }
+.enemy-card .career-round-marks i[data-won='true'] { background:var(--accent); border-color:var(--accent); }
+.career-match-format { margin-top:12px; font:bold 9px/1.6 var(--mono); color:var(--accent); }
+.career-final-score { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding-block:18px; margin-top:18px; border-block:1px solid #17191a38; font:10px var(--mono); }
+.career-final-score strong { font:500 38px var(--display); color:var(--accent); }
+.career-final-score > span { color:#63645c; }
+@media(max-width:760px) {
+  .career-ranking .opponent-row { min-height:66px; gap:11px; }
+  .career-ranking .opponent-row > span { font-size:12px; }
+  .career-ranking .opponent-row > i { font-size:7px; }
+  .career-pending { flex-direction:column; align-items:stretch; gap:9px; }
+  .career-pending .small-button { justify-content:space-between; }
+  .career-total > span { text-align:left; }
+  .career-fighter-title h3 { font-size:25px; }
+}

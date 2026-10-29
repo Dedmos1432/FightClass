@@ -74,8 +74,8 @@ test('доска открывает рейтинг, просмотр класс�
   await page.keyboard.press('e');
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator('.opponent-row')).toHaveCount(3);
-  await expect(dialog.locator('#opponent-profile')).toContainText('Илья');
+  await expect(dialog.locator('.opponent-row')).toHaveCount(4);
+  await expect(dialog.locator('#opponent-profile')).toContainText('Kim Dong-won');
   const position = await x(page);
   await page.keyboard.down('a');
   // Observe several frames: an open dialog must prevent movement.
@@ -83,11 +83,11 @@ test('доска открывает рейтинг, просмотр класс�
   await page.keyboard.up('a');
   expect(await x(page)).toBe(position);
   await dialog.locator('[data-tier="3"]').click();
-  await expect(dialog.locator('#opponent-profile')).toContainText('Роман');
-  await dialog.locator('[data-opponent="nik"]').click();
+  await expect(dialog.locator('#opponent-profile')).toContainText('Sunny Jaa');
+  await dialog.locator('[data-opponent="maria"]').click();
   await expect(dialog.locator('#opponent-profile')).toContainText('Свободный стиль');
   await expect(dialog.locator('#class-unlock')).toContainText('Высший класс');
-  await expect(dialog.getByRole('button', { name: /Начать бой/ })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: /Начать бой/ })).toBeDisabled();
   await page.screenshot({ path: 'test-results/ranking-stage-2.png' });
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);

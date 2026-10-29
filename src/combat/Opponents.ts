@@ -1,17 +1,43 @@
 import type { StyleId } from '../config/styles';
 
-export const ENEMY_SKINS = ['kim', 'kwon', 'yeo'] as const;
+export const ENEMY_SKINS = ['kim', 'kwon', 'yeo', 'shim', 'bang', 'jang', 'cha', 'young', 'sunny', 'lee', 'yang', 'maria'] as const;
 export type EnemySkin = typeof ENEMY_SKINS[number];
 export type FighterSkin = 'player' | EnemySkin;
 const SKINS = {
-  kim: { name: 'Kim Dong Won', style: 'mma' as StyleId, canDodge: false },
+  kim: { name: 'Kim Dong-won', style: 'mma' as StyleId, canDodge: false },
   kwon: { name: 'Kwon Tae-young', style: 'taekwondo' as StyleId, canDodge: true },
   yeo: { name: 'Yeo Eun-sol', style: 'mma' as StyleId, canDodge: true },
+  shim: { name: 'Shim Ha-min', style: 'mma' as StyleId, canDodge: true },
+  bang: { name: 'Bang Jung-eum', style: 'muay-thai' as StyleId, canDodge: true },
+  jang: { name: 'Jang Chun-soo', style: 'taekwondo' as StyleId, canDodge: true },
+  cha: { name: 'Cha So-wol', style: 'muay-thai' as StyleId, canDodge: true },
+  young: { name: 'Young Woong', style: 'boxing' as StyleId, canDodge: true },
+  sunny: { name: 'Sunny Jaa', style: 'muay-thai' as StyleId, canDodge: true },
+  lee: { name: 'Lee Ja-kyung', style: 'mma' as StyleId, canDodge: true },
+  yang: { name: 'Yang Ki-hoon', style: 'mma' as StyleId, canDodge: true },
+  maria: { name: 'Maria', style: 'freestyle' as StyleId, canDodge: true },
 } as const;
 interface Variant {
   id: string; skin: EnemySkin; variantName: string; tactic: string;
   aggression: number; defense: number; preferredRange: number; dodgePreference: number;
   counterPreference: number; comboPreference: number; reserve: number; hpBonus: number;
+}
+/** Shared combat profile; skin/style only select artwork and animation clips. */
+export interface Opponent extends Variant {
+  name: string;
+  style: StyleId;
+  canDodge: boolean;
+  index: number;
+  difficulty: number;
+  skill: number;
+  maxHP: number;
+  stamina: number;
+  damage: number;
+  speed: number;
+  reactionMs: number;
+  comboChance: number;
+  career?: boolean;
+  boss?: boolean;
 }
 /** Fifteen tactical variants share three temporary art sets, independently of survival difficulty. */
 export const ROSTER: readonly Variant[] = [
@@ -39,7 +65,7 @@ function hash(text: string): number {
 export function variantFor(index: number, runKey = ''): Variant {
   return ROSTER[runKey ? hash(`${runKey}:${index}`) % ROSTER.length : index % ROSTER.length];
 }
-export function opponentAt(index: number, runKey = '', roundStartedMs = 0) {
+export function opponentAt(index: number, runKey = '', roundStartedMs = 0): Opponent {
   const variant = variantFor(index, runKey);
   const difficulty = index + Math.max(0, roundStartedMs) / 90000;
   const skill = Math.min(.96, .24 + difficulty * .045);
@@ -52,4 +78,3 @@ export function opponentAt(index: number, runKey = '', roundStartedMs = 0) {
     comboChance: Math.min(.94, variant.comboPreference * (.35 + skill * .8)),
   };
 }
-export type Opponent = ReturnType<typeof opponentAt>;

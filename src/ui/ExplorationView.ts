@@ -20,7 +20,7 @@ export class ExplorationView extends ScreenView {
       : `В центре зала · E — ${services.saves.activeRun ? 'продолжить' : 'начать'} серию.<br />Рекорд: ${services.saves.endless.bestStreak} побед. HP между боями не восстанавливается.`;
     super(services, room, `
       <section class="world-hud" aria-label="Характеристики бойца">
-        <div class="fighter-class"><b>01</b><span>КЛАСС<small>БОЕЦ КЛУБА</small></span></div>
+        <div class="fighter-class"><b>0${services.saves.current?.currentClass ?? 1}</b><span>КЛАСС<small>БОЕЦ КЛУБА</small></span></div>
         <div class="world-vitals">
           <div class="stat-meter hp-meter"><div><span>ЗДОРОВЬЕ</span><strong id="hp-value">${stats.currentHP}<i> / ${stats.maxHP}</i></strong></div><div class="meter-track" role="progressbar" aria-label="Здоровье" aria-valuenow="${stats.currentHP}" aria-valuemin="0" aria-valuemax="${stats.maxHP}"><span></span></div></div>
           <div class="stat-meter stamina-meter"><div><span>ВЫНОСЛИВОСТЬ</span><strong id="stamina-value">${stats.currentStamina}<i> / ${stats.stamina}</i></strong></div><div class="meter-track" role="progressbar" aria-label="Выносливость" aria-valuenow="${stats.currentStamina}" aria-valuemin="0" aria-valuemax="${stats.stamina}"><span></span></div></div>

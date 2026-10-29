@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { GAME } from '../src/config/game';
 import { WORLD } from '../src/config/lobby';
+import { walkTo } from './helpers/walkTo';
 
 const manifest = JSON.parse(readFileSync(new URL('../src/assets/combatManifest.json', import.meta.url), 'utf8')) as { pages: string[] };
 
@@ -24,24 +25,16 @@ test('GitHub Pages: меню, комнаты, бой и все атласы до
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
 
   // Exercise both rooms using actual movement and E, so every room loader runs.
-  const x=async()=>Number(await page.locator('#world-focus').getAttribute('data-player-x'));
-  async function walk(target:number):Promise<void> {
-    const right=await x()<target;
-    await page.keyboard.down(right?'d':'a');
-    try {
-      await expect.poll(x,{intervals:[25],timeout:15000})[right?'toBeGreaterThanOrEqual':'toBeLessThanOrEqual'](target+(right?-40:40));
-    } finally { await page.keyboard.up(right?'d':'a'); }
-  }
-  await walk(457); await page.keyboard.press('e');
+  await walkTo(page,457); await expect(page.locator('#interact-object')).toContainText('Войти в тренажёрный зал'); await page.keyboard.press('e');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','gym');
   await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
   await page.keyboard.press('Escape');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
   await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
-  await walk(1468); await page.keyboard.press('e');
+  await walkTo(page,1468); await page.keyboard.press('e');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','dojo');
   await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
-  await walk(WORLD.width/2); await page.keyboard.press('e');
+  await walkTo(page,WORLD.width/2); await page.keyboard.press('e');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','fight');
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting',{timeout:25000});
   await page.keyboard.press('Escape');
@@ -49,6 +42,17 @@ test('GitHub Pages: меню, комнаты, бой и все атласы до
   await page.screenshot({path:'test-results/pages/fight-pages.png'});
   const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),GAME.storage.session);
   expect(saved.activeRun).toBeDefined();
+
+  await page.locator('#pause-exit').click();
+  await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
+  await walkTo(page,WORLD.width/2); await page.keyboard.press('e');
+  await expect(page.locator('.opponent-row')).toHaveCount(4);
+  await page.locator('#career-start').click();
+  await expect(page.locator('#ui')).toHaveAttribute('data-screen','career-fight');
+  await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
+  await expect(page.locator('#enemy-name')).toHaveText('Kim Dong-won');
+  await page.screenshot({path:'.cache/stage5/career-pages.png'});
+  await page.keyboard.press('Escape');
 
   for(const atlas of manifest.pages) {
     for(const extension of ['json','png']) {
