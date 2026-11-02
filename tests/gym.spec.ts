@@ -58,8 +58,8 @@ test('первое обучение, полноценный жим, наград
   await page.locator('#bench-tutorial-start').click();
   await expect(page.locator('#bench-workout')).toHaveAttribute('data-phase', 'pressing');
   await repetitions(page, 2);
-  await expect(page.locator('.hp-meter .meter-track')).toHaveAttribute('aria-valuemax', '102');
-  await expect(page.locator('.stamina-meter .meter-track')).toHaveAttribute('aria-valuemax', '102');
+  await expect(page.locator('#hp-value')).toHaveText('102');
+  await expect(page.locator('#stamina-value')).toHaveText('102');
   await expect(page.locator('#damage-value')).toHaveText('10');
   await page.screenshot({ path: 'test-results/gym-qte.png' });
   await page.keyboard.press('Escape');
@@ -74,7 +74,7 @@ test('первое обучение, полноценный жим, наград
   expect(checkpoint.training.bestSession).toBe(2);
   await page.locator('#back-menu').click();
   await page.reload(); await page.locator('#continue-game').click();
-  await expect(page.locator('.hp-meter .meter-track')).toHaveAttribute('aria-valuemax', '102');
+  await expect(page.locator('#hp-value')).toHaveText('102');
   expect((await saved(page)).training.totalReps).toBe(2);
   const trainedStats = (await saved(page)).stats;
   await page.locator('#choose-style').click();

@@ -19,14 +19,14 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   let selected=active ? careerOpponent(active.opponentId)! : CAREER_ROSTER[Math.min(progress.victories.length,CAREER_ROSTER.length-1)];
   let selectedClass:number=selected.tier;
   const dialog=view.openDialog(`
-    <div class="dialog-top"><div class="board-club-label"><b aria-hidden="true">FC</b><span class="eyebrow">КЛУБНЫЙ РЕЙТИНГ<br /><small>ЗАПИСЬ НА ПОДПОЛЬНЫЕ БОИ</small></span></div><button class="icon-button" data-close aria-label="Закрыть рейтинг">${icons.close}</button></div>
-    <div class="ranking-heading"><div><span class="board-heading-note">БОЙ ЗА ПРАВО ПОДНЯТЬСЯ ВЫШЕ</span><h2 id="dialog-title">Доска соперников</h2></div><span class="rank-class-badge"><span>ТВОЙ<br />КЛАСС</span><b>0${currentClass}</b></span></div>
-    <p class="career-board-intro">${careerComplete(progress) ? 'Все двенадцать соперников побеждены. Карьера пройдена — любой бой можно повторить.' : 'Четыре соперника в каждом классе. Побеждай по порядку, чтобы открыть следующий бой и подняться выше.'}</p>
+    <div class="dialog-top"><div class="board-club-label"><b aria-hidden="true">FC</b><span class="eyebrow">КЛУБНЫЙ РЕЙТИНГ</span></div><button class="icon-button" data-close aria-label="Закрыть рейтинг">${icons.close}</button></div>
+    <div class="ranking-heading"><div><h2 id="dialog-title">Доска соперников</h2></div><span class="rank-class-badge"><span>ТВОЙ<br />КЛАСС</span><b>0${currentClass}</b></span></div>
+    ${careerComplete(progress) ? '<p class="career-board-intro">Все двенадцать соперников побеждены. Карьера пройдена — любой бой можно повторить.</p>' : ''}
     ${active ? `<div class="career-pending"><p>Сохранён бой с <b>${careerOpponent(active.opponentId)!.name}</b> · раунды ${careerScore(active).playerRounds} : ${careerScore(active).enemyRounds}, до ${careerWinsNeeded(active.opponentId)} побед. Заверши его, чтобы выбрать другого соперника.</p><button class="small-button" id="career-resume">Продолжить бой ${icons.arrow}</button></div>` : ''}
     <div class="ranking-tabs" role="group" aria-label="Класс соперников">${[1,2,3].map(tier=>`<button class="ranking-tab" data-tier="${tier}" aria-pressed="${tier===selectedClass}">КЛАСС 0${tier}<span>${tier<currentClass || careerComplete(progress) ? 'Пройден' : tier===currentClass ? 'Текущий' : 'Заблокирован'}</span></button>`).join('')}</div>
     <div class="ranking-layout"><div class="board-roster"><p class="board-roster-label">ОЧЕРЕДЬ НА БОЙ <span>4 СОПЕРНИКА / КЛАСС</span></p><div id="opponent-list" class="opponent-list" role="group" aria-label="Соперники"></div></div><article id="opponent-profile" class="opponent-profile" aria-live="polite"></article></div>
     <div class="ranking-progress"><span>ПОБЕДЫ <b id="career-tier-progress"></b></span><p id="class-unlock"></p></div>
-    <p class="career-total">КАРЬЕРА <b>${progress.victories.length} / 12</b><span>Прокачка HP и выносливости — в качалке. Урона — в бесконечном режиме.</span></p>
+    <p class="career-total">КАРЬЕРА <b>${progress.victories.length} / 12</b></p>
     <button class="button secondary dialog-done" data-close>Вернуться в лобби ${icons.arrow}</button>
   `,'ranking-dialog career-ranking');
   if(!dialog) return;
@@ -56,7 +56,6 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
       <p class="opponent-tactic">${selected.tactic}</p>
       <p class="career-match-format">${selected.boss ? 'БОСС' : 'ОБЫЧНЫЙ СОПЕРНИК'} · МАТЧ ДО ${careerWinsNeeded(selected.id)} ПОБЕД В РАУНДАХ</p>
       <p class="career-fight-record">ПОБЕДЫ <b>${record.wins}</b> <span>ПОРАЖЕНИЯ <b>${record.losses}</b></span> <span>НИЧЬИ <b>${record.draws}</b></span></p>
-      <p class="opponent-fairness">${selected.canDodge ? 'Блок · уклонения · комбинации · контратаки.' : 'Блок · комбинации · контратаки. Уклонения нет.'} Стиль меняет только анимации.</p>
       ${!available ? `<p class="career-lock-note">Сначала победи ${previous!.name}.</p>` : lockedByPending ? `<p class="career-lock-note">Сначала заверши бой с ${careerOpponent(active!.opponentId)!.name}.</p>` : ''}
       <button class="button primary career-start" id="career-start" ${!available || lockedByPending || !onFight ? 'disabled' : ''} data-fight="${selected.id}">${active?.opponentId===selected.id ? 'Продолжить бой' : won ? 'Повторить бой' : 'Начать бой'} ${icons.arrow}</button>`;
   };

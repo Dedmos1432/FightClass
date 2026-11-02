@@ -18,9 +18,9 @@
 .fighter-class small { display: block; color: #a5a69f; font-size: 8px; letter-spacing: .3px; margin-top: 5px; }
 .world-vitals { display: flex; gap: 22px; }
 .stat-meter { width: 154px; min-width: 0; }
-.stat-meter > div:first-child { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.stat-meter > div:first-child { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
 .stat-meter span { color: #c7c7bc; font: 9px var(--body); letter-spacing: .65px; }
-.stat-meter strong { font: bold 13px var(--mono); white-space: nowrap; }
+.stat-meter strong { font: 25px/1 var(--display); white-space: nowrap; }
 .stat-meter i { font: 10px var(--mono); font-style: normal; color: #979a93; }
 .meter-track { height: 4px; margin-top: 9px; background: #eee8d826; }
 .meter-track > span { display: block; height: 100%; width: 100%; background: #a9b2ab; }

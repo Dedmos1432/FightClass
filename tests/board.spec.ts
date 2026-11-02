@@ -4,6 +4,7 @@ import { GAME } from '../src/config/game';
 import { SaveService } from '../src/services/SaveService';
 import { StorageService } from '../src/services/StorageService';
 import { winCareerMatch } from './helpers/career';
+import { walkTo } from './helpers/walkTo';
 
 test('доска использует текстуру, вложенные фотографии выбирают профиль, классы не меняют прогресс',async({page,request})=>{
   const errors:string[]=[];
@@ -13,6 +14,8 @@ test('доска использует текстуру, вложенные фо�
   await page.keyboard.press('e');
   const dialog=page.locator('.career-ranking');
   await expect(dialog).toBeVisible();
+  for(const text of ['ЗАПИСЬ НА ПОДПОЛЬНЫЕ БОИ','БОЙ ЗА ПРАВО ПОДНЯТЬСЯ ВЫШЕ','Четыре соперника в каждом классе.','Прокачка HP и выносливости — в качалке.'])await expect(dialog).not.toContainText(text);
+  await expect(dialog.locator('.opponent-fairness')).toHaveCount(0);
   const texture=await dialog.evaluate(el=>getComputedStyle(el).getPropertyValue('--career-board-texture'));
   expect(texture).toContain('career-board');
   const url=texture.match(/url\(["']?([^"')]+)["']?\)/)![1];
@@ -21,6 +24,7 @@ test('доска использует текстуру, вложенные фо�
   await expect(dialog.locator('.board-row-photo img')).toHaveCount(4);
   await dialog.locator('[data-opponent="shim"] .board-row-photo img').click();
   await expect(dialog.locator('#opponent-profile h3')).toHaveText('Shim Ha-min');
+  await expect(dialog.locator('.opponent-fairness')).toHaveCount(0);
   await expect(dialog.locator('.career-match-format')).toContainText('ДО 3 ПОБЕД');
   await expect(dialog.locator('#career-start')).toBeDisabled();
   await dialog.locator('[data-tier="3"]').click();
@@ -36,6 +40,28 @@ test('доска использует текстуру, вложенные фо�
   await expect(dialog).toHaveCount(0);
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
   expect(errors).toEqual([]);
+});
+
+for(const width of [1440,320])test(`максимальные характеристики без полосок во всех комнатах ${width}`,async({page})=>{
+  await page.setViewportSize({width,height:width===320?568:900});
+  const saves=new SaveService(new StorageService(null));saves.startNew();saves.skipTutorial();
+  const value={...saves.current!,stats:{...saves.stats,currentHP:37,currentStamina:42}};
+  await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(value));},{key:GAME.storage.session,value});
+  await page.goto('/');await page.locator('#continue-game').click();
+  const check=async()=>{
+    const hud=page.locator('.world-hud');
+    await expect(hud.locator('#hp-value')).toHaveText('100');await expect(hud.locator('#stamina-value')).toHaveText('100');
+    await expect(hud.locator('#damage-value')).toHaveText('10');await expect(hud.locator('.fighter-class > b')).toHaveText('01');
+    await expect(hud.locator('#choose-style')).toBeVisible();await expect(hud.locator('[role="progressbar"], .meter-track')).toHaveCount(0);
+    await expect(hud).not.toContainText('37');await expect(hud).not.toContainText('42');
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  };
+  await check();await expect(page.locator('.location-heading')).not.toContainText('МЕЖДУ БОЯМИ');
+  await page.screenshot({path:`.cache/ui-cleanup/lobby-${width}.png`});
+  for(const [room,x] of [['gym',457],['dojo',1468]] as const){
+    await walkTo(page,x);await page.keyboard.press('e');await expect(page.locator('#ui')).toHaveAttribute('data-screen',room);
+    await check();await page.keyboard.press('Escape');await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
+  }
 });
 
 test('доска сохраняет маршрут продолжения: другая карточка заблокирована, баннер продолжает исходный матч',async({page})=>{

@@ -22,15 +22,15 @@ export class ExplorationView extends ScreenView {
       <section class="world-hud" aria-label="Характеристики бойца">
         <div class="fighter-class"><b>0${services.saves.current?.currentClass ?? 1}</b><span>КЛАСС<small>БОЕЦ КЛУБА</small></span></div>
         <div class="world-vitals">
-          <div class="stat-meter hp-meter"><div><span>ЗДОРОВЬЕ</span><strong id="hp-value">${stats.currentHP}<i> / ${stats.maxHP}</i></strong></div><div class="meter-track" role="progressbar" aria-label="Здоровье" aria-valuenow="${stats.currentHP}" aria-valuemin="0" aria-valuemax="${stats.maxHP}"><span></span></div></div>
-          <div class="stat-meter stamina-meter"><div><span>ВЫНОСЛИВОСТЬ</span><strong id="stamina-value">${stats.currentStamina}<i> / ${stats.stamina}</i></strong></div><div class="meter-track" role="progressbar" aria-label="Выносливость" aria-valuenow="${stats.currentStamina}" aria-valuemin="0" aria-valuemax="${stats.stamina}"><span></span></div></div>
+          <div class="stat-meter hp-meter"><div><span>МАКС. HP</span><strong id="hp-value">${stats.maxHP}</strong></div></div>
+          <div class="stat-meter stamina-meter"><div><span>МАКС. ВЫНОСЛИВОСТЬ</span><strong id="stamina-value">${stats.stamina}</strong></div></div>
         </div>
         <div class="damage-stat"><span>УРОН</span><strong id="damage-value">${stats.damage}</strong></div>
         <button class="style-picker" id="choose-style" aria-label="Выбрать боевой стиль"><span>ТЕХНИКА<strong id="current-style">${style.name}</strong></span>${icons.arrow}</button>
       </section>
       <section class="exploration-layer" aria-label="${ROOM_NAMES[room]}">
         <div id="world-focus" class="world-focus" tabindex="0" role="application" aria-label="${ROOM_NAMES[room]}. A и D или стрелки — движение, E — взаимодействие, Escape — ${room === 'lobby' ? 'главное меню' : 'вернуться в лобби'}."><span class="sr-only">${room === 'lobby' ? 'В лобби две двери: тренажёрный зал слева, зал единоборств справа. Между ними доска рейтинга.' : 'Для возвращения в лобби подойди к левому краю зала и нажми E.'}</span></div>
-        <div class="location-heading"><span class="eyebrow">${room === 'lobby' ? 'МЕЖДУ БОЯМИ' : room === 'gym' ? 'СИЛОВАЯ ПОДГОТОВКА' : 'ТРЕНИРОВОЧНЫЕ БОИ'}</span><h1>${ROOM_NAMES[room]}</h1>${room === 'lobby' ? '' : `<span class="room-stage-note">${roomNote}</span>`}</div>
+        <div class="location-heading">${room === 'lobby' ? '' : `<span class="eyebrow">${room === 'gym' ? 'СИЛОВАЯ ПОДГОТОВКА' : 'ТРЕНИРОВОЧНЫЕ БОИ'}</span>`}<h1>${ROOM_NAMES[room]}</h1>${room === 'lobby' ? '' : `<span class="room-stage-note">${roomNote}</span>`}</div>
         <div class="interaction-area" aria-live="polite"><button id="interact-object" class="interaction-button" hidden><kbd>E</kbd><span id="interaction-label"></span>${icons.arrow}</button><p id="interaction-hint">${room === 'lobby' ? 'Подойди к двери или доске' : 'Выход в лобби — слева'}</p></div>
         <div class="world-actions"><span class="world-save">${icons.check}<span id="save-status">${services.storage.isPersistent ? 'Сохранено на этом устройстве' : 'Сохранено только до перезагрузки'}</span></span><div><button class="button secondary small-button" id="lobby-settings">${icons.settings}<span>Настройки</span></button><button class="button secondary small-button" id="back-menu">${icons.back}<span>Меню</span></button></div></div>
       </section>
@@ -49,14 +49,9 @@ export class ExplorationView extends ScreenView {
 
   refreshStats(): void {
     const stats = this.services.saves.stats;
-    this.root.querySelector('#hp-value')!.innerHTML = `${stats.currentHP}<i> / ${stats.maxHP}</i>`;
-    this.root.querySelector('#stamina-value')!.innerHTML = `${stats.currentStamina}<i> / ${stats.stamina}</i>`;
+    this.root.querySelector('#hp-value')!.textContent = String(stats.maxHP);
+    this.root.querySelector('#stamina-value')!.textContent = String(stats.stamina);
     this.root.querySelector('#damage-value')!.textContent = String(stats.damage);
-    for (const [selector, current, maximum] of [['.hp-meter', stats.currentHP, stats.maxHP], ['.stamina-meter', stats.currentStamina, stats.stamina]] as const) {
-      const track = this.root.querySelector(`${selector} .meter-track`)!;
-      track.setAttribute('aria-valuenow', String(current)); track.setAttribute('aria-valuemax', String(maximum));
-      (track.firstElementChild as HTMLElement).style.width = `${current / maximum * 100}%`;
-    }
     const note = this.root.querySelector('#gym-progress-note');
     if (note) note.textContent = `Повторений всего: ${this.services.saves.training.totalReps} · Рекорд: ${this.services.saves.training.bestSession}`;
   }
