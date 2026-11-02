@@ -6,12 +6,13 @@ import { COMBAT } from '../src/config/combat';
 import { CAREER_ROSTER } from '../src/career/Roster';
 import { careerWinsNeeded, type CareerCheckpoint } from '../src/career/Progress';
 import { settleCareerRound, winCareerMatch } from './helpers/career';
-import { combatPagesFor, ENDLESS_COMBAT_SKINS } from '../src/assets/combatAssets';
+import { combatPagesFor } from '../src/assets/combatAssets';
+import type { EnemySkin } from '../src/combat/Opponents';
 import { walkTo } from './helpers/walkTo';
 
 function session(order=0, checkpoint?: Partial<CareerCheckpoint>, side:'player'|'enemy'|null='player', priorRounds?:number) {
   const saves=new SaveService(new StorageService(null));
-  saves.startNew();
+  saves.startNew();saves.skipTutorial();
   for(const opponent of CAREER_ROSTER.slice(0,order)) {
     winCareerMatch(saves,opponent.id);
   }
@@ -71,7 +72,7 @@ for(const opponent of CAREER_ROSTER) test(`карьерная арена: ${oppo
     await expect(page.locator('#combat-focus')).toHaveAttribute('data-enemy-skin',opponent.skin);
     await expect(page.locator('#enemy-name')).toHaveText(opponent.name);
     await expect(page.locator('#combat-focus')).toHaveAttribute('data-enemy-can-dodge',String(opponent.canDodge));
-    await page.keyboard.press('j');
+    await page.keyboard.press('q');
     await expect(page.locator('#combat-focus')).toHaveAttribute('data-player-action','attack');
     await page.screenshot({path:`.cache/stage5/arena-${opponent.id}.png`});
     await page.keyboard.press('Escape');
@@ -141,7 +142,7 @@ test('карьера: пауза, сохранение и продолжение
 test('карьера: нокаут атакой записывает победу, нокаут от бота записывает поражение',async({page})=>{
   await seed(page,0,{hp:100,enemyHP:1,enemyStamina:0,playerX:800,enemyX:1020});
   await fight(page);
-  await page.keyboard.press('j');
+  await page.keyboard.press('q');
   await expect(page.locator('#career-result-board')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Победа',exact:true})).toBeVisible();
   expect((await saved(page)).career.lastResult).toMatchObject({outcome:'player',reason:'knockout'});
@@ -205,6 +206,7 @@ test('смена карьерных соперников и режимов ос�
   await walkTo(page,COMBAT.centerX); await page.keyboard.press('e');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','fight');
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
+  const endlessSkin=await page.locator('#combat-focus').getAttribute('data-enemy-skin') as EnemySkin;
   await page.keyboard.press('Escape'); await page.locator('#pause-exit').click();
   const endless=await gpuSnapshot(page);
   await walkTo(page,COMBAT.centerX); await board(page); await page.locator('#career-resume').click();
@@ -212,10 +214,10 @@ test('смена карьерных соперников и режимов ос�
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
   await page.keyboard.press('Escape'); await page.waitForTimeout(750);
   const resumed=await gpuSnapshot(page);
-  expect(resumed.deleted).toBeGreaterThanOrEqual(endless.deleted+combatPagesFor(['kim','kwon','yeo']).length);
+  expect(resumed.deleted).toBeGreaterThanOrEqual(endless.deleted+(endlessSkin==='bang'?0:combatPagesFor([endlessSkin]).length));
   // The dojo background is newly cached; canvas text may transiently use two textures.
   expect(resumed.live).toBeLessThanOrEqual(bang.live+3);
-  expect(endless.live-resumed.live).toBeGreaterThanOrEqual(combatPagesFor(ENDLESS_COMBAT_SKINS).length-combatPagesFor(['player','bang']).length-2);
+  expect(endless.live-resumed.live).toBeGreaterThanOrEqual(combatPagesFor(['player',endlessSkin]).length-combatPagesFor(['player','bang']).length-2);
   console.info('GPU lifecycle', {shim,bang,endless,resumed});
   expect((await saved(page)).activeRun).toBeDefined(); expect(errors).toEqual([]);
 });

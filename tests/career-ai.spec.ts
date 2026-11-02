@@ -81,7 +81,7 @@ test('career slot selection respects range instead of spending stamina on distan
 });
 
 test('boss crosses a point-blank long windup with normal movement and without taking damage', () => {
-  const profile = career(true), world = battle(profile, 700, 720), brain = new BotBrain(profile, () => 0);
+  const profile = career(true), world = battle(profile, 700, 710), brain = new BotBrain(profile, () => 0);
   world.attack(world.player, 2); advance(world, brain, 144);
   expect(brain.state).toBe('flank'); expect(world.enemy.action).toBe('walk');
   advance(world, brain, 300);

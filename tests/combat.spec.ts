@@ -1,17 +1,18 @@
 import { test, expect, type Page } from '@playwright/test';
 import { GAME } from '../src/config/game';
 import { COMBAT } from '../src/config/combat';
-import { opponentAt } from '../src/combat/Opponents';
+import { opponentAt, type EnemySkin } from '../src/combat/Opponents';
 import type { ActiveRun } from '../src/combat/EndlessProgress';
 import { MOVES } from '../src/combat/moves';
 
 const arena=(page:Page)=>page.locator('#combat-focus');
 const room=(page:Page,name:string)=>expect(page.locator('#ui')).toHaveAttribute('data-screen',name);
 async function seed(page:Page, run?:Partial<ActiveRun>, style='boxing'):Promise<void> {
-  const enemy=opponentAt(run?.wins??0,'run-test',run?.roundStartedMs);
+  const runId=run?.id??'run-test';
+  const enemy=opponentAt(run?.wins??0,runId,run?.roundStartedMs);
   const session={version:1,id:'combat-test',createdAt:'2026-10-20T00:00:00Z',updatedAt:'2026-10-20T00:00:00Z',location:'lobby',currentClass:1,
     player:{x:1468,facing:'right',style},stats:{maxHP:100,currentHP:100,stamina:100,currentStamina:100,damage:10},
-    ...(run?{activeRun:{id:'run-test',wins:0,hp:100,stamina:100,enemyHP:enemy.maxHP,enemyStamina:enemy.stamina,playerX:COMBAT.playerStart,enemyX:COMBAT.enemyStart,...run}}:{})};
+    ...(run?{activeRun:{id:runId,wins:0,hp:100,stamina:100,enemyHP:enemy.maxHP,enemyStamina:enemy.stamina,playerX:COMBAT.playerStart,enemyX:COMBAT.enemyStart,...run}}:{})};
   await page.addInitScript(({key,session})=>{ if(!localStorage.getItem(key)) localStorage.setItem(key,JSON.stringify(session)); },{key:GAME.storage.session,session});
   await page.goto('/');await page.locator('#continue-game').click();await room(page,'lobby');
 }
@@ -32,6 +33,73 @@ async function startFight(page:Page):Promise<void> {
 }
 const save=async(page:Page)=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),GAME.storage.session);
 
+function runWithSkins(first:EnemySkin,next:EnemySkin):string {
+  for(let i=0;i<10_000;i++) {
+    const id=`expanded-endless-${i}`;
+    if(opponentAt(0,id).skin===first && opponentAt(1,id).skin===next) return id;
+  }
+  throw new Error(`No test run for ${first} -> ${next}`);
+}
+async function seedSkinWave(page:Page,first:EnemySkin,next:EnemySkin):Promise<void> {
+  const id=runWithSkins(first,next),enemy=opponentAt(0,id);
+  await seed(page,{id,hp:37,enemyHP:enemy.maxHP*.1,elapsedMs:88_000,roundStartedMs:0,
+    playerX:COMBAT.minX,enemyX:COMBAT.maxX});
+}
+
+for(const [skin,next] of [['bang','jang'],['jang','cha'],['cha','bang']] as const) {
+  test(`бесконечный режим: модель ${skin}, следующая ${next}, подгрузка и перенос HP`,async({page})=>{
+    const errors:string[]=[],pages=new Set<string>();
+    page.on('pageerror',e=>errors.push(e.message));
+    page.on('response',response=>{
+      const pageName=new URL(response.url()).pathname.match(/\/combat\/([^/]+)\.png$/)?.[1];
+      if(pageName) { expect(response.ok(),pageName).toBe(true); pages.add(pageName); }
+    });
+    let release=()=>{};
+    const gate=new Promise<void>(resolve=>{release=resolve;});
+    // Exercise a slow connection as well as the ordinary between-round preload.
+    if(skin==='jang') await page.route(`**/combat/${next}-*`,async route=>{await gate;await route.continue();});
+    try {
+      await seedSkinWave(page,skin,next); await startFight(page);
+      await expect(arena(page)).toHaveAttribute('data-enemy-skin',skin);
+      const id=runWithSkins(skin,next);
+      await expect(page.locator('#enemy-name')).toHaveText(opponentAt(0,id).name);
+      if(skin==='jang') {
+        await expect(page.locator('#fight-announcement')).toHaveText('ПОДГОТОВКА СЛЕДУЮЩЕГО СОПЕРНИКА');
+        await expect(arena(page)).toHaveAttribute('data-phase','intermission');
+        await expect(arena(page)).toHaveAttribute('data-player-hp','37');
+        await page.keyboard.press('Escape'); await expect(page.locator('#pause-exit')).toBeVisible();
+        release();
+        await page.locator('.combat-pause .dialog-done[data-close]').click();
+      }
+      await expect(arena(page)).toHaveAttribute('data-enemy-skin',next);
+      await page.keyboard.press('Escape');
+      await expect(arena(page)).toHaveAttribute('data-player-hp','37');
+      await expect(arena(page)).toHaveAttribute('data-wins','1');
+      const snapshot=await save(page);
+      expect(snapshot.activeRun).toMatchObject({id,wins:1,hp:37,enemyHP:opponentAt(1,id,90_000).maxHP});
+      expect(snapshot.stats.damage).toBe(10);
+      expect([...pages].every(name=>name.startsWith('player-') || name.startsWith(`${skin}-`) || name.startsWith(`${next}-`))).toBe(true);
+      expect([...pages].some(name=>name.startsWith(`${skin}-`))).toBe(true);
+      expect([...pages].some(name=>name.startsWith(`${next}-`))).toBe(true);
+      await page.screenshot({path:`.cache/endless-roster/${skin}-to-${next}.png`});
+      expect(errors).toEqual([]);
+    } finally { release(); }
+  });
+}
+
+test('ошибка подгрузки следующей модели: повторная загрузка продолжает сохранённую волну без потери HP',async({page})=>{
+  let fail=true;
+  await page.route('**/combat/jang-*',route=>fail?route.abort('failed'):route.continue());
+  await seedSkinWave(page,'bang','jang'); await startFight(page);
+  await room(page,'load-error'); await expect(page.locator('#retry-combat')).toBeVisible();
+  expect((await save(page)).activeRun).toMatchObject({wins:1,hp:37});
+  fail=false; await page.locator('#retry-combat').click();
+  await page.locator('#continue-game').click(); await startFight(page);
+  await expect(arena(page)).toHaveAttribute('data-enemy-skin','jang');
+  await expect(arena(page)).toHaveAttribute('data-wins','1');
+  await expect(arena(page)).toHaveAttribute('data-player-hp','37');
+});
+
 test('только E в центре запускает бой; движение, атаки, блок, уклонение, пауза и продолжение',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await seed(page);await enterDojo(page);
@@ -43,7 +111,7 @@ test('только E в центре запускает бой; движение
   await expect(page.locator('#fight-round-label')).not.toContainText('/ 15');
   await page.keyboard.down('Space');await expect(arena(page)).toHaveAttribute('data-player-action','block');await page.keyboard.up('Space');
   await page.keyboard.press('Shift');await expect(arena(page)).toHaveAttribute('data-player-action','dodge');
-  await page.waitForTimeout(500);await page.keyboard.press('j');await expect(arena(page)).toHaveAttribute('data-player-action','attack');
+  await page.waitForTimeout(500);await page.keyboard.press('q');await expect(arena(page)).toHaveAttribute('data-player-action','attack');
   await page.screenshot({path:'test-results/fight-stage-4.png'});
   await page.keyboard.press('Escape');await expect(page.getByRole('dialog')).toBeVisible();
   const before=await arena(page).getAttribute('data-player-hp'), timeBefore=await arena(page).getAttribute('data-round-ms');await page.waitForTimeout(500);
@@ -120,7 +188,7 @@ test('победа заменяет бота, не лечит игрока и н
   await startFight(page);
   for(let i=0;i<16;i++){
     if(Number(await arena(page).getAttribute('data-wins'))>0) break;
-    await page.keyboard.press(['j','k','l'][i%3]);await page.waitForTimeout(190);
+    await page.keyboard.press(['q','w','e'][i%3]);await page.waitForTimeout(190);
   }
   await expect(arena(page)).toHaveAttribute('data-wins','1');
   const hpAfter=Number(await arena(page).getAttribute('data-player-hp'));expect(hpAfter).toBeGreaterThan(0);expect(hpAfter).toBeLessThanOrEqual(37);

@@ -47,7 +47,7 @@ export class MainMenuScene extends Phaser.Scene {
       if (fresh) this.services.saves.startNew();
       else this.services.saves.touch();
       this.services.audio.play('open');
-      this.scene.start(SCENES.lobby);
+      this.scene.start(this.services.saves.needsTutorial ? SCENES.tutorial : SCENES.lobby);
     };
     view.on('#start-game', 'click', () => {
       if (this.services.saves.current) view.confirmNewGame(() => enter(true));

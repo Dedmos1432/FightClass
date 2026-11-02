@@ -3,6 +3,7 @@ import { ScreenView } from './ScreenView';
 import { icons } from './icons';
 import { getStyle } from '../config/styles';
 import { ATTACK_SLOTS, COMBAT } from '../config/combat';
+import { ATTACK_KEYS } from '../config/controls';
 import { type CombatWorld } from '../combat/CombatWorld';
 import { type Loadout, moveById } from '../combat/moves';
 import type { Opponent } from '../combat/Opponents';
@@ -33,15 +34,15 @@ export class CombatView extends ScreenView {
           <div class="fight-stamina" role="progressbar" aria-label="Выносливость соперника" aria-valuemin="0"><span></span></div>
         </div>
       </section>
-      <section class="combat-layer"><div id="combat-focus" tabindex="0" role="application" aria-label="Поединок. A D движение, J K L атаки, пробел блок, Shift уклонение, Escape пауза"></div>
+      <section class="combat-layer"><div id="combat-focus" tabindex="0" role="application" aria-label="Поединок. A D движение, Q W E атаки, пробел блок, Shift уклонение, Escape пауза"></div>
         <div class="fight-round"><span id="fight-round-label"></span><p id="fight-tactic"></p><p id="fight-pressure"></p></div>
         <div class="fight-announcement" id="fight-announcement" role="status" aria-live="polite"></div>
-        <div class="fight-bottom"><div class="attack-legend">${loadout.map((move, i) => `<span><kbd>${['J','K','L'][i]}</kbd><b>${moveById(move).name}</b><small>${ATTACK_SLOTS[i].stamina} выносл.</small></span>`).join('')}</div>
+        <div class="fight-bottom"><div class="attack-legend">${loadout.map((move, i) => `<span><kbd>${ATTACK_KEYS[i].label}</kbd><b>${moveById(move).name}</b><small>${ATTACK_SLOTS[i].stamina} выносл.</small></span>`).join('')}</div>
           <div class="fight-run-info"><span id="run-reward"></span><small>HP не восстанавливается между соперниками</small></div>
           <button class="button secondary small-button" id="fight-pause">Пауза <kbd>Esc</kbd></button>
         </div>
       </section>`);
-    this.root.querySelector('.keyboard-hint')!.innerHTML = '<kbd>A</kbd><kbd>D</kbd> движение <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd> атаки <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
+    this.root.querySelector('.keyboard-hint')!.innerHTML = '<kbd>A</kbd><kbd>D</kbd> движение / разворот блока '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' атаки <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
     if (career) {
       this.root.querySelector('.streak-summary > span')!.textContent = 'СЧЁТ';
       this.root.querySelector('.fight-run-info > small')!.textContent = 'Новый раунд — полные HP и выносливость';
@@ -91,6 +92,7 @@ export class CombatView extends ScreenView {
     Object.assign(data, { phase, playerHp:String(p.hp), enemyHp:String(e.hp), playerX:p.x.toFixed(1), enemyX:e.x.toFixed(1),
       playerAction:p.action, enemyAction:e.action, enemySkin:e.skin, enemyVariant:profile.id, botState, playerFacing:String(p.facing), enemyFacing:String(e.facing), enemyCanDodge:String(e.canDodge),
       wins:String(wins), slot:String(p.slot), combo:String(p.combo), stamina:Math.floor(p.stamina).toString(),
+      actionMs:String(Math.floor(p.elapsed)), bufferedSlot:p.buffered===null ? '' : String(p.buffered),
       roundMs:String(roundMs), remainingMs:String(remaining), enemyBoosted:String(boosted), enemyDamage:String(e.damage), mode:this.career ? 'career' : 'endless', boss:String(this.career?.boss ?? false) });
     if(this.career) Object.assign(data,{playerRounds:String(this.score.playerRounds),enemyRounds:String(this.score.enemyRounds),
       drawnRounds:String(this.score.drawnRounds),roundNumber:String(this.roundNumber),targetRounds:String(careerWinsNeeded(this.career.id))});
@@ -103,11 +105,11 @@ export class CombatView extends ScreenView {
       <p class="dialog-description">${this.career ? 'Время остановлено. Поединок сохранён — его можно продолжить через доску в лобби.' : 'Время остановлено. Серия сохранена — её можно продолжить в центре зала.'}</p>
       <div class="fight-help" aria-label="Управление бойцом">
         <div><span><kbd>A</kbd><kbd>D</kbd></span><b>Движение</b></div>
-        <div><span><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd></span><b>Три атаки</b></div>
+        <div><span>${ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')}</span><b>Три атаки</b></div>
         <div><kbd>Space</kbd><b>Держать блок</b></div>
         <div><kbd>Shift</kbd><b>Уклонение назад</b></div>
       </div>
-      <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов.</p>
+      <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов. Короткие команды у конца оглушения или уклонения также сохраняются. Блок защищает спереди: A/D разворачивают защиту. В блоке силы медленно восстанавливаются, попадание расходует немного выносливости.</p>
       <div class="fight-rule-note"><b>${COMBAT.roundDurationMs/1000} СЕКУНД НА ${this.career ? 'РАУНД' : 'СОПЕРНИКА'}</b><p>${this.career ? `Матч до ${careerWinsNeeded(this.career.id)} побед в раундах для любого бойца. Счёт ${this.score.playerRounds} : ${this.score.enemyRounds}. По времени решает процент HP. Ничья не меняет счёт. Каждый новый раунд начинается с полными HP, выносливостью и новым таймером; счёт сохраняется при выходе.` : `После первых ${COMBAT.enemyBoostAfterMs/1000} секунд — однократное усиление урона на ${boostPercent}%. Когда время выйдет, побеждает боец с большим процентом HP. Ничья или поражение завершают серию; награда за прошлые победы остаётся.`}</p></div>
       <button class="button primary dialog-done" data-close>Продолжить бой ${icons.arrow}</button>
       <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`, 'combat-pause');

@@ -67,7 +67,9 @@ export class CareerScene extends Phaser.Scene {
     }
     this.controls=new CombatInput(() => this.phase!=='fighting' || Boolean(this.view?.hasDialog),
       slot => { if(this.world) this.world.attack(this.world.player,slot); },
-      () => { if(this.world) this.world.dodge(this.world.player); }, () => this.pause());
+      () => { if(this.world) this.world.dodge(this.world.player); }, () => this.pause(), () => {
+        if(this.world) { this.world.clearInputBuffer(this.world.player); this.world.clearInputBuffer(this.world.enemy); }
+      });
     this.view.on('#fight-pause','click',() => this.pause());
     this.view.on('.brand','click',event => { event.preventDefault(); this.pause(); });
     window.addEventListener('pagehide',() => this.checkpoint(),{signal:this.view.events.signal});

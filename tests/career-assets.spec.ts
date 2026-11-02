@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { combatManifest, combatPagesFor, prepareCombatTextures, ENDLESS_COMBAT_SKINS } from '../src/assets/combatAssets';
+import { combatManifest, combatPagesFor, prepareCombatTextures, queueCombatAtlases, ENDLESS_COMBAT_SKINS } from '../src/assets/combatAssets';
 import { ENEMY_SKINS, type FighterSkin } from '../src/combat/Opponents';
 
 interface AtlasFrame {
@@ -71,7 +71,7 @@ test('все страницы PNG/JSON существуют, размеры со
   expect([...packed].sort()).toEqual([...referenced].sort());
 });
 
-test('карьера загружает только двух участников; повторный skin не дублирует страницы, бесконечный режим сохраняет прежние 17', () => {
+test('бой загружает только двух участников; каталог бесконечного режима включает шесть моделей без боссов', () => {
   for (const skin of ENEMY_SKINS) {
     const wanted: FighterSkin[] = ['player', skin];
     const pages = combatPagesFor(wanted);
@@ -85,8 +85,8 @@ test('карьера загружает только двух участнико
     for (const page of pages) expect(wanted.includes(page.replace(/-\d+$/, '') as FighterSkin), page).toBe(true);
   }
   const endless = combatPagesFor(ENDLESS_COMBAT_SKINS);
-  expect(endless).toHaveLength(17);
-  expect(endless.every(page => /^(player|kim|kwon|yeo)-\d+$/.test(page))).toBe(true);
+  expect(endless).toHaveLength(29);
+  expect(endless.every(page => /^(player|kim|kwon|yeo|bang|jang|cha)-\d+$/.test(page))).toBe(true);
   expect(combatPagesFor([])).toEqual([]);
 });
 
@@ -111,9 +111,33 @@ test('смена карьерных боёв освобождает старые
   };
   enterMatch(['player','kim']);
   for (const skin of ['shim','maria','kim','yang','maria'] as const) enterMatch(['player',skin]);
-  enterMatch(ENDLESS_COMBAT_SKINS);
-  expect(resident.size).toBe(17 + foreign.length);
+  for(const skin of ENDLESS_COMBAT_SKINS) if(skin!=='player') {
+    enterMatch(['player',skin]);
+    expect(resident.size).toBe(combatPagesFor(['player',skin]).length + foreign.length);
+  }
   expect(removed.some(key => key.startsWith('maria-'))).toBe(true);
   expect(removed.some(key => key.startsWith('player-'))).toBe(false);
   expect(removed.some(key => foreign.includes(key))).toBe(false);
+});
+
+test('предзагрузка следующей волны добавляет только недостающие страницы и сохраняет текущую анимацию до смены бойцов', () => {
+  const resident=new Set(combatPagesFor(['player','bang']));
+  const queued: string[]=[];
+  const loader={
+    textures:{exists:(key:string)=>resident.has(key)},
+    load:{atlas:(key:string,png:string,json:string)=>{
+      expect(png).toBe(`/combat/${key}.png`); expect(json).toBe(`/combat/${key}.json`);
+      queued.push(key);
+    }},
+  };
+  expect(queueCombatAtlases(loader,['player','bang'])).toBe(false);
+  expect(queued).toEqual([]);
+  expect(queueCombatAtlases(loader,['player','jang'])).toBe(true);
+  expect(queued).toEqual(combatPagesFor(['jang']));
+  expect(resident.size).toBe(combatPagesFor(['player','bang']).length);
+  for(const page of queued) resident.add(page);
+  const textures={exists:(key:string)=>resident.has(key),remove:(key:string)=>resident.delete(key)};
+  prepareCombatTextures(textures,['player','jang']);
+  expect([...resident].sort()).toEqual(combatPagesFor(['player','jang']).sort());
+  expect(queueCombatAtlases(loader,['player','jang'])).toBe(false);
 });

@@ -3,6 +3,7 @@ import { careerAvailable, careerClass, careerComplete, careerScore, careerWinsNe
 import { getStyle } from '../config/styles';
 import type { ScreenView } from './ScreenView';
 import { icons } from './icons';
+import boardTexture from '../../assets/ui/career-board.png?url';
 import './career.css';
 
 const portraits=import.meta.glob<string>('../../resourse/enemy/*/idle/idle_right/idle_00.png',{
@@ -18,18 +19,21 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   let selected=active ? careerOpponent(active.opponentId)! : CAREER_ROSTER[Math.min(progress.victories.length,CAREER_ROSTER.length-1)];
   let selectedClass:number=selected.tier;
   const dialog=view.openDialog(`
-    <div class="dialog-top"><span class="eyebrow">ДОСКА СОПЕРНИКОВ / КАРЬЕРА</span><button class="icon-button" data-close aria-label="Закрыть рейтинг">${icons.close}</button></div>
-    <div class="ranking-heading"><h2 id="dialog-title">Список соперников</h2><span class="rank-class-badge"><span>ТВОЙ<br />КЛАСС</span><b>0${currentClass}</b></span></div>
+    <div class="dialog-top"><div class="board-club-label"><b aria-hidden="true">FC</b><span class="eyebrow">КЛУБНЫЙ РЕЙТИНГ<br /><small>ЗАПИСЬ НА ПОДПОЛЬНЫЕ БОИ</small></span></div><button class="icon-button" data-close aria-label="Закрыть рейтинг">${icons.close}</button></div>
+    <div class="ranking-heading"><div><span class="board-heading-note">БОЙ ЗА ПРАВО ПОДНЯТЬСЯ ВЫШЕ</span><h2 id="dialog-title">Доска соперников</h2></div><span class="rank-class-badge"><span>ТВОЙ<br />КЛАСС</span><b>0${currentClass}</b></span></div>
     <p class="career-board-intro">${careerComplete(progress) ? 'Все двенадцать соперников побеждены. Карьера пройдена — любой бой можно повторить.' : 'Четыре соперника в каждом классе. Побеждай по порядку, чтобы открыть следующий бой и подняться выше.'}</p>
     ${active ? `<div class="career-pending"><p>Сохранён бой с <b>${careerOpponent(active.opponentId)!.name}</b> · раунды ${careerScore(active).playerRounds} : ${careerScore(active).enemyRounds}, до ${careerWinsNeeded(active.opponentId)} побед. Заверши его, чтобы выбрать другого соперника.</p><button class="small-button" id="career-resume">Продолжить бой ${icons.arrow}</button></div>` : ''}
     <div class="ranking-tabs" role="group" aria-label="Класс соперников">${[1,2,3].map(tier=>`<button class="ranking-tab" data-tier="${tier}" aria-pressed="${tier===selectedClass}">КЛАСС 0${tier}<span>${tier<currentClass || careerComplete(progress) ? 'Пройден' : tier===currentClass ? 'Текущий' : 'Заблокирован'}</span></button>`).join('')}</div>
-    <div class="ranking-layout"><div id="opponent-list" class="opponent-list" role="group" aria-label="Соперники"></div><article id="opponent-profile" class="opponent-profile" aria-live="polite"></article></div>
+    <div class="ranking-layout"><div class="board-roster"><p class="board-roster-label">ОЧЕРЕДЬ НА БОЙ <span>4 СОПЕРНИКА / КЛАСС</span></p><div id="opponent-list" class="opponent-list" role="group" aria-label="Соперники"></div></div><article id="opponent-profile" class="opponent-profile" aria-live="polite"></article></div>
     <div class="ranking-progress"><span>ПОБЕДЫ <b id="career-tier-progress"></b></span><p id="class-unlock"></p></div>
     <p class="career-total">КАРЬЕРА <b>${progress.victories.length} / 12</b><span>Прокачка HP и выносливости — в качалке. Урона — в бесконечном режиме.</span></p>
     <button class="button secondary dialog-done" data-close>Вернуться в лобби ${icons.arrow}</button>
   `,'ranking-dialog career-ranking');
   if(!dialog) return;
   dialog.dataset.currentClass=String(currentClass);
+  dialog.style.setProperty('--career-board-texture',`url("${boardTexture}")`);
+
+  const portraitFor=(opponent:CareerOpponent):string=>portraits[`../../resourse/enemy/${folders[opponent.skin]}/idle/idle_right/idle_00.png`];
 
   const status=(opponent:CareerOpponent):string=>progress.victories.includes(opponent.id) ? 'ПОБЕЖДЁН'
     : active?.opponentId===opponent.id ? 'В БОЮ' : careerAvailable(progress,opponent.id) ? 'ДОСТУПЕН' : 'ЗАКРЫТ';
@@ -43,7 +47,8 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
     const lockedByPending=Boolean(active && active.opponentId!==selected.id);
     const record=progress.records[selected.id] ?? emptyCareerRecord();
     const previous=CAREER_ROSTER[selected.order-1];
-    const portrait=portraits[`../../resourse/enemy/${folders[selected.skin]}/idle/idle_right/idle_00.png`];
+    const portrait=portraitFor(selected);
+    dialog.querySelector('#opponent-profile')!.setAttribute('data-boss',String(selected.boss));
     dialog.querySelector('#opponent-profile')!.innerHTML=`
       <div class="opponent-file-top"><div class="opponent-monogram" aria-hidden="true"><span>№</span>${String(selected.order+1).padStart(2,'0')}</div><div><span class="eyebrow">${selected.boss ? 'БОСС' : 'СОПЕРНИК'} · ${status(selected)}</span><p>КЛАСС 0${selected.tier} / БОЙ 0${selected.rank}</p></div></div>
       <div class="career-fighter-title"><div><h3>${selected.name}</h3><p class="opponent-style">${getStyle(selected.style).name}</p></div><div class="career-portrait" aria-hidden="true"><img src="${portrait}" alt="" /></div></div>
@@ -57,7 +62,7 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   };
   const renderList=():void=>{
     const tierRoster=CAREER_ROSTER.filter(opponent=>opponent.tier===selectedClass);
-    dialog.querySelector('#opponent-list')!.innerHTML=tierRoster.map(opponent=>`<button class="opponent-row" data-opponent="${opponent.id}" data-status="${status(opponent)}" aria-pressed="${opponent.id===selected.id}"><b>0${opponent.rank}</b><span>${opponent.name}<small>${opponent.boss ? 'БОСС · ' : ''}${getStyle(opponent.style).name}</small></span><i>${status(opponent)}</i></button>`).join('');
+    dialog.querySelector('#opponent-list')!.innerHTML=tierRoster.map(opponent=>`<button class="opponent-row" data-opponent="${opponent.id}" data-status="${status(opponent)}" data-boss="${opponent.boss}" aria-pressed="${opponent.id===selected.id}"><b>0${opponent.rank}</b><div class="board-row-photo" aria-hidden="true"><img src="${portraitFor(opponent)}" alt="" loading="lazy" /></div><span>${opponent.name}<small>${opponent.boss ? 'БОСС · ' : ''}${getStyle(opponent.style).name}</small></span><i>${status(opponent)}</i></button>`).join('');
     dialog.querySelector('#career-tier-progress')!.textContent=`${tierRoster.filter(opponent=>progress.victories.includes(opponent.id)).length} / 4`;
     dialog.querySelector('#class-unlock')!.textContent=selectedClass===3 ? 'Высший класс. Победи всех четырёх боссов, чтобы завершить карьеру.'
       : `Победи всех четырёх соперников класса 0${selectedClass}, включая босса, чтобы открыть класс 0${selectedClass+1}.`;

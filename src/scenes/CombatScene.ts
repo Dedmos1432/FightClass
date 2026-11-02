@@ -3,7 +3,7 @@ import { SCENES } from '../config/game';
 import { WORLD } from '../config/lobby';
 import { COMBAT } from '../config/combat';
 import type { GameServices } from '../core/GameServices';
-import { preloadCombat } from '../assets/combatAssets';
+import { preloadCombat, prepareCombatTextures, queueCombatAtlases } from '../assets/combatAssets';
 import { RoomBackdrop } from './RoomBackdrop';
 import { CombatWorld, fighter, enemyFighter } from '../combat/CombatWorld';
 import { BotBrain } from '../combat/BotBrain';
@@ -31,14 +31,19 @@ export class CombatScene extends Phaser.Scene {
   private endReason: SeriesEndReason = 'knockout';
   private runId = '';
   private wins = 0;
+  private nextRoundReady = true;
   private result: { wins: number; gain: number; damage: number } | null = null;
   constructor(private readonly services: GameServices) { super(SCENES.fight); }
   init(): void {
     this.world=null; this.view=null; this.controls=null; this.playerView=null; this.enemyView=null; this.brain=null;
     this.phase='countdown'; this.timer=COMBAT.countdownMs; this.savedElapsed=0; this.survivalMs=0; this.result=null;
     this.roundMs=0; this.boostNoticeMs=0; this.endReason='knockout';
+    this.nextRoundReady=true;
   }
-  preload(): void { if (this.services.saves.activeRun) preloadCombat(this); }
+  preload(): void {
+    const run=this.services.saves.activeRun;
+    if (run) preloadCombat(this,['player',opponentAt(run.wins,run.id,run.roundStartedMs).skin]);
+  }
   create(): void {
     const run = this.services.saves.activeRun;
     if (!run) { this.scene.start(SCENES.dojo); return; }
@@ -49,9 +54,11 @@ export class CombatScene extends Phaser.Scene {
     const loadout = loadoutFor(this.services.saves.lobbyState.style, this.services.saves.freestyle);
     this.view = new CombatView(this.services, loadout);
     this.buildRound();
-    this.controls = new CombatInput(() => this.phase !== 'fighting' || Boolean(this.view?.hasDialog),
+    this.controls = new CombatInput(() => this.phase !== 'fighting' || this.loadFailed || Boolean(this.view?.hasDialog),
       slot => { if (this.world) this.world.attack(this.world.player,slot); },
-      () => { if (this.world) this.world.dodge(this.world.player); }, () => this.pause());
+      () => { if (this.world) this.world.dodge(this.world.player); }, () => this.pause(), () => {
+        if(this.world) { this.world.clearInputBuffer(this.world.player); this.world.clearInputBuffer(this.world.enemy); }
+      });
     this.view.on('#fight-pause','click',() => this.pause());
     this.view.on('.brand','click',event => { event.preventDefault(); this.pause(); });
     window.addEventListener('pagehide',() => this.checkpoint(),{signal:this.view.events.signal});
@@ -60,6 +67,7 @@ export class CombatScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,() => {
       this.checkpoint(); this.controls?.destroy(); this.playerView?.destroy(); this.enemyView?.destroy(); this.view?.destroy();
       this.scale.off(Phaser.Scale.Events.RESIZE,this.resize,this);
+      this.load.off(Phaser.Loader.Events.COMPLETE,this.roundAssetsLoaded,this);
       this.world=null; this.view=null; this.controls=null;
     });
   }
@@ -78,13 +86,26 @@ export class CombatScene extends Phaser.Scene {
     p.facing=e.x>=p.x?1:-1; e.facing=p.facing===1?-1:1;
     this.world=new CombatWorld(p,e); this.brain=new BotBrain(this.profile,Math.random,this.survivalMs-(run.roundStartedMs ?? 0));
     this.playerView?.destroy(); this.enemyView?.destroy();
+    prepareCombatTextures(this.textures,['player',this.profile.skin]);
     this.playerView=new CombatFighterView(this,p,this.view.loadout);
     this.enemyView=new CombatFighterView(this,e,this.view.loadout);
     this.view.focusArena();
   }
+  private get loadFailed(): boolean { return document.querySelector<HTMLElement>('#ui')?.dataset.screen==='load-error'; }
+  private roundAssetsLoaded(): void { this.nextRoundReady=true; }
+  private prepareNextRound(): void {
+    const run=this.services.saves.activeRun;
+    if (!run) return;
+    const next=opponentAt(run.wins,run.id,run.roundStartedMs);
+    this.nextRoundReady=!queueCombatAtlases(this,['player',next.skin]);
+    if (!this.nextRoundReady) {
+      this.load.once(Phaser.Loader.Events.COMPLETE,this.roundAssetsLoaded,this);
+      this.load.start();
+    }
+  }
   update(_time:number,delta:number): void {
     const w=this.world,v=this.view;
-    if (!w || !v) return;
+    if (!w || !v || this.loadFailed) return;
     const dt=Math.min(50,delta);
     const stopped=v.hasDialog || document.hidden;
     if (!stopped) {
@@ -122,6 +143,7 @@ export class CombatScene extends Phaser.Scene {
             const next=this.services.saves.advanceEndless(this.runId);
             if(next) this.wins=next.wins;
             this.phase='intermission'; this.timer=COMBAT.intermissionMs;
+            this.prepareNextRound();
             v.announce(timedOut ? 'ВРЕМЯ · ПОБЕДА ПО HP' : 'ПОБЕДА · СЛЕДУЮЩИЙ СОПЕРНИК');
           } else {
             this.endReason=outcome==='draw' ? 'draw' : timedOut ? 'timeout' : 'knockout';
@@ -136,7 +158,10 @@ export class CombatScene extends Phaser.Scene {
         if(w.player.hp<=0) w.player.elapsed+=dt;
         if(w.enemy.hp<=0) w.enemy.elapsed+=dt;
         if(this.timer<=0) {
-          if(this.phase==='intermission') { this.buildRound(); this.phase='countdown'; this.timer=1000; }
+          if(this.phase==='intermission') {
+            if(this.nextRoundReady) { this.buildRound(); this.phase='countdown'; this.timer=1000; }
+            else v.announce('ПОДГОТОВКА СЛЕДУЮЩЕГО СОПЕРНИКА');
+          }
           else {
             this.phase='result';
             if(this.result) v.showResult(this.result,() => this.returnToLobby(),this.endReason);
@@ -156,7 +181,7 @@ export class CombatScene extends Phaser.Scene {
     this.savedElapsed=0;
   }
   private pause(): void {
-    if(!this.view || this.view.hasDialog || this.phase==='defeat' || this.phase==='result') return;
+    if(!this.view || this.loadFailed || this.view.hasDialog || this.phase==='defeat' || this.phase==='result') return;
     this.controls?.clear(); this.checkpoint();
     this.view.showPause(() => this.returnToLobby());
   }

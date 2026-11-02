@@ -1,3 +1,4 @@
+import { skipTutorial } from './helpers/tutorial';
 import { test, expect, type Page } from '@playwright/test';
 import { GAME } from '../src/config/game';
 import { BENCH } from '../src/config/training';
@@ -20,6 +21,7 @@ async function walk(page: Page, target: number): Promise<void> {
 async function enterGym(page: Page, fresh = true): Promise<void> {
   await page.goto('/');
   await page.locator(fresh ? '#start-game' : '#continue-game').click();
+  if(fresh)await skipTutorial(page);
   await expect(page.locator('#ui')).toHaveAttribute('data-screen', 'lobby');
   await walk(page, LOBBY_OBJECTS.find((object) => object.id === 'gym')!.x);
   await page.keyboard.press('e');

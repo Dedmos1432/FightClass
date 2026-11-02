@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test';
 import { CombatWorld, fighter, attackDuration, enemyFighter } from '../src/combat/CombatWorld';
-import { ATTACK_SLOTS, COMBAT, type AttackSlot } from '../src/config/combat';
+import { ATTACK_SLOTS, COMBAT, guardStaminaCost, type AttackSlot } from '../src/config/combat';
 import { MOVES, loadoutFor, defaultLoadout } from '../src/combat/moves';
 import { STYLES } from '../src/config/styles';
-import { ROSTER, opponentAt } from '../src/combat/Opponents';
+import { ROSTER, opponentAt, ENDLESS_ENEMY_SKINS } from '../src/combat/Opponents';
+import { CAREER_ROSTER } from '../src/career/Roster';
 import { BotBrain } from '../src/combat/BotBrain';
 import { damageFor, freshEndless, rewardFor } from '../src/combat/EndlessProgress';
 import { SaveService, isSessionSave } from '../src/services/SaveService';
@@ -25,7 +26,7 @@ class Memory implements StorageLike {
 const newSave = () => { const storage=new Memory(), saves=new SaveService(new StorageService(storage)); saves.startNew(); return {saves,storage}; };
 
 test('попадание только в активные кадры, один раз за атаку и в пределах hitbox',() => {
-  const w=battle(); w.attack(w.player,0); advance(w,149); expect(w.enemy.hp).toBe(200);
+  const w=battle(); w.attack(w.player,0); advance(w,ATTACK_SLOTS[0].startup-1); expect(w.enemy.hp).toBe(200);
   advance(w,2); expect(w.enemy.hp).toBe(183);
   advance(w,600); expect(w.enemy.hp).toBe(183);
   const far=battle(400,1300); far.attack(far.player,2); advance(far,1000); expect(far.enemy.hp).toBe(200);
@@ -41,8 +42,8 @@ test('все 12 анимаций и все слоты наносят тольк�
   }
 });
 test('блок расходует выносливость и полностью защищает, истощённый блок пробивается',() => {
-  const w=battle(); w.enemy.blocking=true; w.attack(w.player,0); advance(w,200);
-  expect(w.enemy.hp).toBe(200); expect(w.enemy.stamina).toBeLessThan(145);
+  const w=battle(); w.enemy.blocking=true; w.attack(w.player,0); advance(w,ATTACK_SLOTS[0].startup);
+  expect(w.enemy.hp).toBe(200); expect(w.enemy.stamina).toBeCloseTo(150-guardStaminaCost(w.player.damage));
   const weak=battle(); weak.enemy.stamina=1; weak.enemy.blocking=true; weak.attack(weak.player,0); advance(weak,200);
   expect(weak.enemy.hp).toBe(183); expect(weak.enemy.action).toBe('hit'); expect(weak.enemy.stun).toBeGreaterThan(500);
 });
@@ -68,16 +69,23 @@ test('буфер позволяет последовательную комби�
   expect(w.player.combo).toBe(3); advance(w,attackDuration(2)-100);
   expect(w.attack(w.player,0)).toBe(false);
 });
-test('15 самостоятельных профилей используют три внешности, выбор стабилен при загрузке, сложность растёт с победами и временем',() => {
+test('15 самостоятельных профилей используют все шесть обычных бойцов без боссов, выбор стабилен, сложность растёт',() => {
   expect(ROSTER).toHaveLength(15); expect(new Set(ROSTER.map(r=>r.id)).size).toBe(15);
   expect(new Set(ROSTER.map(r=>JSON.stringify([r.aggression,r.defense,r.preferredRange,r.dodgePreference,r.reserve]))).size).toBe(15);
-  expect(new Set(ROSTER.map(r=>r.skin)).size).toBe(3);
+  const skins=[...new Set(ROSTER.map(r=>r.skin))].sort();
+  expect(skins).toEqual([...ENDLESS_ENEMY_SKINS].sort());
+  expect(skins).toEqual(CAREER_ROSTER.filter(r=>!r.boss).map(r=>r.skin).sort());
   expect(opponentAt(3,'saved-run')).toEqual(opponentAt(3,'saved-run'));
   const first=opponentAt(0,'same'), longer=opponentAt(0,'same',900000);
   expect(longer.id).toBe(first.id); expect(longer.maxHP).toBeGreaterThan(first.maxHP);
   expect(longer.reactionMs).toBeLessThan(first.reactionMs); expect(longer.skill).toBeGreaterThan(first.skill);
   expect(opponentAt(150).damage).toBeGreaterThan(opponentAt(15).damage);
   for(let i=0;i<45;i++) if(opponentAt(i).skin==='kim') expect(opponentAt(i).canDodge).toBe(false);
+  for(let i=0;i<300;i++) {
+    const profile=opponentAt(i,'non-boss-check');
+    expect(ENDLESS_ENEMY_SKINS).toContain(profile.skin);
+    expect(profile.canDodge).toBe(profile.skin!=='kim');
+  }
 });
 test('награда с убывающей эффективностью без потолка, нулевая серия без награды',() => {
   const p=freshEndless(); expect(rewardFor(p,0)).toBe(0);

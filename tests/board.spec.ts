@@ -1,0 +1,56 @@
+import { skipTutorial } from './helpers/tutorial';
+import { test, expect } from '@playwright/test';
+import { GAME } from '../src/config/game';
+import { SaveService } from '../src/services/SaveService';
+import { StorageService } from '../src/services/StorageService';
+import { winCareerMatch } from './helpers/career';
+
+test('доска использует текстуру, вложенные фотографии выбирают профиль, классы не меняют прогресс',async({page,request})=>{
+  const errors:string[]=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/');await page.locator('#start-game').click();await skipTutorial(page);
+  await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
+  await page.keyboard.press('e');
+  const dialog=page.locator('.career-ranking');
+  await expect(dialog).toBeVisible();
+  const texture=await dialog.evaluate(el=>getComputedStyle(el).getPropertyValue('--career-board-texture'));
+  expect(texture).toContain('career-board');
+  const url=texture.match(/url\(["']?([^"')]+)["']?\)/)![1];
+  const response=await request.get(url);
+  expect(response.status()).toBe(200);expect(response.headers()['content-type']).toContain('image/png');
+  await expect(dialog.locator('.board-row-photo img')).toHaveCount(4);
+  await dialog.locator('[data-opponent="shim"] .board-row-photo img').click();
+  await expect(dialog.locator('#opponent-profile h3')).toHaveText('Shim Ha-min');
+  await expect(dialog.locator('.career-match-format')).toContainText('ДО 3 ПОБЕД');
+  await expect(dialog.locator('#career-start')).toBeDisabled();
+  await dialog.locator('[data-tier="3"]').click();
+  await expect(dialog.locator('.opponent-row[data-boss="true"]')).toHaveCount(4);
+  await dialog.locator('[data-tier="1"]').click();
+  await dialog.locator('[data-opponent="kim"] .board-row-photo img').click();
+  await expect(dialog.locator('#career-start')).toBeEnabled();
+  await expect(dialog.locator('.career-match-format')).toContainText('ДО 2 ПОБЕД');
+  const saved=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),GAME.storage.session);
+  expect(saved.career.victories).toEqual([]);
+  await page.screenshot({path:'.cache/board-refresh/board-desktop.png'});
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
+  expect(errors).toEqual([]);
+});
+
+test('доска сохраняет маршрут продолжения: другая карточка заблокирована, баннер продолжает исходный матч',async({page})=>{
+  const saves=new SaveService(new StorageService(null));saves.startNew();saves.skipTutorial();winCareerMatch(saves,'kim');
+  const run=saves.beginCareer('kwon')!;
+  saves.checkpointCareer(run.id,{...run,hp:63,enemyHP:45,elapsedMs:15_000});
+  await page.addInitScript(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:GAME.storage.session,value:saves.current});
+  await page.goto('/');await page.locator('#continue-game').click();
+  await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);await page.keyboard.press('e');
+  await expect(page.locator('.career-pending')).toContainText('Kwon Tae-young');
+  await page.locator('[data-opponent="kim"] .board-row-photo img').click();
+  await expect(page.locator('#career-start')).toBeDisabled();
+  await page.locator('#career-resume').click();
+  await expect(page.locator('#ui')).toHaveAttribute('data-screen','career-fight');
+  await expect(page.locator('#combat-focus')).toHaveAttribute('data-enemy-skin','kwon');
+  await expect(page.locator('#combat-focus')).toHaveAttribute('data-player-hp','63');
+  expect((await page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),GAME.storage.session)).activeCareer.id).toBe(run.id);
+});

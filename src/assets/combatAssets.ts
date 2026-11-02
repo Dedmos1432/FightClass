@@ -1,21 +1,21 @@
 import type Phaser from 'phaser';
 import rawManifest from './combatManifest.json' with { type: 'json' };
-import type { FighterSkin } from '../combat/Opponents';
+import { ENDLESS_ENEMY_SKINS, type FighterSkin } from '../combat/Opponents';
 
 interface FrameMeta { page: string; ox: number; oy: number }
 export const combatManifest = rawManifest as {
   pages: string[]; frames: Record<string, FrameMeta>;
   characters: Record<FighterSkin, Record<string, string[]>>;
 };
-export const ENDLESS_COMBAT_SKINS = ['player', 'kim', 'kwon', 'yeo'] as const;
+export const ENDLESS_COMBAT_SKINS = ['player', ...ENDLESS_ENEMY_SKINS] as const;
 
-/** A career bout only needs its two fighters, not the entire twelve-person roster. */
+/** A bout only needs its two fighters, not the entire twelve-person roster. */
 export function combatPagesFor(skins: readonly FighterSkin[]): string[] {
   const wanted = new Set(skins);
   return combatManifest.pages.filter(page => wanted.has(page.replace(/-\d+$/, '') as FighterSkin));
 }
 
-/** Call during the next combat scene's preload, after the prior scene has shut down.
+/** Call after prior fighter sprites are destroyed, at scene preload or between rounds.
  * Phaser textures outlive scenes: remove unused atlases to release their GPU memory.
  * Only manifest-owned combat pages are eligible; room and exploration assets survive.
  */
@@ -30,6 +30,21 @@ export function prepareCombatTextures(
   return pages;
 }
 
+/** Queue missing pages without evicting the fighters still finishing their round. */
+export function queueCombatAtlases(
+  scene: { textures: { exists(key: string): boolean }; load: { atlas(key: string, textureURL: string, atlasURL: string): unknown } },
+  skins: readonly FighterSkin[],
+): boolean {
+  let queued = false;
+  const base = import.meta.env?.BASE_URL ?? '/';
+  for (const page of combatPagesFor(skins)) {
+    if (scene.textures.exists(page)) continue;
+    scene.load.atlas(page, `${base}combat/${page}.png`, `${base}combat/${page}.json`);
+    queued = true;
+  }
+  return queued;
+}
+
 export function preloadCombat(scene: Phaser.Scene, skins: readonly FighterSkin[] = ENDLESS_COMBAT_SKINS): void {
   const ui = document.querySelector<HTMLElement>('#ui')!;
   ui.dataset.screen = 'loading';
@@ -42,7 +57,6 @@ export function preloadCombat(scene: Phaser.Scene, skins: readonly FighterSkin[]
   };
   scene.load.on('progress', progress); scene.load.once('loaderror', failure);
   scene.events.once('shutdown', () => { scene.load.off('progress', progress); scene.load.off('loaderror', failure); });
-  for (const page of prepareCombatTextures(scene.textures, skins)) {
-    if (!scene.textures.exists(page)) scene.load.atlas(page, `${import.meta.env.BASE_URL}combat/${page}.png`, `${import.meta.env.BASE_URL}combat/${page}.json`);
-  }
+  prepareCombatTextures(scene.textures, skins);
+  queueCombatAtlases(scene, skins);
 }

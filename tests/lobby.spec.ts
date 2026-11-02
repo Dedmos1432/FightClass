@@ -1,3 +1,4 @@
+import { skipTutorial } from './helpers/tutorial';
 import { test, expect, type Page } from '@playwright/test';
 import { GAME } from '../src/config/game';
 import { WORLD, LOBBY_OBJECTS } from '../src/config/lobby';
@@ -9,7 +10,7 @@ const location = (page: Page, name: string) => expect(page.locator('#ui')).toHav
 
 async function start(page: Page): Promise<void> {
   await page.goto('/');
-  await page.locator('#start-game').click();
+  await page.locator('#start-game').click();await skipTutorial(page);
   await location(page, 'lobby');
   await expect(region(page)).toHaveAttribute('data-player-x', /\d+/);
 }
@@ -171,7 +172,7 @@ test('ошибка загрузки лобби позволяет повтори
   const background = /\/lobby(?:-[^/]+)?\.png$/;
   await page.route(background, (route) => route.abort());
   await page.goto('/');
-  await page.locator('#start-game').click();
+  await page.locator('#start-game').click();await skipTutorial(page);
   await expect(page.getByRole('heading', { name: 'Не удалось загрузить локацию' })).toBeVisible();
   await page.unroute(background);
   await page.getByRole('button', { name: 'Повторить загрузку' }).click();

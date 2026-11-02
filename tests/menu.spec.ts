@@ -1,3 +1,4 @@
+import { skipTutorial } from './helpers/tutorial';
 import { test, expect, type Page } from '@playwright/test';
 import { GAME } from '../src/config/game';
 
@@ -22,6 +23,7 @@ test('меню запускается без ошибок, продолжени�
 test('новая игра, возврат, перезагрузка и продолжение сохраняют одну сессию', async ({ page }) => {
   await openMenu(page);
   await page.locator('#start-game').click();
+  await skipTutorial(page);
   await expect(screen(page)).toHaveAttribute('data-screen', 'lobby');
   await expect(page.locator('#save-status')).toContainText('на этом устройстве');
   const session = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), GAME.storage.session);
@@ -41,6 +43,7 @@ test('новая игра, возврат, перезагрузка и прод�
 test('замена сохранения требует подтверждения, отмена сохраняет прежнюю игру', async ({ page }) => {
   await openMenu(page);
   await page.locator('#start-game').click();
+  await skipTutorial(page);
   await page.locator('#back-menu').click();
   const id = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).id, GAME.storage.session);
   await page.locator('#start-game').click();
@@ -49,6 +52,7 @@ test('замена сохранения требует подтверждени�
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).id, GAME.storage.session)).toBe(id);
   await page.locator('#start-game').click();
   await page.locator('#confirm-new').click();
+  await skipTutorial(page);
   await expect(screen(page)).toHaveAttribute('data-screen', 'lobby');
   expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).id, GAME.storage.session)).not.toBe(id);
 });
@@ -81,6 +85,7 @@ test('настройки применяются и восстанавливаю�
 test('Escape закрывает настройки в лобби, повторный Escape возвращает в меню', async ({ page }) => {
   await openMenu(page);
   await page.locator('#start-game').click();
+  await skipTutorial(page);
   await page.locator('#lobby-settings').click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -95,6 +100,7 @@ test('клавиатура запускает игру, многократные
   await openMenu(page);
   await expect(page.locator('#start-game')).toBeFocused();
   await page.keyboard.press('Enter');
+  await skipTutorial(page);
   await expect(screen(page)).toHaveAttribute('data-screen', 'lobby');
   for (let count = 0; count < 4; count++) {
     await page.locator('#back-menu').click();
@@ -113,6 +119,7 @@ test('повреждённое сохранение объясняется и н
   await expect(page.locator('#continue-game')).toBeDisabled();
   await expect(page.locator('#toast')).toContainText('повреждено');
   await page.locator('#start-game').click();
+  await skipTutorial(page);
   await expect(screen(page)).toHaveAttribute('data-screen', 'lobby');
   await expect(page.locator('#toast')).not.toHaveClass('visible');
 });
@@ -123,6 +130,7 @@ test('запрет хранилища не ломает меню и честно
   });
   await openMenu(page);
   await page.locator('#start-game').click();
+  await skipTutorial(page);
   await expect(screen(page)).toHaveAttribute('data-screen', 'lobby');
   await expect(page.locator('#save-status')).toContainText('до перезагрузки');
   await page.locator('#back-menu').click();
@@ -158,6 +166,7 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 568 }
     await page.getByRole('button', { name: 'Готово' }).click();
     if (viewport.width === 390) await page.screenshot({ path: 'test-results/menu-mobile.png', fullPage: true });
     await page.locator('#start-game').click();
+    await skipTutorial(page);
     await expect(screen(page)).toHaveAttribute('data-screen', 'lobby');
     await page.locator('#back-menu').click();
     await expect(screen(page)).toHaveAttribute('data-screen', 'menu');

@@ -71,6 +71,12 @@ export class ExplorationScene extends Phaser.Scene {
     this.controls = new ExplorationInput(() => Boolean(this.view?.hasDialog) || Boolean(this.bench?.active) || document.hidden,
       () => this.interact(), () => this.escape());
     this.view.on('#back-menu', 'click', () => this.returnToMenu());
+    if(this.room==='lobby') {
+      this.view.root.querySelector('.world-actions > div')?.insertAdjacentHTML('afterbegin','<button class="button secondary small-button" id="lobby-tutorial" aria-label="Повторить обучение"><b aria-hidden="true">?</b><span>Обучение</span></button>');
+      this.view.on('#lobby-tutorial','click',()=>{
+        this.persistPosition(); this.services.saves.beginTutorial(); this.scene.start(SCENES.tutorial);
+      });
+    }
     this.view.on('.brand', 'click', (event) => { event.preventDefault(); this.returnToMenu(); });
     this.view.listen(document, 'visibilitychange', () => { if (document.hidden) this.persistPosition(); });
     window.addEventListener('pagehide', () => this.persistPosition(), { signal: this.view.events.signal });

@@ -3,6 +3,8 @@ import type { StyleId } from '../config/styles';
 export const ENEMY_SKINS = ['kim', 'kwon', 'yeo', 'shim', 'bang', 'jang', 'cha', 'young', 'sunny', 'lee', 'yang', 'maria'] as const;
 export type EnemySkin = typeof ENEMY_SKINS[number];
 export type FighterSkin = 'player' | EnemySkin;
+/** Career bosses are deliberately excluded from training waves. */
+export const ENDLESS_ENEMY_SKINS = ['kim', 'kwon', 'yeo', 'bang', 'jang', 'cha'] as const satisfies readonly EnemySkin[];
 const SKINS = {
   kim: { name: 'Kim Dong-won', style: 'mma' as StyleId, canDodge: false },
   kwon: { name: 'Kwon Tae-young', style: 'taekwondo' as StyleId, canDodge: true },
@@ -39,7 +41,7 @@ export interface Opponent extends Variant {
   career?: boolean;
   boss?: boolean;
 }
-/** Fifteen tactical variants share three temporary art sets, independently of survival difficulty. */
+/** Fifteen tactical variants share six non-boss art sets, independently of survival difficulty. */
 export const ROSTER: readonly Variant[] = [
   { id:'steady', skin:'kim', variantName:'Основы', tactic:'Держит центр и отвечает прямыми ударами.', aggression:.62, defense:.50, preferredRange:200, dodgePreference:0, counterPreference:.50, comboPreference:.32, reserve:28, hpBonus:0 },
   { id:'outfighter', skin:'kwon', variantName:'Дальняя дистанция', tactic:'Держит дистанцию и встречает на подходе.', aggression:.52, defense:.62, preferredRange:255, dodgePreference:.65, counterPreference:.65, comboPreference:.30, reserve:34, hpBonus:2 },
@@ -48,14 +50,14 @@ export const ROSTER: readonly Variant[] = [
   { id:'dancer', skin:'kwon', variantName:'Подвижность', tactic:'Уходит от медленных ударов и меняет дистанцию.', aggression:.59, defense:.65, preferredRange:240, dodgePreference:.95, counterPreference:.70, comboPreference:.44, reserve:40, hpBonus:1 },
   { id:'guard-breaker', skin:'yeo', variantName:'Давление на блок', tactic:'Расходует выносливость защиты короткими сериями.', aggression:.86, defense:.44, preferredRange:175, dodgePreference:.40, counterPreference:.48, comboPreference:.92, reserve:22, hpBonus:6 },
   { id:'fortress', skin:'kim', variantName:'Плотная защита', tactic:'Бережёт выносливость, блокирует и отвечает.', aggression:.45, defense:.94, preferredRange:210, dodgePreference:0, counterPreference:.74, comboPreference:.27, reserve:45, hpBonus:12 },
-  { id:'trapper', skin:'kwon', variantName:'Ловушка', tactic:'Отступает на край дальности и ловит промах.', aggression:.55, defense:.78, preferredRange:275, dodgePreference:.72, counterPreference:.98, comboPreference:.35, reserve:36, hpBonus:3 },
-  { id:'finisher', skin:'yeo', variantName:'Добивание', tactic:'Усиливает натиск, когда игрок ранен или устал.', aggression:.93, defense:.43, preferredRange:185, dodgePreference:.50, counterPreference:.76, comboPreference:.78, reserve:26, hpBonus:5 },
+  { id:'trapper', skin:'jang', variantName:'Ловушка', tactic:'Отступает на край дальности и ловит промах.', aggression:.55, defense:.78, preferredRange:275, dodgePreference:.72, counterPreference:.98, comboPreference:.35, reserve:36, hpBonus:3 },
+  { id:'finisher', skin:'bang', variantName:'Добивание', tactic:'Усиливает натиск, когда игрок ранен или устал.', aggression:.93, defense:.43, preferredRange:185, dodgePreference:.50, counterPreference:.76, comboPreference:.78, reserve:26, hpBonus:5 },
   { id:'pursuer', skin:'kim', variantName:'Преследование', tactic:'Не даёт спокойно восстановиться на дистанции.', aggression:.94, defense:.46, preferredRange:170, dodgePreference:0, counterPreference:.42, comboPreference:.72, reserve:21, hpBonus:8 },
-  { id:'reader', skin:'kwon', variantName:'Чтение привычек', tactic:'Чаще защищается от повторяемого приёма.', aggression:.58, defense:.86, preferredRange:230, dodgePreference:.80, counterPreference:.90, comboPreference:.55, reserve:38, hpBonus:4 },
-  { id:'flanker', skin:'yeo', variantName:'Обход', tactic:'Пытается пройти за спину во время длинной атаки.', aggression:.76, defense:.57, preferredRange:180, dodgePreference:.75, counterPreference:.78, comboPreference:.64, reserve:30, hpBonus:2 },
+  { id:'reader', skin:'cha', variantName:'Чтение привычек', tactic:'Чаще защищается от повторяемого приёма.', aggression:.58, defense:.86, preferredRange:230, dodgePreference:.80, counterPreference:.90, comboPreference:.55, reserve:38, hpBonus:4 },
+  { id:'flanker', skin:'bang', variantName:'Обход', tactic:'Пытается пройти за спину во время длинной атаки.', aggression:.76, defense:.57, preferredRange:180, dodgePreference:.75, counterPreference:.78, comboPreference:.64, reserve:30, hpBonus:2 },
   { id:'pressure', skin:'kim', variantName:'Ближний бой', tactic:'Навязывает короткую дистанцию и серии.', aggression:.90, defense:.60, preferredRange:150, dodgePreference:0, counterPreference:.62, comboPreference:.90, reserve:25, hpBonus:10 },
-  { id:'patient', skin:'kwon', variantName:'Терпение', tactic:'Не тратит силы на удары вне дальности.', aggression:.48, defense:.88, preferredRange:250, dodgePreference:.86, counterPreference:.94, comboPreference:.40, reserve:44, hpBonus:7 },
-  { id:'veteran', skin:'yeo', variantName:'Универсал', tactic:'Чередует защиту, контрудары и давление.', aggression:.76, defense:.78, preferredRange:215, dodgePreference:.82, counterPreference:.88, comboPreference:.82, reserve:33, hpBonus:9 },
+  { id:'patient', skin:'jang', variantName:'Терпение', tactic:'Не тратит силы на удары вне дальности.', aggression:.48, defense:.88, preferredRange:250, dodgePreference:.86, counterPreference:.94, comboPreference:.40, reserve:44, hpBonus:7 },
+  { id:'veteran', skin:'cha', variantName:'Универсал', tactic:'Чередует защиту, контрудары и давление.', aggression:.76, defense:.78, preferredRange:215, dodgePreference:.82, counterPreference:.88, comboPreference:.82, reserve:33, hpBonus:9 },
 ];
 function hash(text: string): number {
   let value = 2166136261;

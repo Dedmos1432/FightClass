@@ -8,6 +8,8 @@ export class CombatFighterView {
   readonly sprite: Phaser.GameObjects.Sprite;
   private readonly shadow: Phaser.GameObjects.Ellipse;
   private clock = 0;
+  private previousAction: Fighter['action'] | null = null;
+  private guardReleaseMs = 0;
   constructor(scene: Phaser.Scene, private readonly f: Fighter, private readonly loadout: Loadout) {
     const key = combatManifest.characters[f.skin]['idle-right'][0];
     this.sprite = scene.add.sprite(f.x, COMBAT.floorY, combatManifest.frames[key].page, key).setDepth(6);
@@ -15,9 +17,17 @@ export class CombatFighterView {
     this.update(0);
   }
   update(delta: number): void {
-    this.clock += delta;
     const f = this.f;
-    const action = f.action === 'attack' ? f.skin === 'player' ? this.loadout[f.slot] : `attack${f.slot}` : f.action;
+    if(f.action!==this.previousAction) {
+      const striding=(state: Fighter['action'] | null): boolean => state==='walk' || state==='retreat';
+      if(!(striding(f.action) && striding(this.previousAction))) this.clock=0;
+      this.guardReleaseMs=this.previousAction==='block' && f.action==='idle' ? 90 : 0;
+      this.previousAction=f.action;
+    }
+    this.clock+=delta;
+    if(f.action!=='idle') this.guardReleaseMs=0;
+    else this.guardReleaseMs=Math.max(0,this.guardReleaseMs-delta);
+    const action = this.guardReleaseMs>0 ? 'block' : f.action === 'attack' ? f.skin === 'player' ? this.loadout[f.slot] : `attack${f.slot}` : f.action;
     const clip = combatManifest.characters[f.skin][`${action}-${f.facing > 0 ? 'right' : 'left'}`];
     if (!clip) throw new Error(`Missing animation ${f.skin}/${action}`);
     let progress: number;
@@ -29,12 +39,15 @@ export class CombatFighterView {
     } else if (f.action === 'ko') progress = Math.min(1, f.elapsed / 1100);
     else if (f.action === 'hit') progress = Math.min(1, f.elapsed / f.stun);
     else if (f.action === 'dodge') progress = Math.min(1, f.elapsed / COMBAT.dodgeDuration);
-    else if (f.action === 'block') progress = 0.6;
+    else if (this.guardReleaseMs>0) progress=.6*this.guardReleaseMs/90;
+    else if (f.action === 'block') progress = .6*Math.min(1,this.clock/90);
     else progress = (this.clock % (clip.length * (f.action === 'idle' ? 125 : 85))) / (clip.length * (f.action === 'idle' ? 125 : 85));
     const key = clip[Math.min(clip.length - 1, Math.floor(progress * clip.length))], meta = combatManifest.frames[key];
     this.sprite.setTexture(meta.page, key).setOrigin(meta.ox, meta.oy).setPosition(f.x, COMBAT.floorY);
     this.shadow.x = f.x;
-    this.sprite.setAlpha(f.action === 'dodge' && f.elapsed >= COMBAT.dodgeInvulnerableFrom && f.elapsed < COMBAT.dodgeInvulnerableTo ? 0.6 : 1);
+    const evading=f.action==='dodge' && f.elapsed>=COMBAT.dodgeInvulnerableFrom && f.elapsed<COMBAT.dodgeInvulnerableTo;
+    const dodgeFade=evading ? Math.min(1,(f.elapsed-COMBAT.dodgeInvulnerableFrom)/35,(COMBAT.dodgeInvulnerableTo-f.elapsed)/35) : 0;
+    this.sprite.setAlpha(1-dodgeFade*.25);
   }
   destroy(): void { this.sprite.destroy(); this.shadow.destroy(); }
 }

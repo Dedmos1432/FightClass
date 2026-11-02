@@ -1,23 +1,100 @@
-.career-board-intro { color:#63645c; font:11px/1.6 var(--body); margin-top:16px; max-width:680px; }
-.career-pending { display:flex; align-items:center; gap:18px; margin-top:16px; padding:12px 14px; background:#17191a0c; border-left:3px solid var(--accent); }
-.career-pending p { flex:1; color:#55574f; font:11px/1.5 var(--body); }
-.career-pending .small-button { flex-shrink:0; background:var(--ink); color:var(--paper); padding:9px 12px; font-size:11px; }
-.career-fighter-title { position:relative; display:flex; align-items:center; min-height:112px; }
-.career-fighter-title > div:first-child { flex:1; z-index:1; }
-.career-fighter-title h3 { max-width:245px; margin:14px 0 8px; }
-.career-portrait { flex:0 0 100px; position:relative; height:112px; overflow:hidden; background:#17191a0c; border-bottom:2px solid var(--accent); }
-.career-portrait img { position:absolute; height:175px; max-width:none; left:50%; top:-13px; transform:translateX(-50%); image-rendering:pixelated; }
-.career-ranking .opponent-stats { margin-top:10px; }
-.career-ranking .opponent-row { min-height:86px; }
-.career-ranking .opponent-row[data-status='ПОБЕЖДЁН'] > i { color:#557156; }
-.career-ranking .opponent-row[aria-pressed='true'] > i { color:#e6a69c; }
-.career-fight-record { display:flex; flex-wrap:wrap; gap:5px 12px; color:#707166; font:8px/1.6 var(--mono); margin:12px 0; }
-.career-fight-record b { color:var(--ink); margin-left:3px; }
-.career-lock-note { color:var(--accent); font:10px/1.5 var(--body); margin:12px 0 0; }
-.career-start { width:100%; margin-top:15px; justify-content:space-between; }
-.career-total { display:flex; align-items:center; flex-wrap:wrap; gap:7px 12px; font:bold 9px/1.5 var(--mono); margin-bottom:15px; }
-.career-total > b { color:var(--accent); }
-.career-total > span { flex:1; color:#68695f; font:10px/1.5 var(--body); text-align:right; min-width:200px; }
+/* The club's physical noticeboard. The surface is an original bitmap asset;
+   the live roster and dossier stay readable, selectable HTML on top of it. */
+.dialog.career-ranking {
+  --board-paper:#e6deca; --board-ink:#252823; --board-muted:#6b6a60;
+  width:min(1140px,calc(100vw - 28px)); max-height:calc(100svh - 28px);
+  padding:28px 38px 32px; border:9px solid #242824;
+  background-color:#34372c;
+  background-image:linear-gradient(#171b1721,#11181236),var(--career-board-texture);
+  background-position:center; background-size:cover;
+  color:#eee7d5; color-scheme:dark;
+  box-shadow:inset 0 0 0 2px #827c644f,inset 0 0 32px #0008,0 22px 80px #000b;
+  scrollbar-color:#a3997d #232720;
+}
+.career-ranking::backdrop { background:#080c0de8; }
+.career-ranking .dialog-top { border-bottom:1px solid #d9cfac4d; padding-bottom:14px; margin-bottom:23px; }
+.board-club-label { display:flex; align-items:center; gap:12px; }
+.board-club-label > b { display:grid; place-items:center; width:39px; height:41px; background:#a33428; color:#eee5d1; font:600 25px var(--display); box-shadow:2px 3px 0 #0005; transform:rotate(-4deg); }
+.career-ranking .dialog-top .eyebrow { color:#e4dcc6; font:700 10px/1.5 var(--mono); letter-spacing:1.7px; }
+.board-club-label small { display:block; margin-top:3px; color:#bcbba9; font:8px/1.4 var(--body); letter-spacing:.8px; }
+.career-ranking .dialog-top .icon-button { background:#1c2423; color:#e8dfc9; border:1px solid #bcb39a6b; box-shadow:2px 3px 0 #0004; }
+.career-ranking .dialog-top .icon-button:hover { background:#b43328; border-color:#decfba; }
+.career-ranking .ranking-heading { align-items:center; gap:25px; }
+.board-heading-note { display:block; margin-bottom:8px; color:#c7c1aa; font:700 8px/1.4 var(--mono); letter-spacing:1.35px; }
+.career-ranking h2 { font:600 clamp(30px,4.4vw,53px)/1.08 var(--display); letter-spacing:.2px; color:#f0e5cf; text-shadow:2px 3px 0 #0006; }
+.career-ranking .rank-class-badge { position:relative; padding:10px 13px; gap:11px; background:var(--board-paper); color:#a12e25; border:2px solid #a12e25; box-shadow:3px 4px 0 #0005; transform:rotate(3deg); }
+.career-ranking .rank-class-badge::before { content:''; position:absolute; width:46px; height:13px; top:-9px; left:22px; background:#b8b39eb0; transform:rotate(-8deg); }
+.career-ranking .rank-class-badge b { font-size:37px; }
+.career-board-intro { color:#ded5bd; font:12px/1.65 var(--body); margin-top:17px; max-width:730px; }
+.career-ranking .ranking-tabs { gap:9px; border-bottom:2px solid #bdb29880; margin:25px 0 22px; padding-inline:8px; }
+.career-ranking .ranking-tab { position:relative; flex:1; min-width:0; padding:12px 16px 11px; background:#c1b69b; border:1px solid #151b1777; border-bottom:0; color:#383b31; font:500 20px/1.2 var(--display); box-shadow:2px -2px 0 #0003; }
+.career-ranking .ranking-tab::before { content:''; position:absolute; width:23px; height:4px; top:5px; right:10px; background:#4e5449; opacity:.6; }
+.career-ranking .ranking-tab > span { color:#565b4e; font:10px/1.5 var(--body); margin-top:5px; }
+.career-ranking .ranking-tab:hover { background:#ddd2b8; }
+.career-ranking .ranking-tab[aria-pressed='true'] { background:#e9dfc7; color:#9c3025; border-top:3px solid #a53c2d; padding-top:10px; }
+.career-ranking .ranking-tab[aria-pressed='true'] > span { color:#665e4c; }
+.career-ranking .ranking-layout { grid-template-columns:minmax(0,1fr) minmax(0,1.07fr); gap:28px; align-items:start; }
+.board-roster { min-width:0; }
+.board-roster-label { display:flex; justify-content:space-between; flex-wrap:wrap; gap:5px 15px; margin:2px 2px 13px; color:#ded3b9; font:700 9px/1.5 var(--mono); letter-spacing:.8px; }
+.board-roster-label > span { color:#b9b69e; font-size:8px; letter-spacing:0; }
+.career-ranking .opponent-list { gap:14px; padding:0 3px; }
+.career-ranking .opponent-row { position:relative; display:grid; grid-template-columns:30px 48px minmax(0,1fr); column-gap:11px; row-gap:0; min-height:103px; padding:14px 14px 14px 12px; border:0; border-left:4px solid transparent; background:var(--board-paper); color:var(--board-ink); box-shadow:3px 5px 0 #0006; transition:background-color 100ms,box-shadow 100ms; }
+.career-ranking .opponent-row::before { content:''; position:absolute; z-index:1; width:22px; height:8px; top:-4px; left:calc(50% - 11px); background:#aca38dcd; box-shadow:0 1px 0 #f8f0d433; transform:rotate(-6deg); }
+.career-ranking .opponent-row:last-child { border-bottom:0; }
+.career-ranking .opponent-row > b { grid-row:1 / 3; align-self:center; font:500 30px/1 var(--display); color:#97917f; }
+.board-row-photo { grid-column:2; grid-row:1 / 3; position:relative; width:48px; height:65px; overflow:hidden; align-self:center; background:#86897a; border:3px solid #f5edd9; border-bottom-width:8px; box-shadow:1px 2px 0 #24282355; transform:rotate(-3deg); }
+.board-row-photo img { position:absolute; height:99px; max-width:none; left:50%; top:-5px; transform:translateX(-50%); image-rendering:pixelated; filter:saturate(.6); }
+.career-ranking .opponent-row > span { grid-column:3; align-self:end; font:600 14px/1.35 var(--body); overflow-wrap:break-word; }
+.career-ranking .opponent-row small { color:#706c5e; font:9px/1.5 var(--body); margin-top:4px; }
+.career-ranking .opponent-row > i { grid-column:3; justify-self:start; margin:9px 0 0; padding:2px 5px; border:1px solid currentColor; color:#757464; font:700 8px/1.2 var(--mono); letter-spacing:.55px; transform:rotate(-2deg); }
+.career-ranking .opponent-row:hover { background:#f1e8d3; box-shadow:3px 5px 0 #0006,inset 0 0 0 1px #9b5f4266; }
+.career-ranking .opponent-row[aria-pressed='true'] { background:#f0e5cd; color:var(--board-ink); border-color:#ae392b; box-shadow:3px 5px 0 #0007,inset 0 0 0 1px #b6413277; }
+.career-ranking .opponent-row[aria-pressed='true'] > b { color:#a43427; }
+.career-ranking .opponent-row[aria-pressed='true'] small { color:#6b6251; }
+.career-ranking .opponent-row[aria-pressed='true'] > i { color:#a3382c; }
+.career-ranking .opponent-row[data-status='ПОБЕЖДЁН'] > i { color:#4c644d; }
+.career-ranking .opponent-row[data-status='ДОСТУПЕН'] > i { color:#a3382c; }
+.career-ranking .opponent-row[data-status='ЗАКРЫТ'] .board-row-photo img { filter:grayscale(1); opacity:.68; }
+.career-ranking .opponent-profile { position:relative; color:var(--board-ink); padding:23px 25px 24px; border:0; background:var(--board-paper); box-shadow:5px 7px 0 #0006; }
+.career-ranking .opponent-profile::before { content:''; position:absolute; z-index:1; top:-9px; left:calc(50% - 43px); width:86px; height:19px; background:#b7ad91d9; box-shadow:0 2px 1px #3b3c2a22; transform:rotate(2deg); }
+.career-ranking .opponent-profile::after { content:''; position:absolute; bottom:0; right:0; width:17px; height:17px; background:linear-gradient(135deg,#bdb59f 49%,#e7dfca 51%); box-shadow:-2px -2px 3px #2a2c2922; pointer-events:none; }
+.career-ranking .opponent-file-top { padding:0 0 15px; border-bottom:2px solid #3c4035; gap:15px; }
+.career-ranking .opponent-monogram { font-size:46px; color:#343a32; }
+.career-ranking .opponent-monogram > span { font-size:10px; }
+.career-ranking .opponent-file-top .eyebrow { color:#9e3226; font-size:8px; letter-spacing:.65px; }
+.career-ranking .opponent-file-top p { font-size:9px; color:#716a59; }
+.career-fighter-title { position:relative; display:flex; align-items:center; gap:12px; min-height:148px; }
+.career-fighter-title > div:first-child { flex:1; min-width:0; z-index:1; }
+.career-ranking .career-fighter-title h3 { margin:14px 0 9px; font:500 31px/1.13 var(--display); text-transform:uppercase; }
+.career-ranking .opponent-style { color:#776b57; font:11px/1.5 var(--body); }
+.career-portrait { flex:0 0 104px; position:relative; height:132px; overflow:hidden; background:#8e9382; border:5px solid #f8efdc; border-bottom-width:15px; box-shadow:2px 3px 0 #22282044; transform:rotate(3deg); }
+.career-portrait img { position:absolute; height:211px; max-width:none; left:50%; top:-11px; transform:translateX(-50%); image-rendering:pixelated; filter:saturate(.72); }
+.career-ranking .opponent-stats { margin:7px 0 12px; padding:13px 0; border-color:#73726266; gap:7px; }
+.career-ranking .opponent-stats dt { color:#77715f; font-size:9px; }
+.career-ranking .opponent-stats dd { font-size:29px; margin-top:5px; }
+.career-ranking .opponent-tactic { color:#42483b; font:11px/1.7 var(--body); }
+.career-match-format { margin-top:12px; font:bold 9px/1.6 var(--mono); color:var(--accent); }
+.career-fight-record { display:flex; flex-wrap:wrap; gap:5px 12px; color:#777461; font:8px/1.6 var(--mono); margin:13px 0; }
+.career-fight-record b { color:var(--board-ink); margin-left:3px; }
+.career-ranking .opponent-fairness { color:#777260; font:9px/1.6 var(--body); margin-top:11px; }
+.career-lock-note { color:#9d3226; font:10px/1.6 var(--body); margin-top:12px; }
+.career-start { width:100%; margin-top:17px; justify-content:space-between; }
+.career-ranking .career-start:disabled { opacity:.52; }
+.career-pending { display:flex; align-items:center; gap:18px; margin-top:18px; padding:13px 16px; color:var(--board-ink); background:#d8cfb5; border-left:4px solid #a13227; box-shadow:3px 4px 0 #0005; }
+.career-pending p { flex:1; font:11px/1.65 var(--body); }
+.career-pending .small-button { flex-shrink:0; background:#303a31; color:#f3e5cc; padding:10px 13px; font-size:11px; }
+.career-ranking .ranking-progress { border-color:#c3b38d8c; margin-top:25px; padding:17px 0; gap:20px; }
+.career-ranking .ranking-progress > span { color:#f1e6cc; font-size:10px; }
+.career-ranking .ranking-progress b { color:#edb2a1; }
+.career-ranking .ranking-progress p { color:#d5ccb5; font-size:11px; }
+.career-total { display:flex; align-items:center; flex-wrap:wrap; gap:7px 12px; font:bold 9px/1.5 var(--mono); margin-bottom:17px; color:#d9cfb7; }
+.career-total > b { color:#edb2a1; }
+.career-total > span { flex:1; color:#bdbca6; font:10px/1.6 var(--body); text-align:right; min-width:200px; }
+.career-ranking > .dialog-done { background:#202924; color:#e9dfc8; border:1px solid #b5aa8a77; box-shadow:3px 3px 0 #0005; font-size:12px; }
+.career-ranking > .dialog-done:hover { background:#354036; border-color:#dbc8a1; }
+.career-ranking :is(button,a):focus-visible { outline:3px solid #edab88; outline-offset:3px; }
+
+/* Match score elements retain the game's existing bout layout. */
 .career-result .run-result { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .career-result-progress { color:var(--ink); font:500 14px/1.7 var(--body); margin-block:14px; }
 .career-round-marks { display:flex; gap:7px; margin-top:26px; }
@@ -25,16 +102,107 @@
 .career-round-marks i { display:block; width:8px; height:8px; border:1px solid #eee8d880; transform:rotate(45deg); }
 .career-round-marks i[data-won='true'] { background:var(--paper); border-color:var(--paper); }
 .enemy-card .career-round-marks i[data-won='true'] { background:var(--accent); border-color:var(--accent); }
-.career-match-format { margin-top:12px; font:bold 9px/1.6 var(--mono); color:var(--accent); }
 .career-final-score { display:flex; align-items:center; flex-wrap:wrap; gap:12px; padding-block:18px; margin-top:18px; border-block:1px solid #17191a38; font:10px var(--mono); }
 .career-final-score strong { font:500 38px var(--display); color:var(--accent); }
 .career-final-score > span { color:#63645c; }
+/* Fit a whole club board on a desktop display without shrinking reading text.
+   Nine-slice edging keeps the original steel frame at the physical edge, while
+   the enlarged centre sample shows cork instead of another frame behind files. */
+@media(min-width:901px) and (min-height:700px) {
+  .dialog.career-ranking {
+    padding:16px 32px 22px; border-width:16px;
+    border-image:var(--career-board-texture) 80 / 16px stretch;
+    background-size:100% 100%,115% 125%; background-repeat:no-repeat;
+  }
+  .career-ranking .dialog-top { padding-bottom:8px; margin-bottom:12px; }
+  .board-club-label > b { width:32px; height:34px; font-size:23px; }
+  .career-ranking h2 { font-size:44px; }
+  .board-heading-note { margin-bottom:4px; }
+  .career-ranking .rank-class-badge { padding:7px 11px; }
+  .career-ranking .rank-class-badge b { font-size:32px; }
+  .career-board-intro { margin-top:10px; font-size:11px; line-height:1.6; }
+  .career-ranking .ranking-tabs { margin-top:15px; margin-bottom:16px; }
+  .career-ranking .ranking-tab { padding-block:9px 8px; font-size:18px; }
+  .career-ranking .ranking-tab[aria-pressed='true'] { padding-top:7px; }
+  .career-ranking .ranking-tab > span { margin-top:3px; font-size:9px; }
+  .board-roster-label { margin-bottom:10px; }
+  .career-ranking .opponent-list { gap:10px; }
+  .career-ranking .opponent-row { min-height:86px; padding-block:10px; }
+  .board-row-photo { height:60px; }
+  .career-ranking .opponent-row > i { margin-top:6px; }
+  .career-ranking .opponent-profile { padding:18px 23px; }
+  .career-ranking .opponent-file-top { padding-bottom:10px; }
+  .career-ranking .opponent-monogram { font-size:38px; }
+  .career-fighter-title { min-height:112px; }
+  .career-portrait { height:104px; flex-basis:92px; border-bottom-width:11px; }
+  .career-portrait img { height:181px; top:-9px; }
+  .career-ranking .career-fighter-title h3 { margin-block:10px 7px; font-size:29px; }
+  .career-ranking .opponent-stats { margin-block:4px 9px; padding-block:10px; }
+  .career-ranking .opponent-stats dd { font-size:26px; }
+  .career-ranking .opponent-tactic { line-height:1.6; }
+  .career-match-format { margin-top:9px; }
+  .career-fight-record { margin-block:9px; }
+  .career-ranking .opponent-fairness { margin-top:8px; }
+  .career-start { margin-top:12px; }
+  .career-ranking .ranking-progress { margin-top:17px; padding-block:12px; }
+  .career-total { margin-bottom:10px; }
+  .career-ranking > .dialog-done { min-height:40px; padding-block:9px; margin-top:7px; }
+}
+@media(max-width:900px) {
+  .dialog.career-ranking { padding:24px; }
+  .career-ranking .ranking-layout { gap:20px; }
+  .career-ranking .opponent-profile { padding:22px 20px; }
+  .career-ranking .opponent-row { grid-template-columns:27px 41px minmax(0,1fr); column-gap:8px; padding-inline:9px; }
+  .board-row-photo { width:41px; }
+  .career-ranking .career-fighter-title h3 { font-size:28px; }
+  .career-portrait { flex-basis:87px; height:121px; }
+}
 @media(max-width:760px) {
-  .career-ranking .opponent-row { min-height:66px; gap:11px; }
-  .career-ranking .opponent-row > span { font-size:12px; }
-  .career-ranking .opponent-row > i { font-size:7px; }
-  .career-pending { flex-direction:column; align-items:stretch; gap:9px; }
+  .dialog.career-ranking { border-width:7px; padding:22px 20px 24px; }
+  .career-ranking .ranking-heading { align-items:center; gap:12px; }
+  .career-ranking .ranking-heading h2 { max-width:none; font-size:35px; }
+  .board-heading-note { font-size:7px; max-width:190px; letter-spacing:.7px; }
+  .career-ranking .rank-class-badge { padding:7px 8px; gap:6px; }
+  .career-ranking .rank-class-badge b { font-size:29px; }
+  .career-ranking .rank-class-badge > span { font-size:6px; }
+  .career-ranking .rank-class-badge::before { left:15px; width:32px; }
+  .career-board-intro { font-size:11px; margin-top:14px; }
+  .career-ranking .ranking-tabs { gap:5px; margin-top:20px; padding-inline:0; }
+  .career-ranking .ranking-tab { padding:12px 9px 10px; font-size:17px; }
+  .career-ranking .ranking-tab[aria-pressed='true'] { padding-top:10px; }
+  .career-ranking .ranking-tab > span { font-size:8px; overflow-wrap:anywhere; }
+  .career-ranking .ranking-tab::before { width:14px; right:6px; }
+  .career-ranking .ranking-layout { grid-template-columns:minmax(0,1fr); gap:25px; }
+  .board-roster-label { font-size:8px; }
+  .board-roster-label > span { font-size:7px; }
+  .career-ranking .opponent-row { min-height:94px; grid-template-columns:28px 47px minmax(0,1fr); column-gap:12px; padding:12px; }
+  .board-row-photo { width:47px; height:64px; }
+  .career-ranking .opponent-row > span { font-size:13px; }
+  .career-ranking .opponent-row > i { font-size:7px; margin-top:7px; }
+  .career-ranking .opponent-profile { padding:23px 22px; }
+  .career-pending { flex-direction:column; align-items:stretch; gap:10px; padding:13px; }
   .career-pending .small-button { justify-content:space-between; }
   .career-total > span { text-align:left; }
-  .career-fighter-title h3 { font-size:25px; }
+}
+@media(max-width:380px) {
+  .dialog.career-ranking { width:calc(100vw - 18px); max-height:calc(100svh - 18px); padding:18px 14px 22px; border-width:6px; }
+  .board-club-label { gap:8px; }
+  .board-club-label > b { width:30px; height:33px; font-size:22px; }
+  .career-ranking .dialog-top .eyebrow { font-size:8px; letter-spacing:.8px; }
+  .board-club-label small { font-size:6px; letter-spacing:.2px; }
+  .career-ranking .dialog-top .icon-button { width:28px; height:28px; }
+  .career-ranking .ranking-heading h2 { font-size:30px; }
+  .board-heading-note { font-size:6px; }
+  .career-ranking .rank-class-badge { padding:5px; gap:5px; }
+  .career-ranking .rank-class-badge b { font-size:26px; }
+  .career-ranking .ranking-tabs { gap:4px; }
+  .career-ranking .ranking-tab { padding-inline:7px; font-size:16px; }
+  .career-ranking .ranking-tab > span { font-size:7px; }
+  .career-ranking .opponent-row { grid-template-columns:24px 40px minmax(0,1fr); column-gap:9px; padding-inline:9px; }
+  .career-ranking .opponent-row > b { font-size:27px; }
+  .board-row-photo { width:40px; }
+  .career-ranking .opponent-profile { padding-inline:17px; }
+  .career-ranking .career-fighter-title h3 { font-size:26px; }
+  .career-portrait { flex-basis:79px; height:118px; }
+  .career-total > span { min-width:0; flex-basis:100%; }
 }

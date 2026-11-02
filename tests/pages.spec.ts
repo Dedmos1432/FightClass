@@ -1,3 +1,4 @@
+import { skipTutorial } from './helpers/tutorial';
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { GAME } from '../src/config/game';
@@ -20,7 +21,7 @@ test('GitHub Pages: меню, комнаты, бой и все атласы до
   await expect(page).toHaveTitle('Fight Class');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','menu');
   await expect(page.locator('#game canvas')).toBeVisible();
-  await page.locator('#start-game').click();
+  await page.locator('#start-game').click();await skipTutorial(page);
   await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
 

@@ -16,4 +16,5 @@ export const SCENES = {
   dojo: 'Dojo',
   fight: 'Combat',
   career: 'Career',
+  tutorial: 'Tutorial',
 } as const;

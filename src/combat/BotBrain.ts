@@ -1,4 +1,4 @@
-import { ATTACK_SLOTS, COMBAT, type AttackSlot } from '../config/combat';
+import { ATTACK_SLOTS, COMBAT, guardStaminaCost, type AttackSlot } from '../config/combat';
 import { attackDuration, type CombatWorld, type Fighter, type FighterAction } from './CombatWorld';
 import type { Opponent } from './Opponents';
 
@@ -30,6 +30,8 @@ export class BotBrain {
   private recovering = false;
   private baitUntil = 0;
   private nextDodgeBait = 0;
+  private guardFlankGoal: number | null = null;
+  private nextGuardFlank = 0;
   private lastAttackAt = 0;
   private attackRhythm = 0;
   state: 'approach' | 'recover' | 'defend' | 'attack' | 'space' | 'counter' | 'pressure' | 'flank' | 'bait' | 'cutoff' = 'approach';
@@ -95,6 +97,7 @@ export class BotBrain {
       }
       return;
     }
+
     if (incoming) {
       const defense = Math.min(.98,this.profile.defense * (.5 + skill * .55) + habits.repetition * skill * .18);
       if (this.random() < defense) {
@@ -105,7 +108,7 @@ export class BotBrain {
           && this.random() < this.profile.dodgePreference * (.5 + skill * .5) && world.dodge(f)) {
           this.guardUntil=0; return;
         }
-        if (f.stamina >= 12 + p.damage * .4) { this.guardUntil=this.clock + Math.max(150,spec.startup+spec.active-elapsed+65); f.blocking=true; return; }
+        if (f.stamina >= guardStaminaCost(p.damage)) { this.guardUntil=this.clock + Math.max(150,spec.startup+spec.active-elapsed+65); f.blocking=true; return; }
         if (canRetreat) { f.direction=-toward; return; }
       }
     }
@@ -167,7 +170,7 @@ export class BotBrain {
     const committed = seen.action === 'attack' && elapsed < attackDuration(seen.slot);
     const incoming = committed && elapsed < spec.startup + spec.active && seen.facing === -toward
       && distance <= spec.range + COMBAT.bodyHalfWidth + 12;
-    const guardCost = 12 + world.player.damage * .4;
+    const guardCost = guardStaminaCost(world.player.damage);
     const reserve = Math.max(guardCost + 6, this.profile.reserve * (boss ? .8 : .9));
     const playerSpent = seen.stamina < ATTACK_SLOTS[0].stamina;
     const playerBack = seen.facing === toward;
@@ -185,6 +188,12 @@ export class BotBrain {
       return;
     }
 
+    if(this.guardFlankGoal!==null) {
+      if(!incoming && seen.action==='block' && Math.abs(f.x-this.guardFlankGoal)>12) {
+        this.state='flank'; f.direction=Math.sign(this.guardFlankGoal-f.x); return;
+      }
+      this.guardFlankGoal=null;
+    }
     if (this.clock < this.flankUntil) { this.state = 'flank'; f.direction = this.flankDirection; return; }
     // At point-blank range a long windup can be crossed before its forward hitbox activates.
     // Use the observed windup, movement speed and required clearance, rather than a teleport.
@@ -227,6 +236,17 @@ export class BotBrain {
       this.state = 'recover';
       f.direction = distance < 370 ? canRetreat ? -toward : toward : 0;
       return;
+    }
+
+    // A long held guard protects one side. Walk through it to attack the back;
+    // the player can answer by turning the guard with A/D or releasing it.
+    if(seen.action==='block' && habits.blockRate>.35 && !playerBack && distance<350
+      && this.clock>=this.nextGuardFlank && f.stamina>=reserve+24) {
+      const goal=clamp(targetX+toward*175,COMBAT.minX,COMBAT.maxX);
+      if(Math.abs(goal-targetX)>=130) {
+        this.guardFlankGoal=goal; this.nextGuardFlank=this.clock+2600;
+        this.guardUntil=0; f.blocking=false; this.state='flank'; f.direction=toward; return;
+      }
     }
 
     // At overlapping roots, make space instead of swinging repeatedly through empty front hitboxes.
