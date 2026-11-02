@@ -22,7 +22,7 @@ export class ScreenView {
         <header class="topbar">
           <a class="brand" href="#" aria-label="${GAME.title} — главное меню">
             <span class="brand-mark" aria-hidden="true">FC</span>
-            <span class="brand-name">${GAME.title.toUpperCase()}<small>БОЙЦОВСКИЙ КЛУБ</small></span>
+            <span class="brand-name">${GAME.title.toUpperCase()}${screen === 'menu' ? '' : '<small>БОЙЦОВСКИЙ КЛУБ</small>'}</span>
           </a>
           <div class="top-actions">
             <button class="icon-button" id="mute-button" type="button" title="Звук интерфейса"></button>

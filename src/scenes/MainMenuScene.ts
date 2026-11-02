@@ -23,9 +23,7 @@ export class MainMenuScene extends Phaser.Scene {
     const view = new ScreenView(this.services, 'menu', `
       <section class="menu-layout" aria-labelledby="game-title">
         <div class="menu-main">
-          <div class="eyebrow intro-tag"><span></span> ПОДПОЛЬНЫЙ БОЙЦОВСКИЙ КЛУБ</div>
           <h1 id="game-title" aria-label="${GAME.title}">FIGHT<br /><span>CLASS</span></h1>
-          <p class="hero-description">Бокс / ММА / Тхэквондо / Муай-тай</p>
           <nav class="menu-buttons" aria-label="Главное меню">
             <button class="menu-button ${saved ? '' : 'menu-current'}" id="start-game"><span class="button-number">01</span><span class="button-text">Начать игру</span><span class="button-arrow">${icons.arrow}</span></button>
             <button class="menu-button ${saved ? 'menu-current' : ''}" id="continue-game" ${saved ? '' : 'disabled'}><span class="button-number">02</span><span class="button-text">Продолжить<small>${continueText}</small></span><span class="button-arrow">${icons.arrow}</span></button>
@@ -34,7 +32,7 @@ export class MainMenuScene extends Phaser.Scene {
           <div class="save-note">ПРОГРЕСС СОХРАНЯЕТСЯ В ЭТОМ БРАУЗЕРЕ</div>
         </div>
         <aside class="menu-art" aria-label="Личное дело бойца">
-          <div class="poster-plane" aria-hidden="true"><span class="poster-heading">FIGHT CLASS<br />БОЙЦОВСКИЙ КЛУБ</span><span class="poster-numeral">${classNumeral}</span><span class="poster-serial">ТРЕНИРОВКА / ПОЕДИНОК / ПОВТОРИТЬ</span></div>
+          <div class="poster-plane" aria-hidden="true"><span class="poster-heading">FIGHT CLASS</span><span class="poster-numeral">${classNumeral}</span><span class="poster-serial">ТРЕНИРОВКА / ПОЕДИНОК / ПОВТОРИТЬ</span></div>
           <img class="menu-fighter" src="${fighterUrl}" alt="" width="448" height="640" draggable="false" />
           <div class="menu-record">
             <div class="record-heading"><span>ЛИЧНОЕ ДЕЛО</span><b>КЛАСС ${classNumeral}</b></div>

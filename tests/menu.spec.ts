@@ -14,6 +14,7 @@ test('меню запускается без ошибок, продолжени�
   page.on('pageerror', (error) => errors.push(error.message));
   await openMenu(page);
   await expect(page.locator('#game canvas')).toBeVisible();
+  await expect(screen(page)).not.toContainText(/БОЙЦОВСКИЙ КЛУБ|Бокс \/ ММА \/ Тхэквондо \/ Муай-тай/i);
   await expect(page.getByRole('button', { name: /Начать игру/ })).toBeEnabled();
   await expect(page.getByRole('button', { name: /Продолжить/ })).toBeDisabled();
   await page.screenshot({ path: 'test-results/menu-desktop.png' });
