@@ -25,8 +25,8 @@ export class MainMenuScene extends Phaser.Scene {
         <div class="menu-main">
           <h1 id="game-title" aria-label="${GAME.title}">FIGHT<br /><span>CLASS</span></h1>
           <nav class="menu-buttons" aria-label="Главное меню">
-            <button class="menu-button ${saved ? '' : 'menu-current'}" id="start-game"><span class="button-number">01</span><span class="button-text">Начать игру</span><span class="button-arrow">${icons.arrow}</span></button>
-            <button class="menu-button ${saved ? 'menu-current' : ''}" id="continue-game" ${saved ? '' : 'disabled'}><span class="button-number">02</span><span class="button-text">Продолжить<small>${continueText}</small></span><span class="button-arrow">${icons.arrow}</span></button>
+            <button class="menu-button" id="start-game"><span class="button-number">01</span><span class="button-text">Новая игра</span><span class="button-arrow">${icons.arrow}</span></button>
+            <button class="menu-button" id="continue-game" ${saved ? '' : 'disabled'}><span class="button-number">02</span><span class="button-text">Продолжить<small>${continueText}</small></span><span class="button-arrow">${icons.arrow}</span></button>
             <button class="menu-button" id="settings"><span class="button-number">03</span><span class="button-text">Настройки</span><span class="button-arrow">${icons.arrow}</span></button>
           </nav>
           <div class="save-note">ПРОГРЕСС СОХРАНЯЕТСЯ В ЭТОМ БРАУЗЕРЕ</div>

@@ -115,7 +115,7 @@ export class CombatView extends ScreenView {
       <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`, 'combat-pause');
     this.on('#pause-exit','click',onExit);
   }
-  showCareerResult(result: CareerResult, onBoard: () => void, onRetry: () => void): void {
+  showCareerResult(result: CareerResult, onLobby: () => void, onRetry: () => void): void {
     if (!this.career) return;
     this.announce('');
     const won = result.outcome === 'player';
@@ -133,9 +133,9 @@ export class CombatView extends ScreenView {
       <div class="run-result"><span>ПОБЕДЫ<strong>${this.services.saves.career.victories.length} / 12</strong></span><span>ТВОЙ КЛАСС<strong>0${result.newClass}</strong></span></div>
       <p class="career-result-progress">${progress}</p>
       <p class="settings-note">Урон прокачивается в бесконечных боях, HP и выносливость — на скамье.</p>
-      <button class="button primary dialog-done" id="career-result-board">К доске соперников ${icons.arrow}</button>
+      <button class="button primary dialog-done" id="career-result-lobby">Вернуться в лобби ${icons.arrow}</button>
       <button class="button secondary dialog-done" id="career-result-retry">${won ? 'Повторить поединок' : 'Попробовать ещё раз'}</button>`, 'combat-result career-result');
-    this.on('#career-result-board','click',onBoard);
+    this.on('#career-result-lobby','click',onLobby);
     this.on('#career-result-retry','click',onRetry);
   }
   showResult(result: { wins: number; gain: number; damage: number }, onReturn: () => void, reason: SeriesEndReason = 'knockout'): void {

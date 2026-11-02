@@ -15,7 +15,7 @@ test('меню запускается без ошибок, продолжени�
   await openMenu(page);
   await expect(page.locator('#game canvas')).toBeVisible();
   await expect(screen(page)).not.toContainText(/БОЙЦОВСКИЙ КЛУБ|Бокс \/ ММА \/ Тхэквондо \/ Муай-тай/i);
-  await expect(page.getByRole('button', { name: /Начать игру/ })).toBeEnabled();
+  await expect(page.getByRole('button', { name: /Новая игра/ })).toBeEnabled();
   await expect(page.getByRole('button', { name: /Продолжить/ })).toBeDisabled();
   await page.screenshot({ path: 'test-results/menu-desktop.png' });
   expect(errors).toEqual([]);
@@ -31,6 +31,10 @@ test('новая игра, возврат, перезагрузка и прод�
   expect(session.currentClass).toBe(1);
   await page.locator('#back-menu').click();
   await expect(page.locator('#continue-game')).toBeEnabled();
+  for(const id of ['start-game','continue-game','settings']) {
+    const button=page.locator(`#${id}`);await button.hover();
+    await expect(button.locator('.button-text')).toHaveCSS('color','rgb(217, 68, 54)');
+  }
   await page.reload();
   await expect(page.locator('#continue-game')).toBeEnabled();
   await page.locator('#continue-game').click();

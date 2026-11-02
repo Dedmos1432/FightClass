@@ -75,8 +75,7 @@ svg { width: 22px; height: 22px; flex: 0 0 auto; }
 .button-text small { display: block; margin-top: 4px; font: 10px/1.5 var(--body); color: #a4a096; }
 .button-arrow { margin-left: auto; color: var(--accent); display: flex; align-items: center; }
 .button-arrow svg { width: 22px; }
-.menu-current .button-text { color: var(--accent); }
-.menu-button:hover:not(:disabled) .button-text, .menu-button:focus-visible .button-text { color: var(--paper); }
+.menu-button:hover:not(:disabled) .button-text, .menu-button:focus-visible:not(:disabled) .button-text { color: var(--accent); }
 .menu-button:hover:not(:disabled) .button-arrow { transform: translateX(4px); }
 .menu-button:disabled { color: #696b67; }
 .menu-button:disabled .button-number, .menu-button:disabled .button-text small { color: #676963; }

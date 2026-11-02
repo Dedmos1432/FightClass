@@ -84,15 +84,15 @@ for(const opponent of CAREER_ROSTER) test(`карьерная арена: ${oppo
 test('карьера: таймаут-победа открывает следующего, не даёт урон и переживает перезагрузку',async({page})=>{
   await seed(page,3,{elapsedMs:89_800,hp:80,enemyHP:25,playerX:COMBAT.minX,enemyX:COMBAT.maxX});
   await fight(page,false);
-  await expect(page.locator('#career-result-board')).toBeVisible();
+  await expect(page.locator('#career-result-lobby')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Победа',exact:true})).toBeVisible();
   await expect(page.getByRole('dialog')).toContainText('Открыт класс 02');
   const result=await saved(page);
   expect(result.currentClass).toBe(2); expect(result.career.victories).toEqual(['kim','kwon','yeo','shim']);
   expect(result.stats.damage).toBe(10); expect(result.activeCareer).toBeUndefined();
   await page.screenshot({path:'.cache/stage5/result-class-unlock.png'});
-  await page.locator('#career-result-board').click();
-  await expect(page.locator('#opponent-profile h3')).toHaveText('Bang Jung-eum');
+  await page.locator('#career-result-lobby').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await board(page);await expect(page.locator('#opponent-profile h3')).toHaveText('Bang Jung-eum');
   await expect(page.locator('#career-start')).toBeEnabled();
   await page.keyboard.press('Escape'); await expect(page.locator('.fighter-class > b')).toHaveText('02');
   await page.reload(); await page.locator('#continue-game').click(); await board(page);
@@ -143,10 +143,10 @@ test('карьера: нокаут атакой записывает побед�
   await seed(page,0,{hp:100,enemyHP:1,enemyStamina:0,playerX:800,enemyX:1020});
   await fight(page);
   await page.keyboard.press('q');
-  await expect(page.locator('#career-result-board')).toBeVisible();
+  await expect(page.locator('#career-result-lobby')).toBeVisible();
   await expect(page.getByRole('heading',{name:'Победа',exact:true})).toBeVisible();
   expect((await saved(page)).career.lastResult).toMatchObject({outcome:'player',reason:'knockout'});
-  await page.locator('#career-result-board').click();
+  await page.locator('#career-result-lobby').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.keyboard.press('Escape');
   // Seed after navigation: the old scene saves on pagehide and would overwrite
   // an in-page localStorage replacement during reload.
@@ -158,14 +158,15 @@ test('карьера: нокаут атакой записывает побед�
   await expect(page.locator('#career-result-retry')).toBeVisible({timeout:30_000});
   await expect(page.getByRole('heading',{name:'Поражение',exact:true})).toBeVisible();
   expect((await saved(page)).career.lastResult).toMatchObject({outcome:'enemy',reason:'knockout'});
+  await page.keyboard.press('Escape');await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
 test('карьера: финальная победа завершает все12, доска остаётся и любой бой можно повторить',async({page})=>{
   await seed(page,11,{elapsedMs:89_800,hp:100,enemyHP:40,playerX:COMBAT.minX,enemyX:COMBAT.maxX});
-  await fight(page,false); await expect(page.locator('#career-result-board')).toBeVisible();
+  await fight(page,false); await expect(page.locator('#career-result-lobby')).toBeVisible();
   await expect(page.getByRole('dialog')).toContainText('Карьера высшего класса завершена');
-  await page.locator('#career-result-board').click();
-  await expect(page.locator('.career-board-intro')).toContainText('Карьера пройдена');
+  await page.locator('#career-result-lobby').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await board(page);await expect(page.locator('.career-board-intro')).toContainText('Карьера пройдена');
   await expect(page.locator('.career-total > b')).toHaveText('12 / 12');
   await page.locator('[data-tier="1"]').click(); await page.locator('[data-opponent="kim"]').click();
   await expect(page.locator('#career-start')).toHaveText(/Повторить бой/);
@@ -192,10 +193,10 @@ test('смена карьерных соперников и режимов ос�
     Object.assign(window,{__careerGpu:()=>({live:live.size,deleted})});
   });
   await seed(page,3,{elapsedMs:89_800,hp:100,enemyHP:10,playerX:COMBAT.minX,enemyX:COMBAT.maxX});
-  await fight(page,false); await expect(page.locator('#career-result-board')).toBeVisible();
+  await fight(page,false); await expect(page.locator('#career-result-lobby')).toBeVisible();
   const shim=await gpuSnapshot(page);
   expect(shim.live).toBeGreaterThan(0);
-  await page.locator('#career-result-board').click(); await page.locator('#career-start').click();
+  await page.locator('#career-result-lobby').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0); await board(page);await page.locator('#career-start').click();
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-enemy-skin','bang');
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
   await page.keyboard.press('Escape'); await page.locator('#pause-exit').click();
@@ -247,7 +248,7 @@ for(const order of [0,3]) for(const side of ['player','enemy'] as const) {
     await fight(page,false);
     const arena=page.locator('#combat-focus');
     await expect(arena).toHaveAttribute(`data-${side==='player'?'player':'enemy'}-rounds`,String(needed-1));
-    await expect(page.locator('#career-result-board')).toHaveCount(0);
+    await expect(page.locator('#career-result-lobby')).toHaveCount(0);
     await expect(arena).toHaveAttribute('data-round-number',String(needed));
     await expect(arena).toHaveAttribute('data-phase','countdown');
     await page.keyboard.press('Escape');
@@ -285,11 +286,11 @@ test('раунды: ничья повторяет раунд без измене
 test('раунды: загрузка после решающего раунда завершает матч ровно один раз',async({page})=>{
   await seed(page,0,{enemyHP:0},'player',2);
   await fight(page,false);
-  await expect(page.locator('#career-result-board')).toBeVisible();
+  await expect(page.locator('#career-result-lobby')).toBeVisible();
   await expect(page.locator('.career-final-score strong')).toHaveText('2 : 0');
   expect((await saved(page)).career.records.kim).toEqual({attempts:1,wins:1,losses:0,draws:0});
   expect((await saved(page)).activeCareer).toBeUndefined();
-  await page.locator('#career-result-board').click();await page.keyboard.press('Escape');
+  await page.locator('#career-result-lobby').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0);await page.keyboard.press('Escape');
   await page.reload();await page.locator('#continue-game').click();
   expect((await saved(page)).career.records.kim.wins).toBe(1);
 });

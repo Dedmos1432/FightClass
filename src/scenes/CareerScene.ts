@@ -117,7 +117,7 @@ export class CareerScene extends Phaser.Scene {
         if(outcome || this.checkpointMs>=800 || world.events.length) this.checkpoint();
         if(outcome) {
           const round=this.services.saves.resolveCareerRound(this.runId,this.roundNumber);
-          if(!round) { this.returnToLobby(true); return; }
+          if(!round) { this.returnToLobby(); return; }
           this.score=careerScore(round);
           this.result=round.matchOver ? this.services.saves.finishCareer(this.runId) : null;
           this.controls?.clear();
@@ -136,21 +136,21 @@ export class CareerScene extends Phaser.Scene {
         if(this.timer<=0) {
           if(this.phase==='intermission') {
             const run=this.services.saves.activeCareer;
-            if(!run) { this.returnToLobby(true); return; }
+            if(!run) { this.returnToLobby(); return; }
             this.buildRound(run); this.phase='countdown'; this.timer=COMBAT.countdownMs;
             this.view?.setCareerScore(this.score,this.roundNumber);
             return;
           }
           this.phase='result';
-          if(this.result) view.showCareerResult(this.result,() => this.returnToLobby(true),() => this.retry());
-          else this.returnToLobby(true);
+          if(this.result) view.showCareerResult(this.result,() => this.returnToLobby(),() => this.retry());
+          else this.returnToLobby();
         }
       }
     }
     this.playerView?.update(stopped?0:dt); this.enemyView?.update(stopped?0:dt);
     view.setCareerScore(this.score,this.roundNumber);
     view.update(world,profile,this.services.saves.career.victories.length,this.phase,this.brain?.state ?? 'approach',this.elapsedMs);
-    if(this.phase==='result' && !view.hasDialog) this.returnToLobby(true);
+    if(this.phase==='result' && !view.hasDialog) this.returnToLobby();
   }
   private checkpoint(): void {
     if(!this.world || !['countdown','fighting'].includes(this.phase)) return;
@@ -160,7 +160,8 @@ export class CareerScene extends Phaser.Scene {
     this.checkpointMs=0;
   }
   private pause(): void {
-    if(!this.view || this.view.hasDialog || this.phase==='finished' || this.phase==='result') return;
+    if(this.phase==='result') { this.view?.closeDialog(); this.returnToLobby(); return; }
+    if(!this.view || this.view.hasDialog || this.phase==='finished') return;
     this.controls?.clear(); this.checkpoint();
     this.view.showPause(() => this.returnToLobby());
   }
@@ -168,8 +169,8 @@ export class CareerScene extends Phaser.Scene {
     if(!this.profile || !this.services.saves.beginCareer(this.profile.id)) return;
     this.scene.restart();
   }
-  private returnToLobby(ranking=false): void {
-    this.checkpoint(); this.scene.start(SCENES.lobby,{ranking});
+  private returnToLobby(): void {
+    this.checkpoint(); this.scene.start(SCENES.lobby);
   }
   private resize(size:Phaser.Structs.Size): void {
     this.cameras.main.setViewport(0,0,size.width,size.height)
