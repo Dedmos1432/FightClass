@@ -127,7 +127,7 @@ export class BenchTrainingController {
           this.reps++;
           this.view.services.saves.completeBenchRep(this.run, this.reps);
           this.view.refreshStats(); this.view.warnIfTemporary();
-          this.view.services.audio.play('open'); this.setPhase('lowering');
+          this.view.services.audio.play('rep'); this.setPhase('lowering');
         }
         break;
       }

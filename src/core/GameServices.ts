@@ -4,8 +4,12 @@ import { SettingsService } from '../services/SettingsService';
 import { browserStorage, StorageService } from '../services/StorageService';
 
 export class GameServices {
-  readonly storage = new StorageService(browserStorage());
-  readonly saves = new SaveService(this.storage);
-  readonly settings = new SettingsService(this.storage, window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-  readonly audio = new AudioService(this.settings);
+  readonly saves:SaveService;
+  readonly settings:SettingsService;
+  readonly audio:AudioService;
+  constructor(readonly storage=new StorageService(browserStorage())){
+    this.saves=new SaveService(storage);
+    this.settings=new SettingsService(storage,window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    this.audio=new AudioService(this.settings);
+  }
 }

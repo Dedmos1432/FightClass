@@ -12,6 +12,7 @@ import { loadoutFor } from '../combat/moves';
 import { CombatFighterView } from '../characters/CombatFighterView';
 import { CombatInput } from '../input/CombatInput';
 import { CombatView } from '../ui/CombatView';
+import { combatEffect } from '../combat/CombatEffects';
 import { enemyBoosted, roundElapsed, roundEnemyDamage, roundOutcome, roundRemaining, type SeriesEndReason } from '../combat/RoundRules';
 
 export class CombatScene extends Phaser.Scene {
@@ -62,6 +63,7 @@ export class CombatScene extends Phaser.Scene {
     this.view.on('#fight-pause','click',() => this.pause());
     this.view.on('.brand','click',event => { event.preventDefault(); this.pause(); });
     window.addEventListener('pagehide',() => this.checkpoint(),{signal:this.view.events.signal});
+    window.addEventListener('fightclass-suspend',()=>this.checkpoint(),{signal:this.view.events.signal});
     this.resize(this.scale.gameSize);
     this.scale.on(Phaser.Scale.Events.RESIZE,this.resize,this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,() => {
@@ -122,7 +124,7 @@ export class CombatScene extends Phaser.Scene {
         w.player.direction=this.controls?.direction ?? 0; w.player.blocking=this.controls?.block ?? false;
         this.brain?.update(w,combatDt); w.update(combatDt);
         this.survivalMs+=combatDt; this.roundMs+=combatDt;
-        for(const event of w.events) this.effect(event.target.x,event.damage,event.type);
+        for(const event of w.events)combatEffect(this,this.services,event);
         this.savedElapsed+=combatDt;
         const outcome=roundOutcome(this.roundMs,w.player,w.enemy);
         const boostedNow=!outcome && !wasBoosted && enemyBoosted(this.roundMs);
@@ -140,12 +142,14 @@ export class CombatScene extends Phaser.Scene {
             if(timedOut) { f.action='idle'; f.elapsed=0; f.combo=0; }
           }
           if(outcome==='player') {
+            this.services.audio.play('victory');
             const next=this.services.saves.advanceEndless(this.runId);
             if(next) this.wins=next.wins;
             this.phase='intermission'; this.timer=COMBAT.intermissionMs;
             this.prepareNextRound();
             v.announce(timedOut ? 'ВРЕМЯ · ПОБЕДА ПО HP' : 'ПОБЕДА · СЛЕДУЮЩИЙ СОПЕРНИК');
           } else {
+            this.services.audio.play('knockout');
             this.endReason=outcome==='draw' ? 'draw' : timedOut ? 'timeout' : 'knockout';
             this.result=this.services.saves.finishEndless(this.runId);
             this.phase='defeat'; this.timer=1400;
@@ -188,12 +192,5 @@ export class CombatScene extends Phaser.Scene {
   private returnToLobby(): void { this.checkpoint(); this.scene.start(SCENES.lobby); }
   private resize(size:Phaser.Structs.Size): void {
     this.cameras.main.setViewport(0,0,size.width,size.height).setZoom(Math.min(size.width/WORLD.width,size.height/WORLD.height)).centerOn(WORLD.width/2,WORLD.height/2);
-  }
-  private effect(x:number,damage:number,type:string): void {
-    const text=this.add.text(x,COMBAT.floorY-290,damage>0 ? `−${damage}` : type==='block' ? 'БЛОК' : 'УКЛОНЕНИЕ',{
-      fontFamily:'Consolas, monospace',fontSize:damage>0?'34px':'22px',fontStyle:'bold',
-      color:damage>0?'#f0ae90':'#e3edaf',stroke:'#101910',strokeThickness:4,
-    }).setOrigin(.5).setDepth(10);
-    this.tweens.add({ targets:text,y:text.y-70,alpha:0,duration:650,onComplete:() => text.destroy() });
   }
 }

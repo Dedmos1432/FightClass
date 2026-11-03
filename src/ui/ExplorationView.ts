@@ -87,7 +87,7 @@ export class ExplorationView extends ScreenView {
           <div class="style-rules"><span class="eyebrow">НА ПРАКТИКЕ</span><dl><div><dt>Q / W / E</dt><dd>Три атакующих приёма в бою</dd></div><div><dt>УРОН</dt><dd>Общая характеристика бойца</dd></div><div><dt>КОМБО</dt><dd>Следующая атака в конце восстановления</dd></div></dl></div>
           <section id="freestyle-editor" class="freestyle-editor" ${current === 'freestyle' ? '' : 'hidden'}>
             <h3>Свой набор</h3><p>Три приёма из двенадцати. Занятые приёмы меняются местами.</p>
-            ${this.services.saves.freestyle.map((selected, slot) => `<label for="custom-slot-${slot}"><span><kbd>${['J','K','L'][slot]}</kbd> Слот ${slot + 1}</span><select id="custom-slot-${slot}" data-custom-slot="${slot}">${MOVES.map(move => `<option value="${move.id}" ${move.id === selected ? 'selected' : ''}>${move.name} · ${getStyle(move.style).name}</option>`).join('')}</select></label>`).join('')}
+            ${this.services.saves.freestyle.map((selected, slot) => `<label for="custom-slot-${slot}"><span><kbd>${['Q','W','E'][slot]}</kbd> Слот ${slot + 1}</span><select id="custom-slot-${slot}" data-custom-slot="${slot}">${MOVES.map(move => `<option value="${move.id}" ${move.id === selected ? 'selected' : ''}>${move.name} · ${getStyle(move.style).name}</option>`).join('')}</select></label>`).join('')}
             <small>Урон, дальность, расход выносливости и время атаки не зависят от выбранной анимации.</small>
           </section>
         </div>

@@ -1,8 +1,8 @@
 import Phaser from 'phaser';
 import { GAME } from '../config/game';
-import lobbyUrl from '../../assets/backgrounds/lobby.png?url';
-import gymUrl from '../../resourse/задники/качалка.png?url';
-import dojoUrl from '../../resourse/задники/зал боевых искусств.png?url';
+import lobbyUrl from '../../assets/optimized/lobby.webp?url';
+import gymUrl from '../../assets/optimized/gym.webp?url';
+import dojoUrl from '../../assets/optimized/dojo.webp?url';
 
 const sprites = import.meta.glob<string>('../../resourse/player/{idle,walk}/**/*.png', {
   eager: true, query: '?url', import: 'default',

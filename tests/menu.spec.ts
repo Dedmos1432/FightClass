@@ -143,11 +143,11 @@ test('запрет хранилища не ломает меню и честно
 });
 
 test('ошибка загрузки фона показывает рабочую кнопку повтора', async ({ page }) => {
-  // Match the actual texture, not Vite's .png?import JavaScript module.
-  await page.route(/\.png$/, (route) => route.abort());
+  // Match the actual texture, not Vite's .webp?import JavaScript module.
+  await page.route(/\.webp$/, (route) => route.abort());
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Не удалось загрузить фон' })).toBeVisible();
-  await page.unroute(/\.png$/);
+  await page.unroute(/\.webp$/);
   await page.getByRole('button', { name: 'Повторить загрузку' }).click();
   await expect(screen(page)).toHaveAttribute('data-screen', 'menu');
 });

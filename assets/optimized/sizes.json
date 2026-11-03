@@ -1,0 +1,22 @@
+{
+  "lobby": {
+    "original_bytes": 2637532,
+    "delivery_bytes": 1856144
+  },
+  "gym": {
+    "original_bytes": 1501502,
+    "delivery_bytes": 993454
+  },
+  "dojo": {
+    "original_bytes": 2062231,
+    "delivery_bytes": 1463954
+  },
+  "arena": {
+    "original_bytes": 2467358,
+    "delivery_bytes": 1708084
+  },
+  "career-board": {
+    "original_bytes": 3169212,
+    "delivery_bytes": 2051162
+  }
+}

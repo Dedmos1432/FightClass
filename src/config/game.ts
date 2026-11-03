@@ -1,6 +1,6 @@
 export const GAME = {
   title: 'Fight Class',
-  version: '0.5.0',
+  version: '0.6.0',
   background: '#121415',
   storage: {
     session: 'fightclass3.session.v1',

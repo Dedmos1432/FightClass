@@ -10,7 +10,8 @@ export class CombatFighterView {
   private clock = 0;
   private previousAction: Fighter['action'] | null = null;
   private guardReleaseMs = 0;
-  constructor(scene: Phaser.Scene, private readonly f: Fighter, private readonly loadout: Loadout) {
+  private trailMs=0;
+  constructor(private readonly scene: Phaser.Scene, private readonly f: Fighter, private readonly loadout: Loadout) {
     const key = combatManifest.characters[f.skin]['idle-right'][0];
     this.sprite = scene.add.sprite(f.x, COMBAT.floorY, combatManifest.frames[key].page, key).setDepth(6);
     this.shadow = scene.add.ellipse(f.x, COMBAT.floorY, 155, 22, 0x030603, 0.5).setDepth(4);
@@ -48,6 +49,13 @@ export class CombatFighterView {
     const evading=f.action==='dodge' && f.elapsed>=COMBAT.dodgeInvulnerableFrom && f.elapsed<COMBAT.dodgeInvulnerableTo;
     const dodgeFade=evading ? Math.min(1,(f.elapsed-COMBAT.dodgeInvulnerableFrom)/35,(COMBAT.dodgeInvulnerableTo-f.elapsed)/35) : 0;
     this.sprite.setAlpha(1-dodgeFade*.25);
+    if(f.action==='hit'&&f.elapsed<65)this.sprite.setTintFill(0xffdfc5);else this.sprite.clearTint();
+    this.trailMs+=delta;
+    if(evading&&delta>0&&this.trailMs>=90&&document.body.dataset.motion!=='false'){
+      this.trailMs=0;
+      const ghost=this.scene.add.image(f.x,COMBAT.floorY,meta.page,key).setOrigin(meta.ox,meta.oy).setTint(0x89aba0).setAlpha(.18).setDepth(5);
+      this.scene.tweens.add({targets:ghost,alpha:0,duration:160,onComplete:()=>ghost.destroy()});
+    }
   }
   destroy(): void { this.sprite.destroy(); this.shadow.destroy(); }
 }

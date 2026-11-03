@@ -1,9 +1,9 @@
 {
   "name": "fightclass3",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
-  "description": "Fight Class — одиночный 2D-файтинг. Этап 5: карьера и рейтинг.",
+  "description": "Fight Class — одиночный 2D-файтинг. Этап 6: браузерная версия для Яндекс Игр.",
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
@@ -14,7 +14,10 @@
     "test:storage": "playwright test --project=storage",
     "test:browser": "playwright test --project=chrome",
     "build:pages": "npm run build -- --base=/FightClass/",
-    "test:pages": "npm run build:pages && playwright test --config playwright.pages.config.ts"
+    "test:pages": "npm run build:pages && playwright test --config playwright.pages.config.ts",
+    "build:yandex": "npm run build -- --mode yandex --base=./ --outDir dist-yandex",
+    "package:yandex": "npm run build:yandex && python tools/package_yandex.py",
+    "test:release": "npm run build:yandex && playwright test --config playwright.release.config.ts"
   },
   "dependencies": {
     "phaser": "^3.90.0"

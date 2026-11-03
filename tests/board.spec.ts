@@ -42,7 +42,7 @@ test('доска использует текстуру, вложенные фо�
   expect(texture).toContain('career-board');
   const url=texture.match(/url\(["']?([^"')]+)["']?\)/)![1];
   const response=await request.get(url);
-  expect(response.status()).toBe(200);expect(response.headers()['content-type']).toContain('image/png');
+  expect(response.status()).toBe(200);expect(response.headers()['content-type']).toContain('image/webp');
   await expect(dialog.locator('.board-row-photo img')).toHaveCount(4);
   await dialog.locator('[data-opponent="shim"] .board-row-photo img').click();
   await expect(dialog.locator('#opponent-profile h3')).toHaveText('Shim Ha-min');

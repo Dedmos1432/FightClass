@@ -16,6 +16,14 @@ const lessons: Record<PracticeStep,{title:string;body:string;checks:string[]}> =
   stamina:{title:'Оставляй силы на защиту',body:'Следи за полосой выносливости сверху. Удары стоят 12 / 16 / 20, уклонение — 25. Потрать запас до 40 или ниже, затем сделай паузу в атаках и восстанови его до 80. В блоке восстановление медленнее; пустой блок могут пробить.',checks:['Потратить выносливость до 40','Восстановить запас до 80']},
   club:{title:'Теперь — твой путь в клубе',body:'HP — здоровье: при нуле будет нокаут. Эта тренировка не тратит твой прогресс. В лобби двигайся <kbd>A</kbd> / <kbd>D</kbd>, подходи к объектам и нажимай <kbd>E</kbd>.',checks:[]},
 };
+const touchLessons:Partial<Record<PracticeStep,string>>={
+  movement:'Удерживай стрелки ← / → внизу экрана, чтобы пройти в обе стороны. Боец сам поворачивается к сопернику. Через него можно пройти за спину.',
+  attacks:'Касайся кнопок Q, W и E внизу справа. Попади каждым приёмом и дай анимации закончиться между ударами. Вне дальности удар не попадёт. Урон всех трёх приёмов одинаковый.',
+  combo:'Коснись Q. Когда указатель войдёт в красную зону восстановления, коснись W или E. Так можно связать до трёх ударов. Можно одновременно удерживать стрелку движения и нажимать атаку.',
+  block:'Удерживай кнопку «Блок», пока партнёр не ударит. Блок защищает спереди; стрелки ← / → разворачивают его без движения. Попадание расходует немного выносливости.',
+  dodge:'Дождись сигнала и коснись «Уклонение». Оно отводит назад, ненадолго даёт неуязвимость и стоит 25 выносливости. Если промахнулся по времени — попробуй на следующем ударе.',
+  club:'HP — здоровье: при нуле будет нокаут. Эта тренировка не тратит твой прогресс. В лобби удерживай стрелки ← / → и нажимай E у объектов. «Назад» возвращает в лобби из комнаты. В качалке для повторений есть кнопка «Жать».',
+};
 
 export class TutorialView extends ScreenView {
   private message='';
@@ -53,7 +61,7 @@ export class TutorialView extends ScreenView {
     root.querySelector('#tutorial-focus')!.setAttribute('data-step',step);
     root.querySelector('#tutorial-number')!.textContent=`ПЕРВАЯ ТРЕНИРОВКА / ${String(TUTORIAL_STEPS.indexOf(step)+1).padStart(2,'0')} ИЗ 07`;
     root.querySelector('#tutorial-title')!.textContent=lesson.title;
-    root.querySelector('#tutorial-description')!.innerHTML=lesson.body;
+    root.querySelector('#tutorial-description')!.innerHTML=(root.dataset.touch==='true'&&touchLessons[step])||lesson.body;
     root.querySelector('#tutorial-checks')!.innerHTML=lesson.checks.map((check,i)=>`<li data-check="${i}" data-done="false"><i aria-hidden="true"></i><span>${check}</span></li>`).join('');
     (root.querySelector('#tutorial-timing') as HTMLElement).hidden=step!=='combo';
     (root.querySelector('#tutorial-club') as HTMLElement).hidden=step!=='club';
@@ -76,7 +84,8 @@ export class TutorialView extends ScreenView {
     timing.dataset.open=String(open);
     this.root.querySelector<HTMLElement>('#tutorial-needle')!.style.left=`${p.action==='attack'?Math.min(100,p.elapsed/duration*100):0}%`;
     this.root.querySelector<HTMLElement>('.tutorial-timing-window')!.style.width=`${COMBAT.comboBufferMs/duration*100}%`;
-    const message=trainer.ready ? 'Готово. Следующий приём…' : trainer.dodgeCue ? 'СЕЙЧАС — SHIFT' : trainer.step==='block' && e.action==='attack' ? 'Держи SPACE — партнёр атакует'
+    const touch=this.root.dataset.touch==='true';
+    const message=trainer.ready ? 'Готово. Следующий приём…' : trainer.dodgeCue ? touch?'СЕЙЧАС — УКЛОНЕНИЕ':'СЕЙЧАС — SHIFT' : trainer.step==='block' && e.action==='attack' ? touch?'Держи БЛОК — партнёр атакует':'Держи SPACE — партнёр атакует'
       : trainer.step==='dodge' ? 'Дождись удара партнёра' : trainer.step==='combo' && open ? 'СЕЙЧАС — W ИЛИ E' : trainer.step==='stamina' && trainer.spent ? 'Отпусти атаки. Верни запас до 80.' : '';
     if(message!==this.message) { this.root.querySelector('#tutorial-feedback')!.textContent=message; this.message=message; }
     this.root.querySelector('#tutorial-feedback')!.setAttribute('data-cue',String(trainer.dodgeCue || open));

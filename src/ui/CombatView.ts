@@ -21,6 +21,8 @@ const boostPercent = Math.round(COMBAT.enemyDamageBoost*100);
 export class CombatView extends ScreenView {
   private score=careerScore({});
   private roundNumber=1;
+  private hudTime=-Infinity;
+  private hudPhase='';
   constructor(services: GameServices, readonly loadout: Loadout, private readonly career?: CareerOpponent) {
     super(services, career ? 'career-fight' : 'fight', `
       <section class="fight-hud" aria-label="Показатели поединка">
@@ -55,10 +57,14 @@ export class CombatView extends ScreenView {
   setCareerScore(score: CareerScore, roundNumber: number): void { this.score={...score}; this.roundNumber=roundNumber; }
   announce(text: string): void {
     const announcement=this.root.querySelector<HTMLElement>('#fight-announcement')!;
+    if(announcement.textContent===text)return;
     announcement.textContent=text;
     announcement.dataset.kind=text.includes('СИЛЬНЕЕ') ? 'warning' : 'round';
   }
   update(world: CombatWorld, profile: Opponent, wins: number, phase: string, botState: string, roundMs: number): void {
+    this.syncState(world,profile,wins,phase,botState,roundMs);
+    const now=performance.now();if(phase===this.hudPhase && now-this.hudTime<45)return;
+    this.hudTime=now;this.hudPhase=phase;
     const p = world.player, e = world.enemy;
     for (const [side,f] of [['player',p],['enemy',e]] as const) {
       const health = this.root.querySelector<HTMLElement>(`.${side}-card .fight-health`)!;
@@ -88,14 +94,18 @@ export class CombatView extends ScreenView {
       : `УСИЛЕНИЕ ЧЕРЕЗ ${clock(Math.max(0,COMBAT.enemyBoostAfterMs-roundMs))} · УРОН +${boostPercent}%`;
     pressure.dataset.boosted=String(boosted);
     this.root.querySelector('#run-reward')!.textContent = this.career ? `Урон ${p.damage} · Побед в карьере ${this.services.saves.career.victories.length} / 12` : `Урон ${p.damage} · Награда за серию +${rewardFor(this.services.saves.endless,wins)}`;
+  }
+  private syncState(world:CombatWorld,profile:Opponent,wins:number,phase:string,botState:string,roundMs:number):void {
+    const p=world.player,e=world.enemy,remaining=roundRemaining(roundMs),boosted=!this.career&&enemyBoosted(roundMs);
     const data = this.root.querySelector<HTMLElement>('#combat-focus')!.dataset;
-    Object.assign(data, { phase, playerHp:String(p.hp), enemyHp:String(e.hp), playerX:p.x.toFixed(1), enemyX:e.x.toFixed(1),
+    const snapshot={ phase, playerHp:String(p.hp), enemyHp:String(e.hp), playerX:p.x.toFixed(1), enemyX:e.x.toFixed(1),
       playerAction:p.action, enemyAction:e.action, enemySkin:e.skin, enemyVariant:profile.id, botState, playerFacing:String(p.facing), enemyFacing:String(e.facing), enemyCanDodge:String(e.canDodge),
       wins:String(wins), slot:String(p.slot), combo:String(p.combo), stamina:Math.floor(p.stamina).toString(),
       actionMs:String(Math.floor(p.elapsed)), bufferedSlot:p.buffered===null ? '' : String(p.buffered),
-      roundMs:String(roundMs), remainingMs:String(remaining), enemyBoosted:String(boosted), enemyDamage:String(e.damage), mode:this.career ? 'career' : 'endless', boss:String(this.career?.boss ?? false) });
-    if(this.career) Object.assign(data,{playerRounds:String(this.score.playerRounds),enemyRounds:String(this.score.enemyRounds),
+      roundMs:String(roundMs), remainingMs:String(remaining), enemyBoosted:String(boosted), enemyDamage:String(e.damage), mode:this.career ? 'career' : 'endless', boss:String(this.career?.boss ?? false) };
+    if(this.career) Object.assign(snapshot,{playerRounds:String(this.score.playerRounds),enemyRounds:String(this.score.enemyRounds),
       drawnRounds:String(this.score.drawnRounds),roundNumber:String(this.roundNumber),targetRounds:String(careerWinsNeeded(this.career.id))});
+    for(const [key,value]of Object.entries(snapshot))if(data[key]!==value)data[key]=value;
   }
   showPause(onExit: () => void): void {
     if (this.hasDialog) return;

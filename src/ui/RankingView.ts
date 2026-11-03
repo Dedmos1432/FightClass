@@ -4,7 +4,7 @@ import { getStyle } from '../config/styles';
 import type { ScreenView } from './ScreenView';
 import { icons } from './icons';
 import { CLUB_GUIDE_STEPS } from '../tutorial/ClubGuide';
-import boardTexture from '../../assets/ui/career-board.png?url';
+import boardTexture from '../../assets/optimized/career-board.webp?url';
 import './career.css';
 
 const portraits=import.meta.glob<string>('../../resourse/enemy/*/idle/idle_right/idle_00.png',{

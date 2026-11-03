@@ -7,9 +7,10 @@ import { CombatFighterView } from '../characters/CombatFighterView';
 import { CombatInput } from '../input/CombatInput';
 import { loadoutFor } from '../combat/moves';
 import { CombatTutorial } from '../tutorial/CombatTutorial';
+import { combatEffect } from '../combat/CombatEffects';
 import { TutorialView } from '../ui/TutorialView';
 import { RoomBackdrop } from './RoomBackdrop';
-import dojoUrl from '../../resourse/задники/зал боевых искусств.png?url';
+import dojoUrl from '../../assets/optimized/dojo.webp?url';
 
 export class TutorialScene extends Phaser.Scene {
   private trainer:CombatTutorial|null=null;
@@ -53,6 +54,7 @@ export class TutorialScene extends Phaser.Scene {
     if(!paused) {
       t.world.player.direction=this.controls?.direction??0; t.world.player.blocking=this.controls?.block??false;
       t.update(dt);
+      for(const event of t.world.events)combatEffect(this,this.services,event);
       if(t.ready) {
         this.successMs+=dt;
         if(this.successMs>=700) {

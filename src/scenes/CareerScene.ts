@@ -16,6 +16,7 @@ import { BotBrain } from '../combat/BotBrain';
 import { CombatFighterView } from '../characters/CombatFighterView';
 import { CombatInput } from '../input/CombatInput';
 import { CombatView } from '../ui/CombatView';
+import { combatEffect } from '../combat/CombatEffects';
 
 /** One ranked match shares the combat rules and renderer with endless training. */
 export class CareerScene extends Phaser.Scene {
@@ -73,6 +74,7 @@ export class CareerScene extends Phaser.Scene {
     this.view.on('#fight-pause','click',() => this.pause());
     this.view.on('.brand','click',event => { event.preventDefault(); this.pause(); });
     window.addEventListener('pagehide',() => this.checkpoint(),{signal:this.view.events.signal});
+    window.addEventListener('fightclass-suspend',()=>this.checkpoint(),{signal:this.view.events.signal});
     this.resize(this.scale.gameSize);
     this.scale.on(Phaser.Scale.Events.RESIZE,this.resize,this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN,() => {
@@ -112,10 +114,11 @@ export class CareerScene extends Phaser.Scene {
         world.player.blocking=this.controls?.block ?? false;
         this.brain?.update(world,step); world.update(step);
         this.elapsedMs+=step; this.checkpointMs+=step;
-        for(const event of world.events) this.effect(event.target.x,event.damage,event.type);
+        for(const event of world.events)combatEffect(this,this.services,event);
         const outcome=roundOutcome(this.elapsedMs,world.player,world.enemy);
         if(outcome || this.checkpointMs>=800 || world.events.length) this.checkpoint();
         if(outcome) {
+          this.services.audio.play(outcome==='player'?'victory':'knockout');
           const round=this.services.saves.resolveCareerRound(this.runId,this.roundNumber);
           if(!round) { this.returnToLobby(); return; }
           this.score=careerScore(round);
@@ -175,12 +178,5 @@ export class CareerScene extends Phaser.Scene {
   private resize(size:Phaser.Structs.Size): void {
     this.cameras.main.setViewport(0,0,size.width,size.height)
       .setZoom(Math.min(size.width/WORLD.width,size.height/WORLD.height)).centerOn(WORLD.width/2,WORLD.height/2);
-  }
-  private effect(x:number,damage:number,type:string): void {
-    const text=this.add.text(x,COMBAT.floorY-290,damage>0 ? `−${damage}` : type==='block' ? 'БЛОК' : 'УКЛОНЕНИЕ',{
-      fontFamily:'Golos Text, sans-serif',fontSize:damage>0?'34px':'22px',fontStyle:'bold',
-      color:damage>0?'#f4d1bf':'#eee8d8',stroke:'#17191a',strokeThickness:4,
-    }).setOrigin(.5).setDepth(10);
-    this.tweens.add({targets:text,y:text.y-70,alpha:0,duration:650,onComplete:() => text.destroy()});
   }
 }

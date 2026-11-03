@@ -11,6 +11,7 @@ export type ReadResult =
 export class StorageService {
   private readonly memory = new Map<string, string>();
   private persistent = true;
+  private readonly listeners=new Set<(key:string)=>void>();
 
   constructor(private readonly storage: StorageLike | null) {
     this.persistent = storage !== null;
@@ -41,6 +42,7 @@ export class StorageService {
   write(key: string, value: unknown): boolean {
     const raw = JSON.stringify(value);
     this.memory.set(key, raw);
+    this.listeners.forEach(listener=>listener(key));
     if (!this.storage || !this.persistent) return false;
     try {
       this.storage.setItem(key, raw);
@@ -50,6 +52,8 @@ export class StorageService {
       return false;
     }
   }
+
+  subscribe(listener:(key:string)=>void):()=>void {this.listeners.add(listener);return()=>this.listeners.delete(listener);}
 }
 
 export function browserStorage(): StorageLike | null {

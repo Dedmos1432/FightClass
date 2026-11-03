@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import arenaUrl from '../../resourse/задники/Подпольная арена боёв.png?url';
+import arenaUrl from '../../assets/optimized/arena.webp?url';
 import { GAME, SCENES } from '../config/game';
 import type { GameServices } from '../core/GameServices';
 

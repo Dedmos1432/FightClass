@@ -48,7 +48,7 @@ export class BenchTrainingView {
         <li><b>02</b><span><strong>Нажимай E повторно</strong><small>Каждое нажатие поднимает штангу. Держи ритм: без нажатий прогресс снижается. Удерживать клавишу бесполезно.</small></span></li>
         <li><b>03</b><span><strong>Заверши, когда захочешь</strong><small>Escape или «Завершить» — вернуть штангу и встать. Засчитываются только полные подъёмы.</small></span></li>
       </ol>
-      <p class="bench-lesson-note">Повторения навсегда повышают максимальные HP и выносливость. Чем больше уже натренировано, тем больше повторений нужно для следующего прироста. Завершённые повторения сохраняются сразу.</p>
+      <p class="bench-lesson-note">${this.view.root.dataset.touch==='true'?'На телефоне касайся кнопки «Жать» несколько раз. ':''}Повторения навсегда повышают максимальные HP и выносливость. Чем больше уже натренировано, тем больше повторений нужно для следующего прироста. Завершённые повторения сохраняются сразу.</p>
       <button class="button primary dialog-done" id="bench-tutorial-start">${start ? 'Начать подход' : 'Понятно'} ${icons.arrow}</button>
     `, 'bench-tutorial');
     dialog?.querySelector('#bench-tutorial-start')?.addEventListener('click', () => {
@@ -69,7 +69,7 @@ export class BenchTrainingView {
     this.panel.dataset.phase = phase;
     this.panel.dataset.paused = String(paused);
     this.panel.querySelector('#bench-reps')!.textContent = String(reps).padStart(2, '0');
-    this.panel.querySelector('#bench-status')!.textContent = paused ? 'Пауза — вернись в игру или закрой окно' : PHASE_LABELS[phase];
+    this.panel.querySelector('#bench-status')!.textContent = paused ? 'Пауза — вернись в игру или закрой окно' : phase==='pressing'&&this.view.root.dataset.touch==='true' ? 'Касайся «Жать» несколько раз' : PHASE_LABELS[phase];
     const percent = Math.round(progress * 100);
     this.panel.querySelector('#bench-percent')!.textContent = `${percent}%`;
     (this.panel.querySelector('#bench-progress-fill') as HTMLElement).style.width = `${percent}%`;

@@ -1,6 +1,8 @@
 import type { GameServices } from '../core/GameServices';
 import { GAME } from '../config/game';
 import { icons } from './icons';
+import { TouchControls } from './TouchControls';
+import { clearVirtualInput, inputSuspended } from '../input/VirtualInput';
 
 export class ScreenView {
   readonly root = document.querySelector<HTMLElement>('#ui')!;
@@ -16,6 +18,8 @@ export class ScreenView {
     const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ', fight: 'БЕСКОНЕЧНАЯ СЕРИЯ', 'career-fight': 'КАРЬЕРНЫЙ ПОЕДИНОК', tutorial:'ПЕРВАЯ ТРЕНИРОВКА' };
     const location = locations[screen];
     this.root.dataset.screen = screen;
+    services.audio.setEnvironment(screen);
+    this.root.dataset.touch=String(navigator.maxTouchPoints>0 || window.matchMedia('(pointer: coarse)').matches);
     delete this.root.dataset.training;
     this.root.innerHTML = `
       <div class="screen ${world ? 'exploration-screen' : ''}">
@@ -25,7 +29,7 @@ export class ScreenView {
             <span class="brand-name">${GAME.title.toUpperCase()}${screen === 'menu' ? '' : '<small>БОЙЦОВСКИЙ КЛУБ</small>'}</span>
           </a>
           <div class="top-actions">
-            <button class="icon-button" id="mute-button" type="button" title="Звук интерфейса"></button>
+            <button class="icon-button" id="mute-button" type="button" title="Звук игры"></button>
             <button class="icon-button" id="fullscreen-button" type="button" aria-label="Полный экран" title="Полный экран · F">${icons.fullscreen}</button>
           </div>
         </header>
@@ -36,6 +40,7 @@ export class ScreenView {
           <span class="version">FIGHT CLASS <b>v${GAME.version}</b></span>
         </footer>
       </div>`;
+    if(world)new TouchControls(this,['fight','career-fight','tutorial'].includes(screen));
     this.on('#mute-button', 'click', () => {
       services.settings.update({ muted: !services.settings.current.muted });
       services.audio.play();
@@ -43,7 +48,7 @@ export class ScreenView {
     });
     this.on('#fullscreen-button', 'click', () => { void this.toggleFullscreen(); });
     this.listen(document, 'keydown', (event: KeyboardEvent) => {
-      if (event.code === 'KeyF' && !event.repeat && !this.dialog && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      if (event.code === 'KeyF' && !event.repeat && !this.dialog && !inputSuspended() && !event.ctrlKey && !event.metaKey && !event.altKey) {
         event.preventDefault();
         void this.toggleFullscreen();
       }
@@ -86,14 +91,14 @@ export class ScreenView {
     this.openDialog(`
       <div class="dialog-top"><span class="eyebrow">FIGHT CLASS / ПАРАМЕТРЫ</span><button class="icon-button" data-close aria-label="Закрыть настройки">${icons.close}</button></div>
       <h2 id="dialog-title">Настройки</h2>
-      <p class="dialog-description">Звук и движение фона.</p>
+      <p class="dialog-description">Звук игры и визуальные эффекты.</p>
       <div class="setting-row volume-row">
-        <label for="volume">Громкость интерфейса<small>Короткие звуки нажатий</small></label>
+        <label for="volume">Громкость игры<small>Удары, тренировки, окружение и меню</small></label>
         <output id="volume-value" for="volume">${Math.round(volume * 100)}%</output>
         <input id="volume" type="range" min="0" max="100" step="1" value="${Math.round(volume * 100)}" />
       </div>
-      <label class="setting-row" for="sound-enabled"><span>Звук интерфейса<small>Отключить все звуки меню</small></span><input type="checkbox" role="switch" id="sound-enabled" ${muted ? '' : 'checked'} /><span class="switch-track" aria-hidden="true"></span></label>
-      <label class="setting-row" for="motion-enabled"><span>Анимация фона<small>Частицы пыли в свете ламп</small></span><input type="checkbox" role="switch" id="motion-enabled" ${animatedBackground ? 'checked' : ''} /><span class="switch-track" aria-hidden="true"></span></label>
+      <label class="setting-row" for="sound-enabled"><span>Звук игры<small>Отключить все звуки</small></span><input type="checkbox" role="switch" id="sound-enabled" ${muted ? '' : 'checked'} /><span class="switch-track" aria-hidden="true"></span></label>
+      <label class="setting-row" for="motion-enabled"><span>Анимация и эффекты<small>Частицы, след уклонения и дрожание камеры</small></span><input type="checkbox" role="switch" id="motion-enabled" ${animatedBackground ? 'checked' : ''} /><span class="switch-track" aria-hidden="true"></span></label>
       <p class="settings-note">${icons.check} Изменения сохраняются автоматически</p>
       <button class="button primary dialog-done" data-close>Готово ${icons.arrow}</button>
     `);
@@ -128,19 +133,28 @@ export class ScreenView {
 
   openDialog(content: string, modifier = ''): HTMLDialogElement | null {
     if (this.dialog) return null;
+    clearVirtualInput();
     this.previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = document.createElement('dialog');
     dialog.className = `dialog ${modifier}`;
+    dialog.inert=inputSuspended();
     dialog.setAttribute('aria-labelledby', 'dialog-title');
     dialog.innerHTML = content;
     this.root.append(dialog);
     this.dialog = dialog;
     dialog.querySelectorAll('[data-close]').forEach((button) => {
-      button.addEventListener('click', () => { this.services.audio.play(); this.closeDialog(); });
+      button.addEventListener('click', () => { if(inputSuspended())return;this.services.audio.play();this.closeDialog(); });
     });
-    dialog.addEventListener('cancel', (event) => { event.preventDefault(); this.closeDialog(); });
+    dialog.addEventListener('cancel', (event) => { event.preventDefault();if(!inputSuspended())this.closeDialog(); });
+    // A touch can open this modal on pointerdown; its release must not dismiss it.
+    let backdropPressed=false;
+    dialog.addEventListener('pointerdown',event=>{
+      const rect=dialog.getBoundingClientRect();
+      backdropPressed=event.target===dialog && (event.clientX<rect.left || event.clientX>rect.right || event.clientY<rect.top || event.clientY>rect.bottom);
+    });
     dialog.addEventListener('click', (event) => {
-      if (event.target !== dialog) return;
+      if (event.target !== dialog || !backdropPressed || inputSuspended()) return;
+      backdropPressed=false;
       const rect = dialog.getBoundingClientRect();
       if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.closeDialog();
     });
@@ -184,6 +198,7 @@ export class ScreenView {
   }
 
   destroy(): void {
+    clearVirtualInput();
     this.closeDialog();
     this.events.abort();
     this.unsubscribe?.();

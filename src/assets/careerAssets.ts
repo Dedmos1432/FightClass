@@ -1,5 +1,5 @@
 import type Phaser from 'phaser';
-import arenaUrl from '../../resourse/задники/Подпольная арена боёв.png?url';
+import arenaUrl from '../../assets/optimized/arena.webp?url';
 
 export const CAREER_ARENA_KEY = 'career-underground-arena';
 

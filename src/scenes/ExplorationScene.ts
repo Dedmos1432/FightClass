@@ -105,6 +105,7 @@ export class ExplorationScene extends Phaser.Scene {
     if (!this.player || !this.controls || !this.view) return;
     const direction = this.controls.direction;
     if (!this.bench?.active) this.player.update(direction, delta);
+    if(direction!==0&&!this.bench?.active)this.services.audio.play('step');
     this.bench?.update(delta);
     this.clubGuide?.update();
     this.view.syncPlayer(this.player, delta);

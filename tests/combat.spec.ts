@@ -4,6 +4,7 @@ import { COMBAT } from '../src/config/combat';
 import { opponentAt, type EnemySkin } from '../src/combat/Opponents';
 import type { ActiveRun } from '../src/combat/EndlessProgress';
 import { MOVES } from '../src/combat/moves';
+import { walkTo } from './helpers/walkTo';
 
 const arena=(page:Page)=>page.locator('#combat-focus');
 const room=(page:Page,name:string)=>expect(page.locator('#ui')).toHaveAttribute('data-screen',name);
@@ -22,9 +23,7 @@ async function enterDojo(page:Page):Promise<void> {
   await page.keyboard.press('e');await room(page,'dojo');await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);
 }
 async function center(page:Page):Promise<void> {
-  await page.keyboard.down('d');
-  try { await expect.poll(async()=>Number(await page.locator('#world-focus').getAttribute('data-player-x')),{intervals:[30],timeout:8000}).toBeGreaterThan(850); }
-  finally { await page.keyboard.up('d'); }
+  await walkTo(page,COMBAT.centerX);
   await expect(page.locator('#interact-object')).toContainText(/серию боёв/);
 }
 async function startFight(page:Page):Promise<void> {

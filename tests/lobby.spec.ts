@@ -169,7 +169,7 @@ test('сохранение этапа 1 продолжается без сбро
 });
 
 test('ошибка загрузки лобби позволяет повторить загрузку и продолжить сохранение', async ({ page }) => {
-  const background = /\/lobby(?:-[^/]+)?\.png$/;
+  const background = /\/lobby(?:-[^/]+)?\.webp$/;
   await page.route(background, (route) => route.abort());
   await page.goto('/');
   await page.locator('#start-game').click();await skipTutorial(page);
