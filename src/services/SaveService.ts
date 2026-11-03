@@ -8,6 +8,7 @@ import { WORLD } from '../config/lobby';
 import { isStyleId, type StyleId } from '../config/styles';
 import { StorageService } from './StorageService';
 import { isTutorialStep, nextTutorialStep, type TutorialStep } from '../tutorial/Progress';
+import { freshClubGuide, isClubGuide, nextClubGuideStep, type ClubGuideProgress, type ClubGuideStep } from '../tutorial/ClubGuide';
 import { freshTraining, isCharacterStats, isTrainingProgress, restoredStats, trainingAttributes, type CharacterStats, type TrainingProgress } from '../training/Progression';
 import { careerOpponent, type CareerClass } from '../career/Roster';
 import { careerAvailable, careerClass, careerComplete, careerScore, careerRoundNumber, careerMatchOutcome, cloneCareer, emptyCareerRecord, freshCareer, isCareerProgress, isCareerRun, type CareerCheckpoint, type CareerProgress, type CareerResult, type CareerRun, type CareerRoundResult } from '../career/Progress';
@@ -37,6 +38,7 @@ export interface SessionSave {
   career?: CareerProgress;
   activeCareer?: CareerRun;
   tutorial?: TutorialStep;
+  clubGuide?: ClubGuideProgress;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -62,6 +64,8 @@ export function isSessionSave(value: unknown): value is SessionSave {
     && (value.activeRun === undefined || isActiveRun(value.activeRun))
     && (value.career === undefined || isCareerProgress(value.career))
     && (value.tutorial === undefined || isTutorialStep(value.tutorial))
+    && (value.clubGuide === undefined || (isClubGuide(value.clubGuide)
+      && value.clubGuide.repsBefore <= (isTrainingProgress(value.training) ? value.training.totalReps : 0)))
     && (value.activeCareer === undefined || (isCareerRun(value.activeCareer)
       && careerAvailable(isCareerProgress(value.career) ? value.career : freshCareer(), value.activeCareer.opponentId)));
 }
@@ -79,6 +83,8 @@ export class SaveService {
       const career = result.value.career ?? freshCareer();
       this.session = { ...result.value, training: { ...training }, endless: { ...endless },
         career: cloneCareer(career), currentClass: careerClass(career),
+        ...(result.value.clubGuide ? {clubGuide:{...result.value.clubGuide}} :
+          result.value.tutorial && result.value.tutorial!=='complete' ? {clubGuide:freshClubGuide(training.totalReps)} : {}),
         freestyle: [...(result.value.freestyle ?? defaultLoadout())],
         stats: { ...restoredStats(training.totalReps, result.value.stats), damage: damageFor(endless) } };
       this.loadIssue = null;
@@ -100,6 +106,7 @@ export class SaveService {
       ...(this.session.career ? { career: cloneCareer(this.session.career) } : {}),
       ...(this.session.activeCareer ? { activeCareer: { ...this.session.activeCareer } } : {}),
       ...(this.session.freestyle ? { freestyle: [...this.session.freestyle] as Loadout } : {}),
+      ...(this.session.clubGuide ? { clubGuide: {...this.session.clubGuide} } : {}),
     } : null;
   }
 
@@ -107,12 +114,19 @@ export class SaveService {
   // Older saves have no onboarding field and continue directly into the club.
   get tutorialStep(): TutorialStep { return this.session?.tutorial ?? 'complete'; }
   get needsTutorial(): boolean { return Boolean(this.session) && this.tutorialStep!=='complete'; }
-  beginTutorial(): void { if(this.session) { this.session.tutorial='movement'; this.touch(); } }
+  beginTutorial(): void { if(this.session) { this.session.tutorial='movement'; this.session.clubGuide=freshClubGuide(this.training.totalReps); this.touch(); } }
   advanceTutorial(expected: TutorialStep): boolean {
     if(!this.session || this.tutorialStep!==expected || expected==='complete') return false;
     this.session.tutorial=nextTutorialStep(expected); this.touch(); return true;
   }
-  skipTutorial(): void { if(this.session) { this.session.tutorial='complete'; this.touch(); } }
+  skipTutorial(): void { if(this.session) { this.session.tutorial='complete'; this.skipClubGuide(); } }
+  get clubGuide():ClubGuideProgress { return {...(this.session?.clubGuide ?? {step:'complete',repsBefore:0})}; }
+  get needsClubGuide():boolean { return Boolean(this.session) && !this.needsTutorial && this.clubGuide.step!=='complete'; }
+  advanceClubGuide(expected:ClubGuideStep):boolean {
+    if(!this.session || !this.needsClubGuide || this.clubGuide.step!==expected || expected==='complete')return false;
+    this.session.clubGuide={...this.clubGuide,step:nextClubGuideStep(expected)};this.touch();return true;
+  }
+  skipClubGuide():void { if(this.session) {this.session.clubGuide={...this.clubGuide,step:'complete'};this.touch();} }
   get stats(): Readonly<CharacterStats> { return { ...(this.session?.stats ?? restoredStats(this.training.totalReps)) }; }
 
   get freestyle(): Loadout { return [...(this.session?.freestyle ?? defaultLoadout())]; }
@@ -320,6 +334,7 @@ export class SaveService {
       endless: freshEndless(),
       career: freshCareer(),
       tutorial: 'movement',
+      clubGuide: freshClubGuide(),
     };
     this.storage.write(GAME.storage.session, this.session);
     return this.current!;

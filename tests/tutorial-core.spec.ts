@@ -6,6 +6,7 @@ import { COMBAT, type AttackSlot } from '../src/config/combat';
 import { SaveService, isSessionSave } from '../src/services/SaveService';
 import { StorageService, type StorageLike } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
+import { CLUB_GUIDE_STEPS, clubGuideRoom, freshClubGuide, observedClubStep } from '../src/tutorial/ClubGuide';
 
 class Memory implements StorageLike {
   data=new Map<string,string>();getItem(key:string){return this.data.get(key)??null;}setItem(key:string,value:string){this.data.set(key,value);}
@@ -18,8 +19,54 @@ test('новая игра начинает обучение, завершённ�
   expect(saves.advanceTutorial('block')).toBe(false);expect(saves.advanceTutorial('movement')).toBe(true);
   const restored=new SaveService(new StorageService(memory));expect(restored.tutorialStep).toBe('attacks');
   const legacy={...restored.current!};delete legacy.tutorial;
+  delete legacy.clubGuide;
   memory.setItem(GAME.storage.session,JSON.stringify(legacy));
   const older=new SaveService(new StorageService(memory));expect(older.needsTutorial).toBe(false);expect(older.current?.id).toBe(saves.current?.id);
+  expect(older.needsClubGuide).toBe(false);
+});
+
+test('экскурсия начинается после боя, сохраняет шаг и не открывает обучение старым завершённым сохранениям',()=>{
+  const memory=new Memory(),saves=new SaveService(new StorageService(memory));saves.startNew();
+  expect(saves.needsClubGuide).toBe(false);
+  for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
+  expect(saves.needsClubGuide).toBe(true);expect(saves.clubGuide).toEqual(freshClubGuide());
+  expect(saves.advanceClubGuide('press')).toBe(false);
+  saves.advanceClubGuide('gym-door');expect(new SaveService(new StorageService(memory)).clubGuide.step).toBe('bench');
+  const copy=saves.clubGuide;copy.step='complete';expect(saves.clubGuide.step).toBe('bench');
+  const old={...saves.current!};delete old.clubGuide;memory.setItem(GAME.storage.session,JSON.stringify(old));
+  expect(new SaveService(new StorageService(memory)).needsClubGuide).toBe(false);
+});
+
+test('экскурсия: реальные комнаты и повторение двигают задания, отменённый подход не засчитывается',()=>{
+  let progress=freshClubGuide(7);
+  expect(observedClubStep(progress,'dojo',false,7)).toBe('gym-door');
+  progress={...progress,step:observedClubStep(progress,'gym',false,7)};expect(progress.step).toBe('bench');
+  expect(observedClubStep(progress,'gym',false,7)).toBe('bench');
+  progress={...progress,step:observedClubStep(progress,'gym',true,7)};expect(progress.step).toBe('press');
+  expect(observedClubStep(progress,'gym',false,7)).toBe('press');
+  progress={...progress,step:observedClubStep(progress,'gym',true,8)};expect(progress.step).toBe('gym-exit');
+  expect(observedClubStep(progress,'gym',false,8)).toBe('gym-exit');
+  progress={...progress,step:observedClubStep(progress,'lobby',false,8)};expect(progress.step).toBe('dojo-door');
+  progress={...progress,step:observedClubStep(progress,'dojo',false,8)};expect(progress.step).toBe('dojo-start');
+  expect(observedClubStep(progress,'dojo',false,8)).toBe('dojo-start');
+});
+
+test('повтор экскурсии учитывает прежние повторения, пропуск не меняет прокачку и сохранённые бои',()=>{
+  const saves=new SaveService(new StorageService(null));saves.startNew();
+  const id=saves.beginBenchSession()!;saves.completeBenchRep(id,1);saves.finishBenchSession(id);saves.beginEndless();
+  const before=saves.current!;saves.beginTutorial();expect(saves.clubGuide.repsBefore).toBe(1);
+  saves.skipTutorial();expect(saves.needsTutorial).toBe(false);expect(saves.needsClubGuide).toBe(false);
+  for(const field of ['stats','training','endless','activeRun','career','player'] as const)expect(saves.current![field]).toEqual(before[field]);
+  saves.beginTutorial();for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
+  for(const step of CLUB_GUIDE_STEPS.slice(0,-1))expect(saves.advanceClubGuide(step)).toBe(true);
+  expect(saves.needsClubGuide).toBe(false);
+});
+
+test('экскурсия: схема отвергает повреждённые шаги и счётчики, продолжение выбирает нужную комнату',()=>{
+  const saves=new SaveService(new StorageService(null));const save=saves.startNew();
+  for(const clubGuide of [null,{},false,{step:'bad',repsBefore:0},{step:'bench',repsBefore:-1},{step:'bench',repsBefore:NaN},{step:'bench',repsBefore:1}])expect(isSessionSave({...save,clubGuide})).toBe(false);
+  expect(clubGuideRoom('gym-door')).toBe('lobby');expect(clubGuideRoom('press')).toBe('gym');
+  expect(clubGuideRoom('gym-exit')).toBe('gym');expect(clubGuideRoom('dojo-door')).toBe('lobby');expect(clubGuideRoom('dojo-start')).toBe('dojo');
 });
 
 test('завершение, пропуск и повтор обучения не меняют характеристики, тренировки, карьеру и незавершённую серию',()=>{

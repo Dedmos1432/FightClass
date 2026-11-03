@@ -45,6 +45,25 @@
 #tutorial-club .tutorial-match-rules { grid-column:1 / -1; border-top:1px solid #17191a30; padding-top:12px; }
 #tutorial-finish { grid-column:1 / -1; }
 .world-actions #lobby-tutorial b { font:700 15px/1 var(--mono); }
+.club-guide { position:absolute; z-index:9; top:84px; right:0; width:min(410px,100%); padding:16px 20px; background:var(--paper); color:var(--ink); border-top:3px solid var(--action); box-shadow:3px 4px 0 #0007; pointer-events:auto; max-height: min(340px,45svh); overflow:auto; overscroll-behavior:contain; }
+.club-guide .eyebrow { color:#756c5c; font-size:8px; }
+.club-guide h2 { font:500 25px/1.15 var(--display); text-transform:uppercase; margin:7px 0 9px; }
+.club-guide > p { font:11px/1.65 var(--body); }
+.club-guide-route { font:700 10px/1.5 var(--mono); margin-top:12px; padding-top:10px; border-top:1px solid #17191a30; color:#94362c; }
+.club-guide > button { margin-top:12px; min-height:30px; padding:6px 10px; font-size:10px; }
+@media(max-width:760px) {
+  .club-guide { top:70px; padding:11px 14px; max-height:min(220px,32svh); width:56vw; }
+  .club-guide[data-anchor='left'] { left:0; right:auto; }
+  .club-guide h2 { font-size:21px; margin-block:5px 7px; }
+  .club-guide > p { font-size:10px; line-height:1.6; }
+  .club-guide-route { margin-top:8px; padding-top:7px; font-size:9px; }
+}
+@media(max-height:550px) and (min-width:761px) {
+  .club-guide { top:48px; width:330px; max-height:150px; padding:10px 14px; }
+  .club-guide[data-anchor='left'] { left:0; right:auto; }
+  .club-guide h2 { font-size:21px; }
+  .club-guide > p { font-size:10px; }
+}
 @media (max-width:760px) {
   .world-actions #lobby-tutorial span { display:none; }
   .world-actions #lobby-tutorial { min-width:32px; justify-content:center; }

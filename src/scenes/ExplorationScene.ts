@@ -11,6 +11,7 @@ import { showRanking } from '../ui/RankingView';
 import { RoomBackdrop } from './RoomBackdrop';
 import { preloadGym } from '../assets/gymAssets';
 import { BenchTrainingController } from '../training/BenchTrainingController';
+import { ClubGuideController } from '../tutorial/ClubGuideController';
 
 export class ExplorationScene extends Phaser.Scene {
   private player: ExplorationPlayer | null = null;
@@ -23,6 +24,7 @@ export class ExplorationScene extends Phaser.Scene {
   private savedX = 0;
   private moving = false;
   private bench: BenchTrainingController | null = null;
+  private clubGuide: ClubGuideController | null = null;
   private rankingOnEnter = false;
 
   constructor(private readonly services: GameServices, private readonly room: RoomId) {
@@ -35,6 +37,7 @@ export class ExplorationScene extends Phaser.Scene {
     this.nearest = null; this.saveElapsed = 0; this.moving = false;
     this.markers.clear();
     this.bench = null;
+    this.clubGuide = null;
     this.rankingOnEnter = data.ranking === true;
   }
 
@@ -68,6 +71,7 @@ export class ExplorationScene extends Phaser.Scene {
     }
     this.view = new ExplorationView(this.services, this.room, () => this.interact());
     if (this.room === 'gym') this.bench = new BenchTrainingController(this, this.player, this.view);
+    if(this.services.saves.needsClubGuide)this.clubGuide=new ClubGuideController(this,this.view,this.room,this.player,this.bench);
     this.controls = new ExplorationInput(() => Boolean(this.view?.hasDialog) || Boolean(this.bench?.active) || document.hidden,
       () => this.interact(), () => this.escape());
     this.view.on('#back-menu', 'click', () => this.returnToMenu());
@@ -86,6 +90,7 @@ export class ExplorationScene extends Phaser.Scene {
     if (this.room === 'lobby' && this.rankingOnEnter) this.openRanking();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.persistPosition();
+      this.clubGuide?.destroy();this.clubGuide=null;
       this.bench?.destroy(); this.bench = null;
       this.controls?.destroy();
       this.scale.off(Phaser.Scale.Events.RESIZE, this.resize, this);
@@ -99,6 +104,7 @@ export class ExplorationScene extends Phaser.Scene {
     const direction = this.controls.direction;
     if (!this.bench?.active) this.player.update(direction, delta);
     this.bench?.update(delta);
+    this.clubGuide?.update();
     this.view.syncPlayer(this.player, delta);
     this.refreshInteraction();
     this.saveElapsed += delta;
@@ -152,7 +158,10 @@ export class ExplorationScene extends Phaser.Scene {
     if (this.room !== 'lobby') {
       if (this.bench?.nearby) { this.bench.tryStart(); return; }
       if (this.room === 'dojo' && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius) {
-        this.services.saves.beginEndless(); this.services.audio.play('open'); this.scene.start(SCENES.fight); return;
+        const run=this.services.saves.beginEndless();
+        if(!run)return;
+        this.services.saves.advanceClubGuide('dojo-start');
+        this.services.audio.play('open'); this.scene.start(SCENES.fight); return;
       }
       if (Math.abs(this.player.x - 160) <= WORLD.interactionRadius) this.returnToLobby();
       return;

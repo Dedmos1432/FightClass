@@ -4,6 +4,7 @@ import type { GameServices } from '../core/GameServices';
 import { ScreenView } from '../ui/ScreenView';
 import { icons } from '../ui/icons';
 import { ArenaBackdrop } from './ArenaBackdrop';
+import { clubGuideRoom } from '../tutorial/ClubGuide';
 import fighterUrl from '../../resourse/player/ilde_fight/combat_idle_left/idle_01.png?url';
 
 export class MainMenuScene extends Phaser.Scene {
@@ -45,7 +46,8 @@ export class MainMenuScene extends Phaser.Scene {
       if (fresh) this.services.saves.startNew();
       else this.services.saves.touch();
       this.services.audio.play('open');
-      this.scene.start(this.services.saves.needsTutorial ? SCENES.tutorial : SCENES.lobby);
+      const saves=this.services.saves;
+      this.scene.start(saves.needsTutorial ? SCENES.tutorial : saves.needsClubGuide ? SCENES[clubGuideRoom(saves.clubGuide.step)] : SCENES.lobby);
     };
     view.on('#start-game', 'click', () => {
       if (this.services.saves.current) view.confirmNewGame(() => enter(true));
