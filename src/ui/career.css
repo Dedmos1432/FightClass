@@ -26,6 +26,14 @@
 .career-ranking .rank-class-badge::before { content:''; position:absolute; width:46px; height:13px; top:-9px; left:22px; background:#b8b39eb0; transform:rotate(-8deg); }
 .career-ranking .rank-class-badge b { font-size:37px; }
 .career-board-intro { color:#ded5bd; font:12px/1.65 var(--body); margin-top:17px; max-width:730px; }
+.career-guide { margin-top:18px; padding:16px 20px; background:var(--board-paper); color:var(--board-ink); border-left:4px solid #50764e; box-shadow:3px 4px 0 #0005; }
+.career-guide .eyebrow { color:#63705a; font-size:8px; }
+.career-guide h3 { margin-top:5px; font:500 25px/1.2 var(--display); text-transform:uppercase; }
+.career-guide > p { font:11px/1.65 var(--body); margin-top:10px; }
+.career-guide-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px 20px; margin-top:12px; padding-top:12px; border-top:1px solid #25282333; }
+.career-guide-actions > span { flex:1 1 220px; font:10px/1.6 var(--body); color:#626451; }
+.career-guide-actions > button { min-height:36px; color:var(--board-ink); border-color:#25282366; font-size:10px; white-space:normal; text-align:left; }
+.career-guide-actions > button:hover { background:#d0d4b8; }
 .career-ranking .ranking-tabs { gap:9px; border-bottom:2px solid #bdb29880; margin:25px 0 22px; padding-inline:8px; }
 .career-ranking .ranking-tab { position:relative; flex:1; min-width:0; padding:12px 16px 11px; background:#c1b69b; border:1px solid #151b1777; border-bottom:0; color:#383b31; font:500 20px/1.2 var(--display); box-shadow:2px -2px 0 #0003; }
 .career-ranking .ranking-tab::before { content:''; position:absolute; width:23px; height:4px; top:5px; right:10px; background:#4e5449; opacity:.6; }

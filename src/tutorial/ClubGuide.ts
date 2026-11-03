@@ -1,4 +1,4 @@
-export const CLUB_GUIDE_STEPS = ['gym-door','bench','press','gym-exit','dojo-door','dojo-start','complete'] as const;
+export const CLUB_GUIDE_STEPS = ['gym-door','bench','press','gym-exit','career-board','career-review','dojo-door','dojo-start','complete'] as const;
 export type ClubGuideStep = typeof CLUB_GUIDE_STEPS[number];
 export interface ClubGuideProgress { step: ClubGuideStep; repsBefore: number }
 export type ClubRoom = 'lobby' | 'gym' | 'dojo';
@@ -20,9 +20,9 @@ export function observedClubStep(progress:ClubGuideProgress,room:ClubRoom,benchA
     case 'gym-door': return room==='gym' ? 'bench' : progress.step;
     case 'bench': return room==='gym' && benchActive ? 'press' : progress.step;
     case 'press': return totalReps>progress.repsBefore ? 'gym-exit' : progress.step;
-    case 'gym-exit': return room==='lobby' ? 'dojo-door' : progress.step;
+    case 'gym-exit': return room==='lobby' ? 'career-board' : progress.step;
     case 'dojo-door': return room==='dojo' ? 'dojo-start' : progress.step;
-    // Only successfully starting/resuming a series completes the final task.
+    // Career tasks advance in the real ranking UI; the last task requires starting a series.
     default: return progress.step;
   }
 }

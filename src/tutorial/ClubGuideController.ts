@@ -39,11 +39,11 @@ export class ClubGuideController {
     this.view.root.dataset.clubGuide=step;this.panel.dataset.step=step;
     const hidden=this.view.hasDialog;
     this.panel.hidden=hidden;this.marker.setVisible(!hidden);this.arrow.setVisible(!hidden);
-    const hint=this.hint(),key=JSON.stringify(hint);
+    const hint=this.hint(),key=JSON.stringify([step,hint]);
     this.panel.dataset.anchor=hint.target>WORLD.width/2 ? 'left' : 'right';
     if(key!==this.lastHint) {
       this.lastHint=key;
-      this.panel.querySelector('#club-guide-number')!.textContent=`ОСВОЙСЯ В КЛУБЕ / ${CLUB_GUIDE_STEPS.indexOf(step)+1} ИЗ 6`;
+      this.panel.querySelector('#club-guide-number')!.textContent=`ОСВОЙСЯ В КЛУБЕ / ${CLUB_GUIDE_STEPS.indexOf(step)+1} ИЗ ${CLUB_GUIDE_STEPS.length-1}`;
       this.panel.querySelector('#club-guide-title')!.textContent=hint.title;
       this.panel.querySelector('#club-guide-text')!.textContent=hint.text;
     }
@@ -59,6 +59,9 @@ export class ClubGuideController {
     const saves=this.view.services.saves,step=saves.clubGuide.step;
     const exit={title:'Вернись в лобби',text:'Выход — слева. Подойди к нему и нажми E или нажми Escape. Следующая подсказка появится в лобби.',target:160,action:'E / Esc — в лобби'};
     if(this.room==='lobby') {
+      if(step==='career-board'||step==='career-review')return {title:'Карьера — на доске',
+        text:'Доска между дверями открывает карьеру: три класса и двенадцать соперников. Подойди к ней — рамка загорится зелёным. Нажми E, чтобы открыть рейтинг и узнать, как выбрать бой и подняться в следующий класс.',
+        target:LOBBY_OBJECTS[1].x,action:'E — открыть карьерный рейтинг'};
       const gym=['gym-door','bench','press'].includes(step);
       return gym ? {title:'Сначала — качалка',text:'Левая дверь ведёт в тренажёрный зал. Жим штанги навсегда повышает максимальные HP и выносливость. Пройди влево на A или стрелке, подойди к подсвеченной двери и нажми E.',target:LOBBY_OBJECTS[0].x,action:'E — войти в качалку'}
         : {title:'Теперь — бесконечные бои',text:'Правая дверь ведёт в зал единоборств. Здесь прокачивается общий урон всех атак. Пройди вправо на D или стрелке и нажми E у подсвеченной двери. Доска между дверями нужна для карьеры.',target:LOBBY_OBJECTS[2].x,action:'E — войти в зал'};
@@ -67,11 +70,12 @@ export class ClubGuideController {
       if(step==='gym-exit')return this.bench?.active
         ? {title:'Повторение готово',text:'Полное повторение уже сохранено. Следи за максимальными HP и выносливостью сверху: они растут по мере тренировок. Нажми Escape или «Завершить», дождись подъёма со скамьи и закрой результат подхода. Затем вернись в лобби.',target:BENCH.x,action:'Esc — завершить подход'}
         : {...exit,text:'Повторение и улучшения сохранены. Позже для следующего прироста потребуется больше повторений, жёсткого потолка нет. Сейчас вернись в лобби: выход слева или Escape.'};
-      if(step==='dojo-door'||step==='dojo-start')return exit;
+      if(step==='career-board'||step==='career-review'||step==='dojo-door'||step==='dojo-start')return exit;
       return this.bench?.active
         ? {title:'Выполни одно повторение',text:'Дождись, пока боец ляжет и снимет штангу. Затем нажимай и отпускай E несколько раз, чтобы заполнить шкалу жима. Зажатая E не считается. Доведи штангу до верха — повторение засчитается и сохранится.',target:BENCH.x,action:'E — повторения · Esc — закончить'}
         : {title:'Подойди к скамье',text:'Скамья для жима находится справа. Подойди к подсветке и нажми E. Прочитай подсказку первого подхода и выбери «Начать подход». Нужно сделать одно полное повторение.',target:BENCH.x,action:'E — начать жим лёжа'};
     }
+    if(step==='career-board'||step==='career-review')return {...exit,text:'Сначала познакомимся с карьерой. Вернись в лобби через выход слева или Escape, подойди к доске между дверями и нажми E.'};
     if(step!=='dojo-door'&&step!=='dojo-start')return {...exit,text:'Мы ещё не закончили знакомство с качалкой. Вернись в лобби через выход слева или Escape, затем войди в левую дверь.'};
     return {title:saves.activeRun ? 'Продолжи серию в центре' : 'Начни серию в центре',
       text:'Встань в подсвеченную зону и нажми E. Новая серия начинается с полными HP и выносливостью. После победы следующий бот появляется без восстановления HP. На каждого — 90 секунд; после 15 секунд его урон один раз растёт на 10%. Поражение или ничья завершат серию: награда к урону за прошлые победы сохранится. Больше побед — больше награда; по мере прокачки рост замедляется. Escape ставит бой на паузу и позволяет сохранить серию.',

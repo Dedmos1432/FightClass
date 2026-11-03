@@ -3,6 +3,7 @@ import { careerAvailable, careerClass, careerComplete, careerScore, careerWinsNe
 import { getStyle } from '../config/styles';
 import type { ScreenView } from './ScreenView';
 import { icons } from './icons';
+import { CLUB_GUIDE_STEPS } from '../tutorial/ClubGuide';
 import boardTexture from '../../assets/ui/career-board.png?url';
 import './career.css';
 
@@ -18,9 +19,16 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   const currentClass=careerClass(progress);
   let selected=active ? careerOpponent(active.opponentId)! : CAREER_ROSTER[Math.min(progress.victories.length,CAREER_ROSTER.length-1)];
   let selectedClass:number=selected.tier;
+  const guidingCareer=saves.needsClubGuide && ['career-board','career-review'].includes(saves.clubGuide.step);
   const dialog=view.openDialog(`
     <div class="dialog-top"><div class="board-club-label"><b aria-hidden="true">FC</b><span class="eyebrow">КЛУБНЫЙ РЕЙТИНГ</span></div><button class="icon-button" data-close aria-label="Закрыть рейтинг">${icons.close}</button></div>
     <div class="ranking-heading"><div><h2 id="dialog-title">Доска соперников</h2></div><span class="rank-class-badge"><span>ТВОЙ<br />КЛАСС</span><b>0${currentClass}</b></span></div>
+    ${guidingCareer ? `<aside class="career-guide" id="career-guide" aria-labelledby="career-guide-title">
+      <div><span class="eyebrow">ОСВОЙСЯ В КЛУБЕ / ${CLUB_GUIDE_STEPS.indexOf('career-review')+1} ИЗ ${CLUB_GUIDE_STEPS.length-1}</span><h3 id="career-guide-title">Выбери свой следующий бой</h3></div>
+      <p><b>Карточки и классы.</b> Нажми на карточку соперника: в его досье появятся стиль, характеристики и кнопка «Начать бой». Закрытые бойцы доступны для просмотра. Побеждай по порядку: все четыре победы в классе откроют следующий. В третьем классе все соперники — боссы.</p>
+      <p><b>Победы в раундах.</b> Обычного соперника нужно победить в 2 раундах, босса — в 3; столько же поражений проигрывают матч. Каждый раунд начинается с полными HP и выносливостью. Карьерный прогресс сохраняется, поражение не отнимает открытых бойцов — матч можно повторить.</p>
+      <div class="career-guide-actions"><span>Можешь начать настоящий матч сейчас или продолжить экскурсию в зале единоборств.</span><button id="career-guide-done" class="button secondary small-button">Понятно · дальше к залу ${icons.arrow}</button></div>
+    </aside>` : ''}
     ${careerComplete(progress) ? '<p class="career-board-intro">Все двенадцать соперников побеждены. Карьера пройдена — любой бой можно повторить.</p>' : ''}
     ${active ? `<div class="career-pending"><p>Сохранён бой с <b>${careerOpponent(active.opponentId)!.name}</b> · раунды ${careerScore(active).playerRounds} : ${careerScore(active).enemyRounds}, до ${careerWinsNeeded(active.opponentId)} побед. Заверши его, чтобы выбрать другого соперника.</p><button class="small-button" id="career-resume">Продолжить бой ${icons.arrow}</button></div>` : ''}
     <div class="ranking-tabs" role="group" aria-label="Класс соперников">${[1,2,3].map(tier=>`<button class="ranking-tab" data-tier="${tier}" aria-pressed="${tier===selectedClass}">КЛАСС 0${tier}<span>${tier<currentClass || careerComplete(progress) ? 'Пройден' : tier===currentClass ? 'Текущий' : 'Заблокирован'}</span></button>`).join('')}</div>
@@ -30,6 +38,7 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
     <button class="button secondary dialog-done" data-close>Вернуться в лобби ${icons.arrow}</button>
   `,'ranking-dialog career-ranking');
   if(!dialog) return;
+  if(guidingCareer)saves.advanceClubGuide('career-board');
   dialog.dataset.currentClass=String(currentClass);
   dialog.style.setProperty('--career-board-texture',`url("${boardTexture}")`);
 
@@ -40,6 +49,7 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   const start=(id:string):void=>{
     if(!onFight) return;
     if(!saves.beginCareer(id)) {view.toast('Сначала заверши сохранённый карьерный бой.');return;}
+    if(guidingCareer)saves.advanceClubGuide('career-review');
     view.closeDialog();view.services.audio.play('open');onFight();
   };
   const renderProfile=():void=>{
@@ -69,6 +79,9 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   };
   dialog.addEventListener('click',event=>{
     const target=event.target as HTMLElement;
+    if(target.closest('#career-guide-done')){
+      saves.advanceClubGuide('career-review');view.closeDialog();view.services.audio.play();return;
+    }
     const tab=target.closest<HTMLButtonElement>('[data-tier]');
     if(tab){selectedClass=Number(tab.dataset.tier);selected=CAREER_ROSTER.find(opponent=>opponent.tier===selectedClass)!;
       dialog.querySelectorAll<HTMLButtonElement>('[data-tier]').forEach(button=>button.setAttribute('aria-pressed',String(button===tab)));

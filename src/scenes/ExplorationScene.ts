@@ -19,6 +19,7 @@ export class ExplorationScene extends Phaser.Scene {
   private view: ExplorationView | null = null;
   private spawnX: number | undefined;
   private readonly markers = new Map<string, Phaser.GameObjects.Ellipse>();
+  private boardHighlight: Phaser.GameObjects.Graphics | null = null;
   private nearest: LobbyObject | null = null;
   private saveElapsed = 0;
   private savedX = 0;
@@ -36,6 +37,7 @@ export class ExplorationScene extends Phaser.Scene {
     this.player = null; this.controls = null; this.view = null;
     this.nearest = null; this.saveElapsed = 0; this.moving = false;
     this.markers.clear();
+    this.boardHighlight = null;
     this.bench = null;
     this.clubGuide = null;
     this.rankingOnEnter = data.ranking === true;
@@ -120,6 +122,12 @@ export class ExplorationScene extends Phaser.Scene {
   }
 
   private addLobbyMarkers(backdrop: RoomBackdrop): void {
+    // Outline the board painted into the backdrop; follow the same wall scaling.
+    const left=710,top=backdrop.wallY(319),width=510,height=backdrop.wallY(549)-top;
+    this.boardHighlight=this.add.graphics().setDepth(1).setVisible(false);
+    this.boardHighlight.fillStyle(0x68e88b,.05).fillRect(left,top,width,height);
+    for(const [thickness,alpha] of [[22,.06],[12,.12],[5,.3],[2,.95]])
+      this.boardHighlight.lineStyle(thickness,0x68e88b,alpha).strokeRect(left,top,width,height);
     for (const object of LOBBY_OBJECTS) {
       this.add.text(object.x, backdrop.wallY(object.labelY), object.label, {
         fontFamily: 'Consolas, monospace', fontSize: object.id === 'dojo' ? '16px' : '20px',
@@ -127,6 +135,7 @@ export class ExplorationScene extends Phaser.Scene {
       }).setOrigin(0.5).setDepth(2);
       this.markers.set(object.id, this.add.ellipse(object.x, WORLD.floorY + 4, 185, 25, 0xd8e391, 0.09)
         .setStrokeStyle(2, 0xd8e391, 0.7).setDepth(3).setVisible(false));
+      if(object.id==='board')this.markers.get('board')!.setFillStyle(0x68e88b,.12).setStrokeStyle(2,0x68e88b,.9);
     }
   }
 
@@ -142,6 +151,7 @@ export class ExplorationScene extends Phaser.Scene {
       this.nearest = nearestLobbyObject(this.player.x);
       this.view.setInteraction(this.nearest?.action ?? null);
       this.markers.forEach((marker, key) => marker.setVisible(key === this.nearest?.id));
+      this.boardHighlight?.setVisible(this.nearest?.id === 'board');
     } else {
       const nearExit = Math.abs(this.player.x - 160) <= WORLD.interactionRadius;
       const nearFight = this.room === 'dojo' && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius;

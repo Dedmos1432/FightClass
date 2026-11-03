@@ -65,6 +65,16 @@ test('новая игра: полное практическое обучени�
   await expect(page.locator('#hp-value')).toHaveText('102');await expect(page.locator('#damage-value')).toHaveText('10');
   await page.keyboard.press('Escape');await expect(page.getByRole('heading',{name:/Подход завершён/})).toBeVisible();
   await page.getByRole('button',{name:/Вернуться к тренировкам/}).click();await page.keyboard.press('Escape');
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','career-board');
+  await walkTo(page,965);await page.keyboard.press('e');
+  await expect(page.locator('#career-guide')).toBeVisible();
+  expect((await saved(page)).clubGuide.step).toBe('career-review');
+  await page.locator('[data-opponent="shim"]').click();await expect(page.locator('#career-start')).toBeDisabled();
+  await expect(page.locator('#opponent-profile')).toContainText('ДО 3 ПОБЕД');
+  await page.locator('[data-opponent="kim"]').click();await expect(page.locator('#career-start')).toBeEnabled();
+  await expect(page.locator('#opponent-profile')).toContainText('ДО 2 ПОБЕД');
+  await page.screenshot({path:'.cache/club-guide/career.png'});
+  await page.locator('#career-guide-done').click();
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
   await walkTo(page,1468);await page.keyboard.press('e');await expect(page.locator('#ui')).toHaveAttribute('data-screen','dojo');
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-start');
@@ -88,6 +98,47 @@ async function guideSave(page:Page,current:ClubGuideStep):Promise<void> {
   await page.goto('/');await page.locator('#continue-game').click();
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step',current);
 }
+
+test('карьерная экскурсия: закрытие и перезагрузка сохраняют урок, завершение не создаёт бой',async({page})=>{
+  await guideSave(page,'career-board');const before=await saved(page);
+  await page.keyboard.press('e');await expect(page.locator('#career-guide')).toBeVisible();
+  await expect(page.locator('#club-guide')).toBeHidden();
+  await expect(page.locator('#career-guide')).toContainText('в 2 раундах');
+  await expect(page.locator('#career-guide')).toContainText('босса — в 3');
+  await page.locator('[data-tier="3"]').click();await expect(page.locator('.opponent-row[data-boss="true"]')).toHaveCount(4);
+  await expect(page.locator('#career-start')).toBeDisabled();
+  await page.keyboard.press('Escape');await expect(page.locator('#club-guide')).toHaveAttribute('data-step','career-review');
+  await expect(page.locator('#club-guide-number')).toContainText('6 ИЗ 8');
+  await page.reload();await page.locator('#continue-game').click();
+  await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','career-review');
+  await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);await page.keyboard.press('e');
+  await expect(page.locator('#career-guide')).toBeVisible();await page.locator('#career-guide-done').click();
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
+  await expect(page.locator('#club-guide-number')).toContainText('7 ИЗ 8');
+  const after=await saved(page);
+  for(const field of ['stats','training','career','endless','activeRun','activeCareer'])expect(after[field]).toEqual(before[field]);
+  await page.keyboard.press('e');await expect(page.locator('.career-ranking')).toBeVisible();await expect(page.locator('#career-guide')).toHaveCount(0);
+});
+
+test('карьерная экскурсия позволяет начать настоящий матч и продолжить маршрут после выхода',async({page})=>{
+  await guideSave(page,'career-board');await page.keyboard.press('e');await page.locator('#career-start').click();
+  await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
+  expect((await saved(page)).clubGuide.step).toBe('dojo-door');expect((await saved(page)).activeCareer.opponentId).toBe('kim');
+  await page.keyboard.press('Escape');await page.locator('#pause-exit').click();
+  await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
+});
+
+for(const [width,height] of [[320,568],[844,390]])test(`карьерная экскурсия: карточки и кнопка доступны ${width}x${height}`,async({page})=>{
+  await page.setViewportSize({width,height});await guideSave(page,'career-board');await page.keyboard.press('e');
+  await expect(page.locator('#career-guide')).toBeVisible();
+  await page.locator('#career-guide-done').scrollIntoViewIfNeeded();await expect(page.locator('#career-guide-done')).toBeInViewport();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  expect(await page.locator('.career-ranking').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.screenshot({path:`.cache/club-guide/career-${width}.png`});
+  await page.locator('[data-opponent="kim"]').click();await expect(page.locator('#career-start')).toBeEnabled();
+  await page.locator('#career-guide-done').click();await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
+});
 
 test('экскурсия сохраняется после отмены подхода и перезапуска, пропуск не выдаёт улучшений',async({page})=>{
   await guideSave(page,'press');await expect(page.locator('#ui')).toHaveAttribute('data-screen','gym');

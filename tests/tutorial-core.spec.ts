@@ -46,7 +46,11 @@ test('экскурсия: реальные комнаты и повторени�
   expect(observedClubStep(progress,'gym',false,7)).toBe('press');
   progress={...progress,step:observedClubStep(progress,'gym',true,8)};expect(progress.step).toBe('gym-exit');
   expect(observedClubStep(progress,'gym',false,8)).toBe('gym-exit');
-  progress={...progress,step:observedClubStep(progress,'lobby',false,8)};expect(progress.step).toBe('dojo-door');
+  progress={...progress,step:observedClubStep(progress,'lobby',false,8)};expect(progress.step).toBe('career-board');
+  expect(observedClubStep(progress,'lobby',false,8)).toBe('career-board');
+  progress={...progress,step:'career-review'};
+  expect(observedClubStep(progress,'dojo',false,8)).toBe('career-review');
+  progress={...progress,step:'dojo-door'};
   progress={...progress,step:observedClubStep(progress,'dojo',false,8)};expect(progress.step).toBe('dojo-start');
   expect(observedClubStep(progress,'dojo',false,8)).toBe('dojo-start');
 });
@@ -67,6 +71,25 @@ test('экскурсия: схема отвергает повреждённые
   for(const clubGuide of [null,{},false,{step:'bad',repsBefore:0},{step:'bench',repsBefore:-1},{step:'bench',repsBefore:NaN},{step:'bench',repsBefore:1}])expect(isSessionSave({...save,clubGuide})).toBe(false);
   expect(clubGuideRoom('gym-door')).toBe('lobby');expect(clubGuideRoom('press')).toBe('gym');
   expect(clubGuideRoom('gym-exit')).toBe('gym');expect(clubGuideRoom('dojo-door')).toBe('lobby');expect(clubGuideRoom('dojo-start')).toBe('dojo');
+  expect(clubGuideRoom('career-board')).toBe('lobby');expect(clubGuideRoom('career-review')).toBe('lobby');
+});
+
+test('карьерный урок сохраняет просмотр доски, не начинает матч и принимает прежние шаги экскурсии',()=>{
+  const memory=new Memory(),saves=new SaveService(new StorageService(memory));saves.startNew();
+  for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
+  for(const step of CLUB_GUIDE_STEPS.slice(0,4))saves.advanceClubGuide(step);
+  expect(saves.clubGuide.step).toBe('career-board');
+  const before=saves.current!;
+  expect(saves.advanceClubGuide('career-review')).toBe(false);
+  saves.advanceClubGuide('career-board');
+  const restored=new SaveService(new StorageService(memory));expect(restored.clubGuide.step).toBe('career-review');
+  expect(restored.activeCareer).toBeNull();expect(restored.activeRun).toBeNull();
+  restored.advanceClubGuide('career-review');expect(restored.clubGuide.step).toBe('dojo-door');
+  for(const field of ['stats','training','career','endless'] as const)expect(restored.current![field]).toEqual(before[field]);
+  for(const step of ['dojo-door','dojo-start','complete'] as const){
+    memory.setItem(GAME.storage.session,JSON.stringify({...before,clubGuide:{step,repsBefore:0}}));
+    const older=new SaveService(new StorageService(memory));expect(older.loadIssue).toBeNull();expect(older.clubGuide.step).toBe(step);
+  }
 });
 
 test('завершение, пропуск и повтор обучения не меняют характеристики, тренировки, карьеру и незавершённую серию',()=>{

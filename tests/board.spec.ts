@@ -6,6 +6,28 @@ import { StorageService } from '../src/services/StorageService';
 import { winCareerMatch } from './helpers/career';
 import { walkTo } from './helpers/walkTo';
 
+test('доска подсвечивается зелёным только рядом с персонажем, независимо от обучения',async({page})=>{
+  await page.goto('/');await page.locator('#start-game').click();await skipTutorial(page);
+  const countGreen=async()=>{
+    const {width,height}=page.viewportSize()!,zoom=Math.min(width/1920,height/1080);
+    const screenshot=await page.screenshot({clip:{x:(width-1920*zoom)/2+696*zoom,y:(height-1080*zoom)/2+427*zoom,width:538*zoom,height:220*zoom}});
+    return page.evaluate(async encoded=>{
+      const bytes=Uint8Array.from(atob(encoded),c=>c.charCodeAt(0));
+      const bitmap=await createImageBitmap(new Blob([bytes],{type:'image/png'}));
+      const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;
+      const ctx=canvas.getContext('2d')!;ctx.drawImage(bitmap,0,0);bitmap.close();
+      const pixels=ctx.getImageData(0,0,canvas.width,canvas.height).data;let green=0;
+      for(let i=0;i<pixels.length;i+=4)if(pixels[i+1]>115&&pixels[i+1]>pixels[i]*1.35&&pixels[i+1]>pixels[i+2]*1.15)green++;
+      return green;
+    },screenshot.toString('base64'));
+  };
+  await walkTo(page,457);const far=await countGreen();
+  await walkTo(page,965);await expect(page.locator('#interact-object')).toContainText('Открыть доску');
+  const near=await countGreen();expect(near).toBeGreaterThan(far+300);
+  await page.screenshot({path:'.cache/club-guide/board-highlight.png'});
+  await walkTo(page,1468);expect(await countGreen()).toBeLessThan(near-300);
+});
+
 test('доска использует текстуру, вложенные фотографии выбирают профиль, классы не меняют прогресс',async({page,request})=>{
   const errors:string[]=[];
   page.on('pageerror',error=>errors.push(error.message));
