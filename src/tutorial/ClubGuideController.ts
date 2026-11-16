@@ -7,7 +7,7 @@ import type { ExplorationView } from '../ui/ExplorationView';
 import type { BenchTrainingController } from '../training/BenchTrainingController';
 import { CLUB_GUIDE_STEPS, observedClubStep, type ClubRoom } from './ClubGuide';
 
-interface Hint { title:string; text:string; target:number; action:string }
+interface Hint { title:string; text:string; target:number|null; action:string }
 /** An in-world continuation of combat onboarding. Observes real room/workout actions. */
 export class ClubGuideController {
   private readonly panel:HTMLElement;
@@ -40,12 +40,16 @@ export class ClubGuideController {
     const hidden=this.view.hasDialog;
     this.panel.hidden=hidden;this.marker.setVisible(!hidden);this.arrow.setVisible(!hidden);
     const hint=this.hint(),key=JSON.stringify([step,hint]);
-    this.panel.dataset.anchor=hint.target>WORLD.width/2 ? 'left' : 'right';
+    this.panel.dataset.anchor=hint.target!==null && hint.target>WORLD.width/2 ? 'left' : 'right';
     if(key!==this.lastHint) {
       this.lastHint=key;
       this.panel.querySelector('#club-guide-number')!.textContent=`ОСВОЙСЯ В КЛУБЕ / ${CLUB_GUIDE_STEPS.indexOf(step)+1} ИЗ ${CLUB_GUIDE_STEPS.length-1}`;
       this.panel.querySelector('#club-guide-title')!.textContent=hint.title;
       this.panel.querySelector('#club-guide-text')!.textContent=hint.text;
+    }
+    if(hint.target===null) {
+      this.panel.querySelector('#club-guide-route')!.textContent=hint.action;
+      this.marker.setVisible(false);this.arrow.setVisible(false);return;
     }
     const near=Math.abs(this.player.x-hint.target)<=WORLD.interactionRadius;
     const direction=near ? 'ЗДЕСЬ' : this.player.x>hint.target ? '← ВЛЕВО' : 'ВПРАВО →';
@@ -57,6 +61,9 @@ export class ClubGuideController {
   }
   private hint():Hint {
     const saves=this.view.services.saves,step=saves.clubGuide.step;
+    if(step==='style')return {title:'Выбери боевой стиль',
+      text:'Нажми подсвеченную кнопку «Техника» в верхней панели. Доступны бокс, ММА, тхэквондо, муай-тай и свободный стиль: в нём можно собрать три атаки из двенадцати. Стиль меняет только анимации — урон, скорость и остальные характеристики сохраняются. Выбери понравившийся вариант и нажми «Готово». Менять стиль можно и позже в любой комнате.',
+      target:null,action:'↑ ТЕХНИКА — В ВЕРХНЕЙ ПАНЕЛИ'};
     const exit={title:'Вернись в лобби',text:'Выход — слева. Подойди к нему и нажми E или нажми Escape. Следующая подсказка появится в лобби.',target:160,action:'E / Esc — в лобби'};
     if(this.room==='lobby') {
       if(step==='career-board'||step==='career-review')return {title:'Карьера — на доске',

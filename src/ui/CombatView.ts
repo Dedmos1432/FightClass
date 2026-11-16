@@ -45,6 +45,7 @@ export class CombatView extends ScreenView {
         </div>
       </section>`);
     this.root.querySelector('.keyboard-hint')!.innerHTML = '<kbd>A</kbd><kbd>D</kbd> движение / разворот блока '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' атаки <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
+    if(this.root.dataset.touch==='true')this.root.querySelector('#combat-focus')!.setAttribute('aria-label','Поединок. Стрелки слева — движение; Q, W, E справа — атаки; нижняя круглая кнопка — уклонение. Отпусти все кнопки для автоматического блока спереди.');
     if (career) {
       this.root.querySelector('.streak-summary > span')!.textContent = 'СЧЁТ';
       this.root.querySelector('.fight-run-info > small')!.textContent = 'Новый раунд — полные HP и выносливость';
@@ -109,17 +110,18 @@ export class CombatView extends ScreenView {
   }
   showPause(onExit: () => void): void {
     if (this.hasDialog) return;
+    const touch=this.root.dataset.touch==='true';
     this.openDialog(`
       <div class="dialog-top"><span class="eyebrow">БОЙ ПРИОСТАНОВЛЕН</span><button class="icon-button" data-close aria-label="Продолжить бой">${icons.close}</button></div>
       <h2 id="dialog-title">Пауза</h2>
       <p class="dialog-description">${this.career ? 'Время остановлено. Поединок сохранён — его можно продолжить через доску в лобби.' : 'Время остановлено. Серия сохранена — её можно продолжить в центре зала.'}</p>
       <div class="fight-help" aria-label="Управление бойцом">
-        <div><span><kbd>A</kbd><kbd>D</kbd></span><b>Движение</b></div>
+        <div><span>${touch ? '<kbd>←</kbd><kbd>→</kbd>' : '<kbd>A</kbd><kbd>D</kbd>'}</span><b>Движение</b></div>
         <div><span>${ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')}</span><b>Три атаки</b></div>
-        <div><kbd>Space</kbd><b>Держать блок</b></div>
-        <div><kbd>Shift</kbd><b>Уклонение назад</b></div>
+        <div><kbd>${touch ? 'Авто' : 'Space'}</kbd><b>${touch ? 'Блок в покое' : 'Держать блок'}</b></div>
+        <div><kbd>${touch ? '↶' : 'Shift'}</kbd><b>Уклонение назад</b></div>
       </div>
-      <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов. Короткие команды у конца оглушения или уклонения также сохраняются. Блок защищает спереди: A/D разворачивают защиту. В блоке силы медленно восстанавливаются, попадание расходует немного выносливости.</p>
+      <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов. Короткие команды у конца оглушения или уклонения также сохраняются. ${touch ? 'Отпусти все кнопки: в покое боец автоматически блокирует попадания спереди. Во время движения, атаки, уклонения и оглушения автоблок не действует.' : 'Блок защищает спереди: A/D разворачивают защиту.'} В блоке силы медленно восстанавливаются, попадание расходует немного выносливости.</p>
       <div class="fight-rule-note"><b>${COMBAT.roundDurationMs/1000} СЕКУНД НА ${this.career ? 'РАУНД' : 'СОПЕРНИКА'}</b><p>${this.career ? `Матч до ${careerWinsNeeded(this.career.id)} побед в раундах для любого бойца. Счёт ${this.score.playerRounds} : ${this.score.enemyRounds}. По времени решает процент HP. Ничья не меняет счёт. Каждый новый раунд начинается с полными HP, выносливостью и новым таймером; счёт сохраняется при выходе.` : `После первых ${COMBAT.enemyBoostAfterMs/1000} секунд — однократное усиление урона на ${boostPercent}%. Когда время выйдет, побеждает боец с большим процентом HP. Ничья или поражение завершают серию; награда за прошлые победы остаётся.`}</p></div>
       <button class="button primary dialog-done" data-close>Продолжить бой ${icons.arrow}</button>
       <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`, 'combat-pause');

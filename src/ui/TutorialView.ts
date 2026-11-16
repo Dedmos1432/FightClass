@@ -20,7 +20,7 @@ const touchLessons:Partial<Record<PracticeStep,string>>={
   movement:'Удерживай стрелки ← / → внизу экрана, чтобы пройти в обе стороны. Боец сам поворачивается к сопернику. Через него можно пройти за спину.',
   attacks:'Касайся кнопок Q, W и E внизу справа. Попади каждым приёмом и дай анимации закончиться между ударами. Вне дальности удар не попадёт. Урон всех трёх приёмов одинаковый.',
   combo:'Коснись Q. Когда указатель войдёт в красную зону восстановления, коснись W или E. Так можно связать до трёх ударов. Можно одновременно удерживать стрелку движения и нажимать атаку.',
-  block:'Удерживай кнопку «Блок», пока партнёр не ударит. Блок защищает спереди; стрелки ← / → разворачивают его без движения. Попадание расходует немного выносливости.',
+  block:'Отпусти все кнопки и дождись удара партнёра. На мобильном боец автоматически блокирует удары спереди, когда стоит без действий. Во время движения, атаки и уклонения автоблок не работает. Блок расходует немного выносливости; пустую защиту могут пробить.',
   dodge:'Дождись сигнала и коснись «Уклонение». Оно отводит назад, ненадолго даёт неуязвимость и стоит 25 выносливости. Если промахнулся по времени — попробуй на следующем ударе.',
   club:'HP — здоровье: при нуле будет нокаут. Эта тренировка не тратит твой прогресс. В лобби удерживай стрелки ← / → и нажимай E у объектов. «Назад» возвращает в лобби из комнаты. В качалке для повторений есть кнопка «Жать».',
 };
@@ -85,7 +85,7 @@ export class TutorialView extends ScreenView {
     this.root.querySelector<HTMLElement>('#tutorial-needle')!.style.left=`${p.action==='attack'?Math.min(100,p.elapsed/duration*100):0}%`;
     this.root.querySelector<HTMLElement>('.tutorial-timing-window')!.style.width=`${COMBAT.comboBufferMs/duration*100}%`;
     const touch=this.root.dataset.touch==='true';
-    const message=trainer.ready ? 'Готово. Следующий приём…' : trainer.dodgeCue ? touch?'СЕЙЧАС — УКЛОНЕНИЕ':'СЕЙЧАС — SHIFT' : trainer.step==='block' && e.action==='attack' ? touch?'Держи БЛОК — партнёр атакует':'Держи SPACE — партнёр атакует'
+    const message=trainer.ready ? 'Готово. Следующий приём…' : trainer.dodgeCue ? touch?'СЕЙЧАС — УКЛОНЕНИЕ':'СЕЙЧАС — SHIFT' : trainer.step==='block' && e.action==='attack' ? touch?'Отпусти кнопки — сработает автоблок':'Держи SPACE — партнёр атакует'
       : trainer.step==='dodge' ? 'Дождись удара партнёра' : trainer.step==='combo' && open ? 'СЕЙЧАС — W ИЛИ E' : trainer.step==='stamina' && trainer.spent ? 'Отпусти атаки. Верни запас до 80.' : '';
     if(message!==this.message) { this.root.querySelector('#tutorial-feedback')!.textContent=message; this.message=message; }
     this.root.querySelector('#tutorial-feedback')!.setAttribute('data-cue',String(trainer.dodgeCue || open));

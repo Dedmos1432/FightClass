@@ -70,7 +70,7 @@ export class CareerScene extends Phaser.Scene {
       slot => { if(this.world) this.world.attack(this.world.player,slot); },
       () => { if(this.world) this.world.dodge(this.world.player); }, () => this.pause(), () => {
         if(this.world) { this.world.clearInputBuffer(this.world.player); this.world.clearInputBuffer(this.world.enemy); }
-      });
+      }, () => this.view?.root.dataset.touch==='true');
     this.view.on('#fight-pause','click',() => this.pause());
     this.view.on('.brand','click',event => { event.preventDefault(); this.pause(); });
     window.addEventListener('pagehide',() => this.checkpoint(),{signal:this.view.events.signal});
@@ -112,6 +112,7 @@ export class CareerScene extends Phaser.Scene {
         const step=Math.min(dt,roundRemaining(this.elapsedMs));
         world.player.direction=this.controls?.direction ?? 0;
         world.player.blocking=this.controls?.block ?? false;
+        world.player.autoGuard=this.controls?.autoBlock ?? false;
         this.brain?.update(world,step); world.update(step);
         this.elapsedMs+=step; this.checkpointMs+=step;
         for(const event of world.events)combatEffect(this,this.services,event);

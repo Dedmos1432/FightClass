@@ -7,7 +7,8 @@ export class CombatInput {
   private readonly touch = new Set<string>();
   private readonly events = new AbortController();
   constructor(private readonly blocked: () => boolean, private readonly attack: (slot: AttackSlot) => void,
-    private readonly dodge: () => void, private readonly pause: () => void, private readonly releaseBuffered: () => void = () => {}) {
+    private readonly dodge: () => void, private readonly pause: () => void, private readonly releaseBuffered: () => void = () => {},
+    private readonly automaticGuard: () => boolean = () => false) {
     document.addEventListener('keydown', this.onDown, { signal: this.events.signal });
     document.addEventListener('keyup', event => this.held.delete(event.code), { signal: this.events.signal });
     window.addEventListener('blur', () => { this.clear(); this.pause(); }, { signal: this.events.signal });
@@ -23,6 +24,9 @@ export class CombatInput {
   private has(code:string):boolean { return this.held.has(code)||this.touch.has(code); }
   get direction(): number { return this.blocked() || inputSuspended() ? 0 : Number(this.has('KeyD') || this.has('ArrowRight')) - Number(this.has('KeyA') || this.has('ArrowLeft')); }
   get block(): boolean { return !this.blocked() && !inputSuspended() && this.has('Space'); }
+  get autoBlock(): boolean {
+    return this.automaticGuard() && !this.blocked() && !inputSuspended() && this.held.size===0 && this.touch.size===0;
+  }
   clear(): void { this.held.clear(); this.touch.clear(); this.releaseBuffered(); clearVirtualInput(); }
   destroy(): void { this.clear(); this.events.abort(); }
   private readonly onDown = (event: KeyboardEvent): void => {

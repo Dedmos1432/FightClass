@@ -59,7 +59,7 @@ export class CombatScene extends Phaser.Scene {
       slot => { if (this.world) this.world.attack(this.world.player,slot); },
       () => { if (this.world) this.world.dodge(this.world.player); }, () => this.pause(), () => {
         if(this.world) { this.world.clearInputBuffer(this.world.player); this.world.clearInputBuffer(this.world.enemy); }
-      });
+      }, () => this.view?.root.dataset.touch==='true');
     this.view.on('#fight-pause','click',() => this.pause());
     this.view.on('.brand','click',event => { event.preventDefault(); this.pause(); });
     window.addEventListener('pagehide',() => this.checkpoint(),{signal:this.view.events.signal});
@@ -122,6 +122,7 @@ export class CombatScene extends Phaser.Scene {
           if(this.boostNoticeMs===0) v.announce('');
         }
         w.player.direction=this.controls?.direction ?? 0; w.player.blocking=this.controls?.block ?? false;
+        w.player.autoGuard=this.controls?.autoBlock ?? false;
         this.brain?.update(w,combatDt); w.update(combatDt);
         this.survivalMs+=combatDt; this.roundMs+=combatDt;
         for(const event of w.events)combatEffect(this,this.services,event);

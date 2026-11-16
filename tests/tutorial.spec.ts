@@ -53,6 +53,10 @@ test('новая игра: полное практическое обучени�
   expect(value.stats).toMatchObject({maxHP:100,currentHP:100,stamina:100,damage:10});
   expect(value.training.totalReps).toBe(0);expect(value.career.victories).toEqual([]);expect(value.endless.totalWins).toBe(0);
   expect(value.activeRun).toBeUndefined();expect(value.activeCareer).toBeUndefined();expect(errors).toEqual([]);
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','style');
+  await page.locator('#choose-style').click();await expect(page.locator('#style-guide')).toBeVisible();
+  await page.locator('input[name="style"][value="mma"]').check();await page.locator('#styles-done').click();
+  await expect(page.locator('#current-style')).toHaveText('ММА');
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
   await page.screenshot({path:'.cache/club-guide/lobby.png'});
   await walkTo(page,457);await page.keyboard.press('e');await expect(page.locator('#ui')).toHaveAttribute('data-screen','gym');
@@ -99,6 +103,45 @@ async function guideSave(page:Page,current:ClubGuideStep):Promise<void> {
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step',current);
 }
 
+test('выбор стиля в обучении: закрытие и перезагрузка сохраняют урок, готово продолжает экскурсию',async({page})=>{
+  await guideSave(page,'style');const before=await saved(page);
+  await expect(page.locator('#club-guide')).toContainText('Техника');
+  await expect(page.locator('#choose-style')).toHaveCSS('outline-style','solid');
+  await page.locator('#choose-style').click();await expect(page.locator('#style-guide')).toBeVisible();
+  await expect(page.locator('#club-guide')).toBeHidden();
+  await page.locator('input[name="style"][value="freestyle"]').check();
+  await page.locator('#custom-slot-0').selectOption('hook');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','style');
+  await page.reload();await page.locator('#continue-game').click();
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','style');
+  await expect(page.locator('#current-style')).toHaveText('Свободный стиль');
+  await page.locator('#choose-style').click();await expect(page.locator('#custom-slot-0')).toHaveValue('hook');
+  await page.locator('#styles-done').click();
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
+  await expect(page.locator('#world-focus')).toBeFocused();
+  await expect(page.locator('#choose-style')).toHaveCSS('outline-style','none');
+  const after=await saved(page);
+  for(const field of ['stats','training','career','endless','activeRun','activeCareer'])expect(after[field]).toEqual(before[field]);
+  await page.locator('#choose-style').click();await expect(page.locator('#style-guide')).toHaveCount(0);
+  await page.locator('#styles-done').click();
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
+});
+
+for(const [width,height] of [[320,568],[844,390]])test(`обучение выбору стиля: кнопка и пояснения доступны ${width}x${height}`,async({page})=>{
+  await page.setViewportSize({width,height});await guideSave(page,'style');
+  await expect(page.locator('#choose-style')).toBeInViewport();
+  await page.screenshot({path:`.cache/club-guide/style-${width}.png`});
+  await page.locator('#choose-style').click();await expect(page.locator('#style-guide')).toBeVisible();
+  await page.locator('input[name="style"][value="muay-thai"]').check();
+  await page.locator('#styles-done').scrollIntoViewIfNeeded();await expect(page.locator('#styles-done')).toBeInViewport();
+  expect(await page.locator('.styles-dialog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.screenshot({path:`.cache/club-guide/style-dialog-${width}.png`});
+  await page.locator('#styles-done').click();
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
+  await expect(page.locator('#current-style')).toHaveText('Муай-тай');
+});
+
 test('карьерная экскурсия: закрытие и перезагрузка сохраняют урок, завершение не создаёт бой',async({page})=>{
   await guideSave(page,'career-board');const before=await saved(page);
   await page.keyboard.press('e');await expect(page.locator('#career-guide')).toBeVisible();
@@ -108,14 +151,14 @@ test('карьерная экскурсия: закрытие и перезаг�
   await page.locator('[data-tier="3"]').click();await expect(page.locator('.opponent-row[data-boss="true"]')).toHaveCount(4);
   await expect(page.locator('#career-start')).toBeDisabled();
   await page.keyboard.press('Escape');await expect(page.locator('#club-guide')).toHaveAttribute('data-step','career-review');
-  await expect(page.locator('#club-guide-number')).toContainText('6 ИЗ 8');
+  await expect(page.locator('#club-guide-number')).toContainText('7 ИЗ 9');
   await page.reload();await page.locator('#continue-game').click();
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step','career-review');
   await expect(page.locator('#world-focus')).toHaveAttribute('data-player-x',/\d+/);await page.keyboard.press('e');
   await expect(page.locator('#career-guide')).toBeVisible();await page.locator('#career-guide-done').click();
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
-  await expect(page.locator('#club-guide-number')).toContainText('7 ИЗ 8');
+  await expect(page.locator('#club-guide-number')).toContainText('8 ИЗ 9');
   const after=await saved(page);
   for(const field of ['stats','training','career','endless','activeRun','activeCareer'])expect(after[field]).toEqual(before[field]);
   await page.keyboard.press('e');await expect(page.locator('.career-ranking')).toBeVisible();await expect(page.locator('#career-guide')).toHaveCount(0);

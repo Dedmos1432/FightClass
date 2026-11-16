@@ -1,8 +1,8 @@
-export const CLUB_GUIDE_STEPS = ['gym-door','bench','press','gym-exit','career-board','career-review','dojo-door','dojo-start','complete'] as const;
+export const CLUB_GUIDE_STEPS = ['style','gym-door','bench','press','gym-exit','career-board','career-review','dojo-door','dojo-start','complete'] as const;
 export type ClubGuideStep = typeof CLUB_GUIDE_STEPS[number];
 export interface ClubGuideProgress { step: ClubGuideStep; repsBefore: number }
 export type ClubRoom = 'lobby' | 'gym' | 'dojo';
-export const freshClubGuide = (repsBefore=0): ClubGuideProgress => ({step:'gym-door',repsBefore});
+export const freshClubGuide = (repsBefore=0): ClubGuideProgress => ({step:'style',repsBefore});
 export function isClubGuide(value:unknown):value is ClubGuideProgress {
   if(typeof value!=='object' || value===null || Array.isArray(value))return false;
   const v=value as Record<string,unknown>;

@@ -125,3 +125,77 @@ test('an active attack stays facing its original side but a buffered new attack 
   expect(w.attack(p,1)).toBe(true); advance(w,attackDuration(0)-p.elapsed);
   expect(p.facing).toBe(-1); expect(p.action).toBe('attack');
 });
+
+test('mobile automatic guard stays idle with normal recovery until a real impact, then releases its pose',()=>{
+  const w=battle(),p=w.player;
+  p.autoGuard=true; p.stamina=50;
+  advance(w,1000);
+  expect(p.action).toBe('idle'); expect(p.guardMs).toBe(0);
+  expect(p.stamina).toBeCloseTo(50+COMBAT.staminaRegen);
+  const before=p.stamina;
+  expect(w.attack(w.enemy,0)).toBe(true);
+  advance(w,ATTACK_SLOTS[0].startup-1);
+  expect(p.action).toBe('idle'); expect(p.hp).toBe(200);
+  advance(w,1);
+  expect(p.action).toBe('block'); expect(p.hp).toBe(200);
+  expect(w.events.some(event=>event.type==='block' && event.target===p)).toBe(true);
+  expect(p.stamina).toBeCloseTo(before+COMBAT.staminaRegen*ATTACK_SLOTS[0].startup/1000-guardStaminaCost(w.enemy.damage));
+  expect(p.guardMs).toBe(COMBAT.autoGuardMs);
+  advance(w,COMBAT.autoGuardMs+8);
+  expect(p.action).toBe('idle'); expect(p.guardMs).toBe(0);
+});
+
+test('mobile automatic guard respects attack recovery, hit stun, movement and early dodge vulnerability',()=>{
+  for(const action of ['idle','attack','hit','dodge'] as const) {
+    const w=battle(),p=w.player;
+    p.autoGuard=true;
+    if(action==='idle')p.direction=-1;
+    else {p.action=action;p.elapsed=action==='attack' ? ATTACK_SLOTS[0].startup+ATTACK_SLOTS[0].active : 0;}
+    expect(w.attack(w.enemy,0)).toBe(true);
+    w.enemy.elapsed=ATTACK_SLOTS[0].startup-8;
+    w.update(8);
+    expect(p.hp,action).toBe(190);
+    expect(w.events.some(event=>event.type==='hit' && event.target===p),action).toBe(true);
+    expect(p.guardMs,action).toBe(0);
+  }
+  const evade=battle(),p=evade.player;p.autoGuard=true;
+  expect(evade.dodge(p)).toBe(true);p.elapsed=COMBAT.dodgeInvulnerableFrom;
+  expect(evade.attack(evade.enemy,0)).toBe(true);evade.enemy.elapsed=ATTACK_SLOTS[0].startup-8;
+  evade.update(8);
+  expect(p.hp).toBe(200);expect(p.action).toBe('dodge');expect(p.guardMs).toBe(0);
+  expect(evade.events.some(event=>event.type==='dodge' && event.target===p)).toBe(true);
+});
+
+test('automatic guard uses the normal stamina tax and guard break instead of unlimited protection',()=>{
+  const w=battle(),p=w.player;
+  p.autoGuard=true;p.stamina=1;
+  expect(w.attack(w.enemy,0)).toBe(true);w.enemy.elapsed=ATTACK_SLOTS[0].startup-8;
+  w.update(8);
+  expect(p.hp).toBe(190);expect(p.action).toBe('hit');expect(p.stamina).toBe(0);
+  expect(p.stun).toBe(COMBAT.guardBreakStun);
+  expect(w.events.some(event=>event.type==='guard-break' && event.target===p)).toBe(true);
+});
+
+test('desktop fighters have no automatic guard and a guard does not magically cover the wrong facing',()=>{
+  const desktop=battle();expect(desktop.player.autoGuard).toBe(false);
+  desktop.attack(desktop.enemy,0);advance(desktop,ATTACK_SLOTS[0].startup);
+  expect(desktop.player.hp).toBe(190);expect(desktop.player.action).toBe('hit');
+  const rear=battle();rear.player.autoGuard=true;rear.player.autoFace=false;rear.player.facing=-1;
+  rear.attack(rear.enemy,0);advance(rear,ATTACK_SLOTS[0].startup);
+  expect(rear.player.hp).toBe(190);expect(rear.player.action).toBe('hit');
+});
+
+test('movement, attacks and dodges immediately interrupt the brief automatic guard pose',()=>{
+  for(const input of ['move','attack','dodge'] as const) {
+    const w=battle(),p=w.player;p.autoGuard=true;
+    w.attack(w.enemy,0);advance(w,ATTACK_SLOTS[0].startup);
+    expect(p.action).toBe('block');
+    const x=p.x;p.autoGuard=false;
+    if(input==='move'){
+      p.direction=1;advance(w,8);expect(p.x).toBeGreaterThan(x);expect(p.action).toBe('walk');expect(p.guardMs).toBe(0);
+      p.direction=0;p.autoGuard=true;advance(w,8);expect(p.action).toBe('idle');
+    }
+    else if(input==='attack'){expect(w.attack(p,0)).toBe(true);expect(p.action).toBe('attack');}
+    else {expect(w.dodge(p)).toBe(true);expect(p.action).toBe('dodge');}
+  }
+});

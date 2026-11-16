@@ -9,7 +9,7 @@ export const COMBAT = {
   centerX: 960, startRadius: 145, playerStart: 710, enemyStart: 1210,
   minX: 160, maxX: 1760, floorY: 910, playerSpeed: 340, bodyHalfWidth: 57,
   staminaRegen: 18, blockRegen: 5, guardCostBase: 3, guardCostPerDamage: .08,
-  hitStun: 240, guardBreakStun: 580,
+  hitStun: 240, guardBreakStun: 580, autoGuardMs: 180,
   dodgeCost: 25, dodgeDuration: 450, dodgeSpeed: 640, dodgeInvulnerableFrom: 65, dodgeInvulnerableTo: 290,
   comboBufferMs: 220, inputBufferMs: 140, bufferGraceMs: 24, maxCombo: 3, intermissionMs: 1800, countdownMs: 1800,
   damageGrowth: 3, rosterSize: 15,

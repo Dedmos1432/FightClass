@@ -35,7 +35,7 @@ export class TutorialScene extends Phaser.Scene {
     const w=this.trainer.world,loadout=loadoutFor(this.services.saves.lobbyState.style,this.services.saves.freestyle);
     this.playerView=new CombatFighterView(this,w.player,loadout); this.partnerView=new CombatFighterView(this,w.enemy,loadout);
     this.controls=new CombatInput(()=>this.loadFailed || Boolean(this.view?.hasDialog) || this.trainer!.ready || this.trainer!.step==='club',
-      slot=>{w.attack(w.player,slot);},()=>{w.dodge(w.player);},()=>this.pause(),()=>{w.clearInputBuffer(w.player);});
+      slot=>{w.attack(w.player,slot);},()=>{w.dodge(w.player);},()=>this.pause(),()=>{w.clearInputBuffer(w.player);},()=>this.view?.root.dataset.touch==='true');
     this.view.on('#tutorial-skip','click',()=>{this.services.saves.skipTutorial();this.scene.start(SCENES.lobby);});
     this.view.on('#tutorial-finish','click',()=>{if(this.trainer?.step==='club'){this.services.saves.advanceTutorial('club');this.scene.start(SCENES.lobby);}});
     this.view.on('#tutorial-pause','click',()=>this.pause());
@@ -53,6 +53,7 @@ export class TutorialScene extends Phaser.Scene {
     const paused=v.hasDialog || document.hidden,dt=Math.min(50,delta);
     if(!paused) {
       t.world.player.direction=this.controls?.direction??0; t.world.player.blocking=this.controls?.block??false;
+      t.world.player.autoGuard=this.controls?.autoBlock??false;
       t.update(dt);
       for(const event of t.world.events)combatEffect(this,this.services,event);
       if(t.ready) {

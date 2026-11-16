@@ -7,13 +7,13 @@ export interface Fighter {
   stamina: number; maxStamina: number; damage: number; speed: number; canDodge: boolean;
   action: FighterAction; elapsed: number; slot: AttackSlot; hitLanded: boolean; combo: number;
   buffered: AttackSlot | null; bufferedDodge: boolean; bufferMs: number;
-  direction: number; blocking: boolean; stun: number;
+  direction: number; blocking: boolean; autoGuard: boolean; guardMs: number; stun: number;
 }
 export interface CombatEvent { type: 'hit' | 'block' | 'guard-break' | 'dodge'; target: Fighter; source: Fighter; damage: number }
 export function fighter(values: Pick<Fighter, 'skin' | 'maxHP' | 'damage' | 'speed' | 'canDodge'> & { stamina: number; x: number; hp?: number; facing?: -1 | 1; autoFace?: boolean }): Fighter {
   return { ...values, autoFace: values.autoFace ?? true, hp: values.hp ?? values.maxHP, maxStamina: values.stamina, facing: values.facing ?? 1,
     action: 'idle', elapsed: 0, slot: 0, hitLanded: false, combo: 0, buffered: null, bufferedDodge: false, bufferMs: 0,
-    direction: 0, blocking: false, stun: COMBAT.hitStun };
+    direction: 0, blocking: false, autoGuard: false, guardMs: 0, stun: COMBAT.hitStun };
 }
 export function enemyFighter(profile: Opponent): Fighter {
   return fighter({ ...profile, x: COMBAT.enemyStart, facing: -1, autoFace: false });
@@ -57,7 +57,7 @@ export class CombatWorld {
     if (f.stamina < ATTACK_SLOTS[slot].stamina) return false;
     f.action = 'attack'; f.elapsed = 0; f.slot = slot; f.stamina -= ATTACK_SLOTS[slot].stamina;
     f.hitLanded = false; this.clearInputBuffer(f); f.combo = Math.max(1, f.combo);
-    f.blocking = false;
+    f.blocking = false; f.guardMs = 0;
     return true;
   }
   dodge(f: Fighter): boolean {
@@ -67,7 +67,7 @@ export class CombatWorld {
         : f.action==='dodge' ? COMBAT.dodgeDuration-f.elapsed : Infinity;
       return remaining>=0 && remaining<=COMBAT.inputBufferMs && this.queue(f,'dodge',remaining);
     }
-    f.stamina -= COMBAT.dodgeCost; f.action = 'dodge'; f.elapsed = 0; this.clearInputBuffer(f); f.combo = 0; f.blocking = false;
+    f.stamina -= COMBAT.dodgeCost; f.action = 'dodge'; f.elapsed = 0; this.clearInputBuffer(f); f.combo = 0; f.blocking = false; f.guardMs = 0;
     return true;
   }
   get over(): boolean { return this.player.hp <= 0 || this.enemy.hp <= 0; }
@@ -91,8 +91,10 @@ export class CombatWorld {
       if(f.bufferMs===0) this.clearInputBuffer(f);
     }
     f.elapsed += delta;
+    f.guardMs = f.autoGuard && f.direction===0 ? Math.max(0,f.guardMs-delta) : 0;
     if (free(f)) {
-      if (f.blocking && f.stamina > 0) {
+      const automaticHold=f.autoGuard && f.direction===0 && f.guardMs>0;
+      if ((f.blocking || automaticHold) && f.stamina > 0) {
         // A held guard has a side: A/D turns it explicitly instead of automatically
         // covering a cross-up. Bots turn only when their delayed brain decides to.
         if(f.autoFace && f.direction!==0) f.facing=f.direction>0 ? 1 : -1;
@@ -117,7 +119,7 @@ export class CombatWorld {
   }
   private finishAction(f: Fighter, other: Fighter, chain=0): void {
     const slot=f.buffered,dodge=f.bufferedDodge,live=f.bufferMs>0;
-    f.action='idle'; f.elapsed=0; f.combo=0; this.clearInputBuffer(f);
+    f.action='idle'; f.elapsed=0; f.combo=0; f.guardMs=0; this.clearInputBuffer(f);
     // A new commitment may face the enemy; an active strike remains locked.
     if(f.autoFace && (!f.blocking || live) && Math.abs(other.x-f.x)>1) f.facing=other.x>f.x ? 1 : -1;
     if(!live) return;
@@ -129,7 +131,11 @@ export class CombatWorld {
     if (target.action === 'dodge' && target.elapsed >= COMBAT.dodgeInvulnerableFrom && target.elapsed < COMBAT.dodgeInvulnerableTo) {
       this.events.push({ type: 'dodge', source, target, damage: 0 }); return;
     }
-    const defending = target.action === 'block' && target.facing === (source.x > target.x ? 1 : -1);
+    const facingAttack=target.facing === (source.x > target.x ? 1 : -1);
+    // Mobile guard is a reaction to contact, never a way to cancel a committed action.
+    const automatic=target.autoGuard && target.direction===0 && free(target) && facingAttack;
+    if(automatic) { target.action='block'; target.elapsed=0; target.guardMs=COMBAT.autoGuardMs; }
+    const defending = target.action === 'block' && facingAttack;
     const guardCost = guardStaminaCost(source.damage);
     if (defending && target.stamina >= guardCost) {
       target.stamina -= guardCost; this.events.push({ type: 'block', source, target, damage: 0 }); return;
@@ -138,7 +144,7 @@ export class CombatWorld {
     target.action = target.hp <= 0 ? 'ko' : 'hit'; target.elapsed = 0;
     target.stun = defending ? COMBAT.guardBreakStun : COMBAT.hitStun;
     if (defending) target.stamina = 0;
-    this.clearInputBuffer(target); target.combo = 0; target.blocking = false;
+    this.clearInputBuffer(target); target.combo = 0; target.blocking = false; target.guardMs = 0;
     this.events.push({ type: defending ? 'guard-break' : 'hit', source, target, damage: source.damage });
   }
 }

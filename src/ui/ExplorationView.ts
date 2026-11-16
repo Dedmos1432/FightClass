@@ -5,6 +5,7 @@ import type { ExplorationPlayer } from '../characters/ExplorationPlayer';
 import { MOVES, moveById } from '../combat/moves';
 import { ScreenView } from './ScreenView';
 import { icons } from './icons';
+import { inputSuspended } from '../input/VirtualInput';
 
 const ROOM_NAMES = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ' } as const;
 
@@ -77,10 +78,12 @@ export class ExplorationView extends ScreenView {
 
   private showStyles(): void {
     const current = this.services.saves.lobbyState.style;
+    const guidingStyle = this.services.saves.needsClubGuide && this.services.saves.clubGuide.step === 'style';
     const dialog = this.openDialog(`
       <div class="dialog-top"><span class="eyebrow">ЛИЧНОЕ ДЕЛО / ТЕХНИКА</span><button class="icon-button" data-close aria-label="Закрыть выбор стиля">${icons.close}</button></div>
       <div class="styles-heading"><h2 id="dialog-title">Боевой стиль</h2><span>05 <small>ВАРИАНТОВ</small></span></div>
       <p class="dialog-description">Стиль меняет анимации атак. Характеристики и боевые параметры остаются прежними.</p>
+      ${guidingStyle ? `<aside class="style-guide" id="style-guide" aria-label="Обучение выбору стиля"><b>Твоя техника</b><p>Выбери любой из четырёх базовых стилей или «Свободный стиль», чтобы назначить по одному приёму на Q, W и E. Выбор сохраняется сразу и применяется в следующих боях. Можно оставить текущий стиль. Когда закончишь, нажми «Готово» — дальше познакомимся с качалкой.</p></aside>` : ''}
       <div class="style-workspace">
         <fieldset id="style-options" class="style-options"><legend class="sr-only">Боевой стиль</legend>${STYLES.map((style) => `<label class="style-option"><input type="radio" name="style" value="${style.id}" ${current === style.id ? 'checked' : ''} /><span class="style-choice"><span class="style-number">${style.number}</span><span class="style-choice-name"><strong>${style.name}</strong><small>${(style.id === 'freestyle' ? this.services.saves.freestyle.map(move => moveById(move).name) : style.moves).join(' · ')}</small></span><span class="style-check">${icons.check}</span></span></label>`).join('')}</fieldset>
         <div class="style-notes">
@@ -93,8 +96,14 @@ export class ExplorationView extends ScreenView {
         </div>
       </div>
       <p class="style-info">Любой из пяти стилей использует те же HP, выносливость, скорость и защиту.</p>
-      <button class="button primary dialog-done" data-close>Готово ${icons.arrow}</button>
+      <button class="button primary dialog-done" id="styles-done">Готово${guidingStyle ? ' · дальше в качалку' : ''} ${icons.arrow}</button>
     `, 'styles-dialog');
+    dialog?.querySelector('#styles-done')?.addEventListener('click', () => {
+      if(inputSuspended())return;
+      if(guidingStyle)this.services.saves.advanceClubGuide('style');
+      this.services.audio.play();this.closeDialog();
+      if(guidingStyle)this.focusWorld();
+    });
     dialog?.querySelector('#style-options')?.addEventListener('change', (event) => {
       const value = (event.target as HTMLInputElement).value;
       if (!isStyleId(value)) return;

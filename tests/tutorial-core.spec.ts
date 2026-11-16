@@ -6,7 +6,7 @@ import { COMBAT, type AttackSlot } from '../src/config/combat';
 import { SaveService, isSessionSave } from '../src/services/SaveService';
 import { StorageService, type StorageLike } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
-import { CLUB_GUIDE_STEPS, clubGuideRoom, freshClubGuide, observedClubStep } from '../src/tutorial/ClubGuide';
+import { CLUB_GUIDE_STEPS, clubGuideRoom, freshClubGuide, observedClubStep, type ClubGuideProgress } from '../src/tutorial/ClubGuide';
 
 class Memory implements StorageLike {
   data=new Map<string,string>();getItem(key:string){return this.data.get(key)??null;}setItem(key:string,value:string){this.data.set(key,value);}
@@ -31,6 +31,7 @@ test('экскурсия начинается после боя, сохраня�
   for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
   expect(saves.needsClubGuide).toBe(true);expect(saves.clubGuide).toEqual(freshClubGuide());
   expect(saves.advanceClubGuide('press')).toBe(false);
+  saves.advanceClubGuide('style');expect(new SaveService(new StorageService(memory)).clubGuide.step).toBe('gym-door');
   saves.advanceClubGuide('gym-door');expect(new SaveService(new StorageService(memory)).clubGuide.step).toBe('bench');
   const copy=saves.clubGuide;copy.step='complete';expect(saves.clubGuide.step).toBe('bench');
   const old={...saves.current!};delete old.clubGuide;memory.setItem(GAME.storage.session,JSON.stringify(old));
@@ -38,7 +39,10 @@ test('экскурсия начинается после боя, сохраня�
 });
 
 test('экскурсия: реальные комнаты и повторение двигают задания, отменённый подход не засчитывается',()=>{
-  let progress=freshClubGuide(7);
+  const start=freshClubGuide(7);
+  expect(start.step).toBe('style');
+  expect(observedClubStep(start,'gym',true,8)).toBe('style');
+  let progress:ClubGuideProgress={...start,step:'gym-door'};
   expect(observedClubStep(progress,'dojo',false,7)).toBe('gym-door');
   progress={...progress,step:observedClubStep(progress,'gym',false,7)};expect(progress.step).toBe('bench');
   expect(observedClubStep(progress,'gym',false,7)).toBe('bench');
@@ -69,7 +73,7 @@ test('повтор экскурсии учитывает прежние повт
 test('экскурсия: схема отвергает повреждённые шаги и счётчики, продолжение выбирает нужную комнату',()=>{
   const saves=new SaveService(new StorageService(null));const save=saves.startNew();
   for(const clubGuide of [null,{},false,{step:'bad',repsBefore:0},{step:'bench',repsBefore:-1},{step:'bench',repsBefore:NaN},{step:'bench',repsBefore:1}])expect(isSessionSave({...save,clubGuide})).toBe(false);
-  expect(clubGuideRoom('gym-door')).toBe('lobby');expect(clubGuideRoom('press')).toBe('gym');
+  expect(clubGuideRoom('style')).toBe('lobby');expect(clubGuideRoom('gym-door')).toBe('lobby');expect(clubGuideRoom('press')).toBe('gym');
   expect(clubGuideRoom('gym-exit')).toBe('gym');expect(clubGuideRoom('dojo-door')).toBe('lobby');expect(clubGuideRoom('dojo-start')).toBe('dojo');
   expect(clubGuideRoom('career-board')).toBe('lobby');expect(clubGuideRoom('career-review')).toBe('lobby');
 });
@@ -77,7 +81,7 @@ test('экскурсия: схема отвергает повреждённые
 test('карьерный урок сохраняет просмотр доски, не начинает матч и принимает прежние шаги экскурсии',()=>{
   const memory=new Memory(),saves=new SaveService(new StorageService(memory));saves.startNew();
   for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
-  for(const step of CLUB_GUIDE_STEPS.slice(0,4))saves.advanceClubGuide(step);
+  for(const step of CLUB_GUIDE_STEPS){if(step==='career-board')break;saves.advanceClubGuide(step);}
   expect(saves.clubGuide.step).toBe('career-board');
   const before=saves.current!;
   expect(saves.advanceClubGuide('career-review')).toBe(false);
@@ -86,7 +90,7 @@ test('карьерный урок сохраняет просмотр доски
   expect(restored.activeCareer).toBeNull();expect(restored.activeRun).toBeNull();
   restored.advanceClubGuide('career-review');expect(restored.clubGuide.step).toBe('dojo-door');
   for(const field of ['stats','training','career','endless'] as const)expect(restored.current![field]).toEqual(before[field]);
-  for(const step of ['dojo-door','dojo-start','complete'] as const){
+  for(const step of CLUB_GUIDE_STEPS){
     memory.setItem(GAME.storage.session,JSON.stringify({...before,clubGuide:{step,repsBefore:0}}));
     const older=new SaveService(new StorageService(memory));expect(older.loadIssue).toBeNull();expect(older.clubGuide.step).toBe(step);
   }

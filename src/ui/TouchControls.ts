@@ -1,14 +1,15 @@
 import type { ScreenView } from './ScreenView';
 import { clearVirtualInput, inputSuspended, onVirtualInput, sendVirtualInput } from '../input/VirtualInput';
 
-/** Pointer capture and per-pointer ownership allow moving, blocking and attacking together. */
+/** Separate thumb zones preserve simultaneous movement and combat actions. */
 export class TouchControls {
   private readonly pointers=new Map<number,{code:string;button:HTMLButtonElement}>();
   constructor(view:ScreenView,combat:boolean) {
     const button=(code:string,label:string,caption:string)=>`<button type="button" data-touch="${code}" aria-label="${caption}" aria-pressed="false"><b>${label}</b><span>${caption}</span></button>`;
+    const arrow=(code:string,right:boolean)=>`<button type="button" class="touch-arrow" data-touch="${code}" aria-label="${right?'Вправо':'Влево'}" aria-pressed="false"><svg viewBox="0 0 72 72" aria-hidden="true"><path d="${right?'M15 8 58 36 15 64Z':'M57 8 14 36 57 64Z'}"/></svg></button>`;
     view.root.querySelector('.screen')!.insertAdjacentHTML('beforeend',`<nav class="touch-controls" aria-label="Сенсорное управление">
-      <div class="touch-movement">${button('KeyA','←','Влево')}${button('KeyD','→','Вправо')}</div>
-      <div class="touch-actions">${combat ? button('Space','▰','Блок')+button('ShiftLeft','↶','Уклонение')+button('KeyQ','Q','Удар 1')+button('KeyW','W','Удар 2')+button('KeyE','E','Удар 3') : button('Escape','↩','Назад')+button('KeyE','E','Действие')}</div>
+      <div class="touch-movement">${arrow('KeyA',false)}${arrow('KeyD',true)}</div>
+      <div class="touch-actions ${combat?'touch-combat-actions':'touch-room-actions'}">${combat ? button('KeyQ','Q','Удар 1')+button('KeyW','W','Удар 2')+button('KeyE','E','Удар 3')+button('ShiftLeft','↶','Уклонение') : button('Escape','↩','Назад')+button('KeyE','E','Действие')}</div>
     </nav>`);
     for(const node of view.root.querySelectorAll<HTMLButtonElement>('[data-touch]')) {
       node.addEventListener('pointerdown',event=>{

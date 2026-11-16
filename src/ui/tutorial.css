@@ -51,6 +51,11 @@
 .club-guide > p { font:11px/1.65 var(--body); }
 .club-guide-route { font:700 10px/1.5 var(--mono); margin-top:12px; padding-top:10px; border-top:1px solid #17191a30; color:#94362c; }
 .club-guide > button { margin-top:12px; min-height:30px; padding:6px 10px; font-size:10px; }
+#ui[data-club-guide='style'] #choose-style { outline:2px solid #a9cf99; outline-offset:5px; background:#a9cf9914; }
+#ui[data-club-guide='style'] #choose-style :is(strong,svg) { color:#c5e5b7; }
+.style-guide { margin-block:16px; padding:12px 16px; border-left:3px solid #476648; background:#47664812; }
+.style-guide > b { font:600 18px var(--display); }
+.style-guide > p { margin-top:6px; font:11px/1.65 var(--body); }
 @media(max-width:760px) {
   .club-guide { top:70px; padding:11px 14px; max-height:min(220px,32svh); width:56vw; }
   .club-guide[data-anchor='left'] { left:0; right:auto; }
