@@ -1,0 +1,104 @@
+/* Mobile windows use the available viewport, with navigation instead of scroll sheets. */
+#ui[data-touch='true'] { min-height:100dvh; }
+:where(#ui[data-touch='true']) .screen { height:100dvh; min-height:0; }
+:where(#ui[data-touch='true']) .dialog {
+  width:min(560px,calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  max-height:calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  padding:14px 16px; border-top-width:3px; overscroll-behavior:none;
+}
+:where(#ui[data-touch='true']) .dialog-top { margin-bottom:8px; padding-bottom:6px; gap:8px; min-height:32px; }
+:where(#ui[data-touch='true']) .dialog h2 { font-size:28px; line-height:1.1; letter-spacing:0; }
+:where(#ui[data-touch='true']) .dialog-description { font-size:12px; line-height:1.5; margin:10px 0 12px; }
+:where(#ui[data-touch='true']) .dialog .button { min-height:42px; padding:9px 12px; font-size:12px; gap:8px; }
+:where(#ui[data-touch='true']) .dialog-done { margin-top:8px; }
+:where(#ui[data-touch='true']) .settings-note { font-size:10px; line-height:1.4; margin-top:10px; }
+:where(#ui[data-touch='true']) .confirm-actions { flex-direction:row; gap:8px; margin-top:16px; }
+:where(#ui[data-touch='true']) .setting-row { padding:12px 0; gap:10px; font-size:13px; }
+:where(#ui[data-touch='true']) .setting-row small { font-size:10px; line-height:1.4; }
+:where(#ui[data-touch='true']) .volume-row { gap:10px; }
+#ui[data-touch='true'] .settings-dialog > .dialog-description { display:none; }
+.pause-tabs { display:flex; gap:6px; margin:10px 0; }
+.pause-tabs button { min-height:38px; flex:1; padding:7px 8px; font:600 11px var(--body); border:1px solid #17191a55; background:transparent; color:var(--ink); }
+.pause-tabs [aria-pressed='true'] { background:var(--ink); color:var(--paper); }
+.pause-page .fight-help { margin-block:10px; }
+.pause-actions { display:flex; gap:8px; }
+.pause-actions > button { flex:1; }
+#ui[data-touch='true'] .pause-page :is(.fight-combo-note,.fight-rule-note) { margin:0; font-size:12px; line-height:1.55; }
+#ui[data-touch='true'] .pause-page .fight-rule-note p { font-size:12px; line-height:1.5; }
+#ui[data-touch='true'] .combat-result .run-result { padding-block:12px; margin-block:12px; gap:12px; }
+#ui[data-touch='true'] .combat-result .run-result strong { font-size:32px; }
+#ui[data-touch='true'] .career-final-score { margin-block:10px; }
+#ui[data-touch='true'] .career-result-progress { font-size:12px; line-height:1.5; }
+#ui[data-touch='true'] .career-result .settings-note { display:none; }
+#ui[data-touch='true'] .menu-layout { min-height:0; }
+#ui[data-touch='true'] .footer { min-height:28px; padding-block:5px; flex-shrink:0; }
+#ui[data-touch='true'] .topbar { min-height:48px; flex-shrink:0; }
+#ui[data-touch='true'] .screen > .footer .keyboard-hint { display:none; }
+#ui[data-touch='true'] #toast { max-height:calc(100dvh - 40px); font-size:11px; padding:12px 16px; }
+@media(max-width:600px) {
+  #ui[data-touch='true'][data-screen='menu'] .menu-layout { padding-block:14px; }
+  #ui[data-touch='true'][data-screen='menu'] #game-title { font-size:clamp(70px,22vw,110px); }
+  #ui[data-touch='true'][data-screen='menu'] .menu-buttons { margin-top:22px; }
+  #ui[data-touch='true'][data-screen='menu'] .save-note { margin-top:10px; }
+}
+@media(orientation:landscape) and (max-height:500px) {
+  #ui[data-touch='true'] .world-actions { position:fixed; top:7px; bottom:auto; left:180px; right:110px; justify-content:flex-end; z-index:16; }
+  #ui[data-touch='true'] .world-actions .world-save { display:none; }
+  #ui[data-touch='true'] .world-actions .small-button { min-height:36px; }
+  #ui[data-touch='true'] .world-hud { display:flex; gap:10px; width:100%; padding:6px 10px; }
+  #ui[data-touch='true'] .fighter-class { padding-right:8px; }
+  #ui[data-touch='true'] .fighter-class > b { font-size:28px; }
+  #ui[data-touch='true'] .fighter-class > span { display:none; }
+  #ui[data-touch='true'] .world-vitals { flex:1; gap:10px; }
+  #ui[data-touch='true'] .stat-meter { width:auto; flex:1; }
+  #ui[data-touch='true'] .stat-meter span { font-size:8px; letter-spacing:0; }
+  #ui[data-touch='true'] .stat-meter strong { font-size:18px; }
+  #ui[data-touch='true'] .damage-stat { padding-left:8px; }
+  #ui[data-touch='true'] .damage-stat strong { font-size:20px; }
+  #ui[data-touch='true'] .style-picker { min-height:36px; max-width:140px; padding:0 0 0 8px; border-top:0; border-left:1px solid #eee8d833; gap:10px; }
+  #ui[data-touch='true'] .style-picker > span { display:block; font-size:8px; }
+  #ui[data-touch='true'] .style-picker strong { margin-top:3px; font-size:12px; }
+}
+@media(max-height:500px) {
+  :where(#ui[data-touch='true']) .dialog { padding:10px 14px; }
+  :where(#ui[data-touch='true']) .dialog h2 { font-size:24px; }
+  :where(#ui[data-touch='true']) .dialog-top { margin-bottom:5px; padding-bottom:3px; }
+  #ui[data-touch='true'] .settings-dialog { width:min(660px,calc(100vw - 24px)); }
+  #ui[data-touch='true'] .settings-dialog .dialog-top { float:right; border:0; padding:0; margin:0; }
+  #ui[data-touch='true'] .settings-dialog h2 { min-height:36px; }
+  #ui[data-touch='true'] .settings-controls { display:grid; grid-template-columns:1fr 1fr; gap:0 20px; }
+  #ui[data-touch='true'] .settings-controls .volume-row { grid-row:1 / 3; align-content:center; }
+  #ui[data-touch='true'] .settings-controls .setting-row { padding-block:7px; min-height:45px; }
+  #ui[data-touch='true'] .settings-controls small { font-size:10px; margin-top:3px; }
+  #ui[data-touch='true'] .settings-dialog > .settings-note { margin-top:6px; }
+  #ui[data-touch='true'] .combat-pause { width:min(660px,calc(100vw - 24px)); }
+  #ui[data-touch='true'] .combat-pause .dialog-top { float:right; border:0; padding:0; margin:0; }
+  #ui[data-touch='true'] .combat-pause h2 { min-height:32px; }
+  #ui[data-touch='true'] .pause-tabs { clear:both; margin:5px 0 8px; }
+  #ui[data-touch='true'] .pause-page .dialog-description { margin:6px 0; }
+  #ui[data-touch='true'] .pause-page :is(.fight-combo-note,.fight-rule-note,.fight-rule-note p) { font-size:11px; line-height:1.45; }
+  #ui[data-touch='true'] .fight-help { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+  #ui[data-touch='true'] .fight-help > div { padding:7px 4px; }
+  #ui[data-touch='true'] .fight-help b { font-size:10px; }
+  #ui[data-touch='true'] .combat-result { width:min(680px,calc(100vw - 24px)); display:grid; grid-template-columns:1fr 1fr; gap:6px 18px; }
+  #ui[data-touch='true'] .combat-result .dialog-top { grid-column:1 / -1; margin:0; }
+  #ui[data-touch='true'] .combat-result h2 { grid-column:1; }
+  #ui[data-touch='true'] .combat-result .dialog-description { grid-column:1; margin:0; font-size:11px; }
+  #ui[data-touch='true'] .combat-result .run-result { grid-column:2; grid-row:2 / 4; margin:0; align-self:center; }
+  #ui[data-touch='true'] .combat-result .run-result strong { font-size:26px; }
+  #ui[data-touch='true'] .combat-result :is(.dialog-done,.settings-note) { grid-column:1 / -1; margin:0; }
+  #ui[data-touch='true'] .career-result .career-final-score { grid-column:2; grid-row:2 / 4; margin:0; }
+  #ui[data-touch='true'] .career-result .run-result { grid-row:4; }
+  #ui[data-touch='true'] .career-result .career-result-progress { grid-column:1; grid-row:4; font-size:11px; }
+  #ui[data-touch='true'] .career-result #career-result-lobby { grid-column:1; }
+  #ui[data-touch='true'] .career-result #career-result-retry { grid-column:2; }
+  #ui[data-touch='true'][data-screen='menu'] .menu-layout { grid-template-columns:1fr; padding-block:8px; }
+  #ui[data-touch='true'][data-screen='menu'] .menu-main { max-width:620px; width:100%; display:grid; grid-template-columns:1fr 1fr; gap:0 22px; align-items:center; }
+  #ui[data-touch='true'][data-screen='menu'] #game-title { font-size:clamp(64px,13vw,100px); grid-column:1; grid-row:1 / 3; }
+  #ui[data-touch='true'][data-screen='menu'] .menu-buttons { grid-column:2; margin:0; }
+  #ui[data-touch='true'][data-screen='menu'] .menu-button { min-height:46px; padding-block:5px; }
+  #ui[data-touch='true'][data-screen='menu'] .button-text { font-size:21px; }
+  #ui[data-touch='true'][data-screen='menu'] .button-text small { font-size:9px; }
+  #ui[data-touch='true'][data-screen='menu'] .save-note { grid-column:2; margin-top:6px; font-size:7px; }
+  #ui[data-touch='true'][data-screen='menu'] .menu-art { display:none; }
+}

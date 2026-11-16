@@ -34,7 +34,7 @@ export function bindPlatform(game:Phaser.Game,services:GameServices,platform:Pla
     const phase=ui.querySelector<HTMLElement>('#combat-focus')?.dataset.phase;
     const playing=!suspended&&!dialog && (['lobby','gym','dojo'].includes(screen) ||
       (['fight','career-fight'].includes(screen)&&['countdown','fighting'].includes(phase??'')) ||
-      (screen==='tutorial'&&ui.querySelector<HTMLElement>('#tutorial-focus')?.dataset.step!=='club'));
+      (screen==='tutorial'&&ui.dataset.tutorialReading!=='true'&&ui.querySelector<HTMLElement>('#tutorial-focus')?.dataset.step!=='club'));
     platform.setPlaying(playing);services.audio.setGameplayActive(playing);
   };
   game.events.on('poststep',tick);suspend();

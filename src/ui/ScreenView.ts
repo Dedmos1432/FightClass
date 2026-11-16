@@ -21,6 +21,7 @@ export class ScreenView {
     services.audio.setEnvironment(screen);
     this.root.dataset.touch=String(navigator.maxTouchPoints>0 || window.matchMedia('(pointer: coarse)').matches);
     delete this.root.dataset.training;
+    delete this.root.dataset.tutorialReading;
     this.root.innerHTML = `
       <div class="screen ${world ? 'exploration-screen' : ''}">
         <header class="topbar">
@@ -92,16 +93,17 @@ export class ScreenView {
       <div class="dialog-top"><span class="eyebrow">FIGHT CLASS / ПАРАМЕТРЫ</span><button class="icon-button" data-close aria-label="Закрыть настройки">${icons.close}</button></div>
       <h2 id="dialog-title">Настройки</h2>
       <p class="dialog-description">Звук игры и визуальные эффекты.</p>
-      <div class="setting-row volume-row">
+      <div class="settings-controls"><div class="setting-row volume-row">
         <label for="volume">Громкость игры<small>Удары, тренировки, окружение и меню</small></label>
         <output id="volume-value" for="volume">${Math.round(volume * 100)}%</output>
         <input id="volume" type="range" min="0" max="100" step="1" value="${Math.round(volume * 100)}" />
       </div>
       <label class="setting-row" for="sound-enabled"><span>Звук игры<small>Отключить все звуки</small></span><input type="checkbox" role="switch" id="sound-enabled" ${muted ? '' : 'checked'} /><span class="switch-track" aria-hidden="true"></span></label>
       <label class="setting-row" for="motion-enabled"><span>Анимация и эффекты<small>Частицы, след уклонения и дрожание камеры</small></span><input type="checkbox" role="switch" id="motion-enabled" ${animatedBackground ? 'checked' : ''} /><span class="switch-track" aria-hidden="true"></span></label>
+      </div>
       <p class="settings-note">${icons.check} Изменения сохраняются автоматически</p>
       <button class="button primary dialog-done" data-close>Готово ${icons.arrow}</button>
-    `);
+    `, 'settings-dialog');
     this.on('#volume', 'input', (event) => {
       const value = Number((event.target as HTMLInputElement).value);
       this.root.querySelector('#volume-value')!.textContent = `${value}%`;
@@ -126,7 +128,7 @@ export class ScreenView {
       <h2 id="dialog-title">Начать заново<span class="accent">?</span></h2>
       <p class="dialog-description">Текущее сохранение будет заменено. Настройки звука и фона останутся прежними.</p>
       <div class="confirm-actions"><button class="button secondary" data-close>Отмена</button><button class="button primary" id="confirm-new">Начать заново ${icons.arrow}</button></div>
-    `);
+    `, 'confirm-dialog');
     this.on('#confirm-new', 'click', () => { this.closeDialog(); onConfirm(); });
     this.focus('.confirm-actions [data-close]');
   }

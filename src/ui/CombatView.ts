@@ -126,6 +126,23 @@ export class CombatView extends ScreenView {
       <button class="button primary dialog-done" data-close>Продолжить бой ${icons.arrow}</button>
       <button class="button secondary dialog-done" id="pause-exit">Сохранить и выйти в лобби</button>`, 'combat-pause');
     this.on('#pause-exit','click',onExit);
+    if(touch) {
+      const dialog=this.root.querySelector<HTMLDialogElement>('.combat-pause')!;
+      const groups=[['.dialog-description','.fight-help'],['.fight-combo-note'],['.fight-rule-note']];
+      const tabs=document.createElement('nav');tabs.className='pause-tabs';tabs.setAttribute('aria-label','Справка о поединке');
+      const pages=groups.map((selectors,index)=>{
+        const page=document.createElement('section');page.className='pause-page';page.hidden=index!==0;
+        selectors.forEach(selector=>page.append(dialog.querySelector(selector)!));
+        const tab=document.createElement('button');tab.type='button';tab.textContent=['Управление','Приёмы','Правила'][index];tab.setAttribute('aria-pressed',String(index===0));
+        tabs.append(tab);tab.addEventListener('click',()=>{
+          pages.forEach((node,i)=>{node.hidden=i!==index;tabs.children[i].setAttribute('aria-pressed',String(i===index));});
+        });
+        return page;
+      });
+      dialog.querySelector('h2')!.after(tabs,...pages);
+      const actions=document.createElement('div');actions.className='pause-actions';
+      actions.append(dialog.querySelector('.dialog-done')!,dialog.querySelector('#pause-exit')!);dialog.append(actions);
+    }
   }
   showCareerResult(result: CareerResult, onLobby: () => void, onRetry: () => void): void {
     if (!this.career) return;

@@ -6,6 +6,7 @@ import type { ExplorationPlayer } from '../characters/ExplorationPlayer';
 import type { ExplorationView } from '../ui/ExplorationView';
 import type { BenchTrainingController } from '../training/BenchTrainingController';
 import { CLUB_GUIDE_STEPS, observedClubStep, type ClubRoom } from './ClubGuide';
+import { lessonPages } from '../ui/LessonPages';
 
 interface Hint { title:string; text:string; target:number|null; action:string }
 /** An in-world continuation of combat onboarding. Observes real room/workout actions. */
@@ -14,18 +15,23 @@ export class ClubGuideController {
   private readonly marker:Phaser.GameObjects.Ellipse;
   private readonly arrow:Phaser.GameObjects.Text;
   private lastHint='';
+  private pages:string[]=[];
+  private page=0;
   constructor(scene:Phaser.Scene,private readonly view:ExplorationView,private readonly room:ClubRoom,
     private readonly player:ExplorationPlayer,private readonly bench:BenchTrainingController|null) {
     view.root.querySelector('.exploration-layer')!.insertAdjacentHTML('beforeend',`
       <aside id="club-guide" class="club-guide" aria-labelledby="club-guide-title">
         <span class="eyebrow" id="club-guide-number"></span><h2 id="club-guide-title"></h2>
-        <p id="club-guide-text"></p><div class="club-guide-route" id="club-guide-route" role="status" aria-live="polite"></div>
+        <p id="club-guide-text"></p><nav id="club-guide-reader" class="lesson-reader" aria-label="Страницы экскурсии" hidden><button id="club-guide-prev" type="button" aria-label="Предыдущая подсказка">←</button><span id="club-guide-page" aria-live="polite"></span><button id="club-guide-next" type="button" aria-label="Следующая подсказка">→</button></nav><div class="club-guide-route" id="club-guide-route" role="status" aria-live="polite"></div>
         <button id="club-guide-skip" class="button secondary small-button">Пропустить экскурсию</button>
       </aside>`);
     this.panel=view.root.querySelector<HTMLElement>('#club-guide')!;
+    if(view.root.dataset.touch==='true')this.panel.querySelector('#club-guide-skip')!.textContent='Пропустить';
     this.marker=scene.add.ellipse(0,WORLD.floorY+4,195,32,0xd94436,.13).setStrokeStyle(3,0xf1bca1,.95).setDepth(8);
     this.arrow=scene.add.text(0,WORLD.floorY-390,'▼',{fontFamily:'Consolas, monospace',fontSize:'40px',color:'#f1bca1',stroke:'#17191a',strokeThickness:5}).setOrigin(.5).setDepth(8);
     view.on('#club-guide-skip','click',()=>{view.services.saves.skipClubGuide();this.update();view.focusWorld();});
+    view.on('#club-guide-prev','click',()=>{this.page=Math.max(0,this.page-1);this.renderPage();});
+    view.on('#club-guide-next','click',()=>{this.page=Math.min(this.pages.length-1,this.page+1);this.renderPage();});
     this.update();
   }
   update():void {
@@ -45,19 +51,31 @@ export class ClubGuideController {
       this.lastHint=key;
       this.panel.querySelector('#club-guide-number')!.textContent=`ОСВОЙСЯ В КЛУБЕ / ${CLUB_GUIDE_STEPS.indexOf(step)+1} ИЗ ${CLUB_GUIDE_STEPS.length-1}`;
       this.panel.querySelector('#club-guide-title')!.textContent=hint.title;
-      this.panel.querySelector('#club-guide-text')!.textContent=hint.text;
+      const touch=this.view.root.dataset.touch==='true';
+      const text=touch ? hint.text.replaceAll('на A или стрелке','на левой стрелке').replaceAll('на D или стрелке','на правой стрелке').replaceAll('нажми E','коснись «Действие»').replaceAll('Нажми E','Коснись «Действие»').replaceAll('нажимай и отпускай E','касайся и отпускай «Жать»').replaceAll('Зажатая E','Зажатая кнопка').replaceAll('Нажми Escape или «Завершить»','Нажми «Завершить»').replaceAll('Escape','кнопка «Назад»') : hint.text;
+      this.pages=touch ? lessonPages(text,85) : [text];this.page=0;this.renderPage();
     }
     if(hint.target===null) {
-      this.panel.querySelector('#club-guide-route')!.textContent=hint.action;
+      this.panel.querySelector('#club-guide-route')!.textContent=this.actionLabel(hint.action);
       this.marker.setVisible(false);this.arrow.setVisible(false);return;
     }
     const near=Math.abs(this.player.x-hint.target)<=WORLD.interactionRadius;
     const direction=near ? 'ЗДЕСЬ' : this.player.x>hint.target ? '← ВЛЕВО' : 'ВПРАВО →';
-    const route=`${direction} · ${hint.action}`,routeNode=this.panel.querySelector('#club-guide-route')!;
+    const route=`${direction} · ${this.actionLabel(hint.action)}`,routeNode=this.panel.querySelector('#club-guide-route')!;
     if(routeNode.textContent!==route)routeNode.textContent=route;
     this.marker.x=hint.target;this.arrow.x=hint.target;
     // The combined bench sprite already shows where to train; keep its animation clear.
     if(this.bench?.active){this.marker.setVisible(false);this.arrow.setVisible(false);}
+  }
+  private actionLabel(action:string):string {
+    return this.view.root.dataset.touch==='true' ? action.replace('E — повторения · Esc — закончить','Жать · Завершить').replace('E / Esc','Назад').replaceAll('E —','Действие —').replaceAll('Esc —','Назад —') : action;
+  }
+  private renderPage():void {
+    this.panel.querySelector('#club-guide-text')!.textContent=this.pages[this.page];
+    this.panel.querySelector<HTMLElement>('#club-guide-reader')!.hidden=this.pages.length<2;
+    this.panel.querySelector('#club-guide-page')!.textContent=`${this.page+1} / ${this.pages.length}`;
+    this.panel.querySelector<HTMLButtonElement>('#club-guide-prev')!.disabled=this.page===0;
+    this.panel.querySelector<HTMLButtonElement>('#club-guide-next')!.disabled=this.page===this.pages.length-1;
   }
   private hint():Hint {
     const saves=this.view.services.saves,step=saves.clubGuide.step;

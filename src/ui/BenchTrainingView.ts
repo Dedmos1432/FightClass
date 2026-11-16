@@ -39,18 +39,34 @@ export class BenchTrainingView {
   }
 
   showTutorial(start?: () => void): void {
+    const touch=this.view.root.dataset.touch==='true';
     const dialog = this.view.openDialog(`
       <div class="dialog-top"><span class="eyebrow">${start ? 'ПЕРВАЯ ТРЕНИРОВКА' : 'ТЕХНИКА ЖИМА'}</span><button class="icon-button" data-close aria-label="Закрыть обучение">${icons.close}</button></div>
       <h2 id="dialog-title">Сильнее с каждым<br />повторением</h2>
       <div class="bench-rhythm" aria-hidden="true"><span>НЕ ДЕРЖИ. НАЖИМАЙ.</span><div><kbd>E</kbd><i>→</i><kbd>E</kbd><i>→</i><kbd>E</kbd><i>→</i><kbd>E</kbd></div></div>
       <ol class="bench-lesson">
-        <li><b>01</b><span><strong>Займи положение</strong><small>Подойди к скамье и нажми E. Боец ляжет и возьмётся за штангу.</small></span></li>
-        <li><b>02</b><span><strong>Нажимай E повторно</strong><small>Каждое нажатие поднимает штангу. Держи ритм: без нажатий прогресс снижается. Удерживать клавишу бесполезно.</small></span></li>
-        <li><b>03</b><span><strong>Заверши, когда захочешь</strong><small>Escape или «Завершить» — вернуть штангу и встать. Засчитываются только полные подъёмы.</small></span></li>
+        <li><b>01</b><span><strong>Займи положение</strong><small>${touch?'Подойди к скамье и коснись «Действие».':'Подойди к скамье и нажми E.'} Боец ляжет и возьмётся за штангу.</small></span></li>
+        <li><b>02</b><span><strong>${touch?'Касайся «Жать»':'Нажимай E повторно'}</strong><small>Каждое нажатие поднимает штангу. Держи ритм: без нажатий прогресс снижается. Удерживать ${touch?'кнопку':'клавишу'} бесполезно.</small></span></li>
+        <li><b>03</b><span><strong>Заверши, когда захочешь</strong><small>${touch?'Кнопка «Завершить»':'Escape или «Завершить»'} — вернуть штангу и встать. Засчитываются только полные подъёмы.</small></span></li>
       </ol>
       <p class="bench-lesson-note">${this.view.root.dataset.touch==='true'?'На телефоне касайся кнопки «Жать» несколько раз. ':''}Повторения навсегда повышают максимальные HP и выносливость. Чем больше уже натренировано, тем больше повторений нужно для следующего прироста. Завершённые повторения сохраняются сразу.</p>
+      <nav class="bench-mobile-pages" aria-label="Страницы обучения жиму"><button type="button" id="bench-lesson-prev" aria-label="Предыдущая подсказка">←</button><span id="bench-lesson-page" aria-live="polite"></span><button type="button" id="bench-lesson-next" aria-label="Следующая подсказка">→</button></nav>
       <button class="button primary dialog-done" id="bench-tutorial-start">${start ? 'Начать подход' : 'Понятно'} ${icons.arrow}</button>
     `, 'bench-tutorial');
+    if(dialog&&touch){
+      let page=0;
+      const render=():void=>{
+        dialog.dataset.lessonPage=String(page);
+        dialog.querySelectorAll<HTMLElement>('.bench-lesson li').forEach((item,index)=>item.hidden=index!==page);
+        dialog.querySelector<HTMLElement>('.bench-lesson-note')!.hidden=page!==3;
+        dialog.querySelector('#bench-lesson-page')!.textContent=`${page+1} / 4`;
+        dialog.querySelector<HTMLButtonElement>('#bench-lesson-prev')!.disabled=page===0;
+        dialog.querySelector<HTMLButtonElement>('#bench-lesson-next')!.disabled=page===3;
+      };
+      dialog.querySelector('#bench-lesson-prev')!.addEventListener('click',()=>{page=Math.max(0,page-1);render();});
+      dialog.querySelector('#bench-lesson-next')!.addEventListener('click',()=>{page=Math.min(3,page+1);render();});
+      render();
+    }
     dialog?.querySelector('#bench-tutorial-start')?.addEventListener('click', () => {
       this.view.closeDialog();
       this.view.services.audio.play();

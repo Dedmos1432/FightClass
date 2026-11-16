@@ -34,7 +34,7 @@ export class TutorialScene extends Phaser.Scene {
     this.trainer=new CombatTutorial(step); this.view=new TutorialView(this.services);
     const w=this.trainer.world,loadout=loadoutFor(this.services.saves.lobbyState.style,this.services.saves.freestyle);
     this.playerView=new CombatFighterView(this,w.player,loadout); this.partnerView=new CombatFighterView(this,w.enemy,loadout);
-    this.controls=new CombatInput(()=>this.loadFailed || Boolean(this.view?.hasDialog) || this.trainer!.ready || this.trainer!.step==='club',
+    this.controls=new CombatInput(()=>this.loadFailed || Boolean(this.view?.hasDialog) || Boolean(this.view?.reading) || this.trainer!.ready || this.trainer!.step==='club',
       slot=>{w.attack(w.player,slot);},()=>{w.dodge(w.player);},()=>this.pause(),()=>{w.clearInputBuffer(w.player);},()=>this.view?.root.dataset.touch==='true');
     this.view.on('#tutorial-skip','click',()=>{this.services.saves.skipTutorial();this.scene.start(SCENES.lobby);});
     this.view.on('#tutorial-finish','click',()=>{if(this.trainer?.step==='club'){this.services.saves.advanceTutorial('club');this.scene.start(SCENES.lobby);}});
@@ -50,7 +50,7 @@ export class TutorialScene extends Phaser.Scene {
   private get loadFailed():boolean {return document.querySelector<HTMLElement>('#ui')?.dataset.screen==='load-error';}
   update(_time:number,delta:number):void {
     const t=this.trainer,v=this.view;if(!t || !v || this.loadFailed) return;
-    const paused=v.hasDialog || document.hidden,dt=Math.min(50,delta);
+    const paused=v.hasDialog || v.reading || document.hidden,dt=Math.min(50,delta);
     if(!paused) {
       t.world.player.direction=this.controls?.direction??0; t.world.player.blocking=this.controls?.block??false;
       t.world.player.autoGuard=this.controls?.autoBlock??false;

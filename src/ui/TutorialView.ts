@@ -6,6 +6,8 @@ import { COMBAT } from '../config/combat';
 import { attackDuration } from '../combat/CombatWorld';
 import { TUTORIAL_STEPS, type PracticeStep } from '../tutorial/Progress';
 import type { CombatTutorial } from '../tutorial/CombatTutorial';
+import { lessonPages } from './LessonPages';
+import { clearVirtualInput } from '../input/VirtualInput';
 
 const lessons: Record<PracticeStep,{title:string;body:string;checks:string[]}> = {
   movement:{title:'Почувствуй дистанцию',body:'Пройди в обе стороны: <kbd>A</kbd> / <kbd>D</kbd> или стрелки. Боец сам поворачивается к сопернику. Через него можно пройти за спину.',checks:['Пройти влево','Пройти вправо']},
@@ -27,6 +29,11 @@ const touchLessons:Partial<Record<PracticeStep,string>>={
 
 export class TutorialView extends ScreenView {
   private message='';
+  private pages:string[]=[];
+  private page=0;
+  private lecture=true;
+  private lessonStep:PracticeStep='movement';
+  get reading():boolean { return this.root.dataset.touch==='true' && this.lecture && this.lessonStep!=='club'; }
   constructor(services:GameServices) {
     super(services,'tutorial',`
       <section class="tutorial-hud" aria-label="Учебный боец">
@@ -40,6 +47,9 @@ export class TutorialView extends ScreenView {
           <div class="tutorial-copy"><span class="eyebrow" id="tutorial-number"></span><h1 id="tutorial-title"></h1><p id="tutorial-description"></p></div>
           <div class="tutorial-tasks"><ul id="tutorial-checks"></ul><p id="tutorial-feedback" role="status" aria-live="polite"></p></div>
           <div id="tutorial-timing" hidden><span>СЛЕДУЮЩИЙ УДАР — В КРАСНОЙ ЗОНЕ</span><div class="tutorial-timing-track"><i class="tutorial-timing-window"></i><i id="tutorial-needle"></i></div></div>
+          <nav id="tutorial-reader" class="lesson-reader" aria-label="Страницы подсказки" hidden><button id="tutorial-page-prev" type="button" aria-label="Предыдущая подсказка">←</button><span id="tutorial-page-count" aria-live="polite"></span><button id="tutorial-page-next" type="button" aria-label="Следующая подсказка">→</button></nav>
+          <button id="tutorial-practice" class="button primary" hidden>К практике ${icons.arrow}</button>
+          <button id="tutorial-help" class="icon-button" aria-label="Открыть пояснение урока" hidden>?</button>
           <div id="tutorial-club" hidden>
             <div><b>01 / КАЧАЛКА</b><p>Левая дверь. Жим штанги улучшает максимальные HP и выносливость.</p></div>
             <div><b>02 / ДОСКА</b><p>В центре лобби. В каждом из трёх классов четыре бойца. Победи всех, чтобы открыть следующий класс. Обычные матчи — до 2 побед в раундах, боссы — до 3.</p></div>
@@ -53,21 +63,61 @@ export class TutorialView extends ScreenView {
       </section>`);
     this.root.querySelector('.keyboard-hint')!.innerHTML='<kbd>A</kbd><kbd>D</kbd> движение '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' удары <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
     this.on('#tutorial-focus','click',()=>this.focusArena());
+    this.on('#tutorial-page-prev','click',()=>this.changePage(-1));
+    this.on('#tutorial-page-next','click',()=>this.changePage(1));
+    this.on('#tutorial-practice','click',()=>{this.lecture=false;this.renderReading();this.focusArena();});
+    this.on('#tutorial-help','click',()=>{clearVirtualInput();this.lecture=true;this.renderReading();this.focus('#tutorial-practice');});
     this.warnIfTemporary();
   }
   focusArena():void { this.focus('#tutorial-focus'); }
   showLesson(step:PracticeStep):void {
     const lesson=lessons[step],root=this.root;
+    this.lessonStep=step;this.lecture=true;
     root.querySelector('#tutorial-focus')!.setAttribute('data-step',step);
     root.querySelector('#tutorial-number')!.textContent=`ПЕРВАЯ ТРЕНИРОВКА / ${String(TUTORIAL_STEPS.indexOf(step)+1).padStart(2,'0')} ИЗ 07`;
     root.querySelector('#tutorial-title')!.textContent=lesson.title;
-    root.querySelector('#tutorial-description')!.innerHTML=(root.dataset.touch==='true'&&touchLessons[step])||lesson.body;
+    const touch=root.dataset.touch==='true';
+    const body=(touch&&touchLessons[step])||lesson.body;
+    this.pages=touch ? lessonPages(body,180) : [body];this.page=0;
+    if(touch && step==='club') {
+      this.pages=[
+        'HP — здоровье. При нуле будет нокаут. В этой тренировке твой прогресс не тратится.',
+        'В лобби двигайся стрелками. У двери или доски касайся «Действие». Из комнаты возвращайся кнопкой «Назад».',
+        'КАЧАЛКА / Левая дверь. Касайся «Жать», чтобы поднимать штангу. Жим повышает максимальные HP и выносливость.',
+        'КАРЬЕРА / Доска между дверями. Три класса по четыре соперника. Победи всех по порядку, чтобы открыть следующий класс.',
+        'РАУНДЫ / Обычный матч — до двух побед, бой с боссом — до трёх. HP и выносливость восстанавливаются перед раундом.',
+        'БЕСКОНЕЧНЫЕ БОИ / Правая дверь. В центре — «Действие». HP между противниками не восстанавливается.',
+        'НАГРАДА / После завершения серии прошлые победы дадут постоянную прибавку к урону. Даже после поражения.',
+        'ТАЙМЕР / 90 секунд. По времени побеждает больший процент HP. В серии после 15 секунд урон бота один раз растёт на 10%.',
+        'ТЕХНИКА / Стиль меняет анимации, характеристики одинаковые. В лобби экскурсия покажет стили, качалку, карьеру и зал.',
+      ];
+    }
+    this.renderPage();
     root.querySelector('#tutorial-checks')!.innerHTML=lesson.checks.map((check,i)=>`<li data-check="${i}" data-done="false"><i aria-hidden="true"></i><span>${check}</span></li>`).join('');
     (root.querySelector('#tutorial-timing') as HTMLElement).hidden=step!=='combo';
     (root.querySelector('#tutorial-club') as HTMLElement).hidden=step!=='club';
     root.querySelector('#tutorial-card')!.setAttribute('data-lesson',step);
     this.message=''; root.querySelector('#tutorial-feedback')!.textContent='';
-    if(step==='club') this.focus('#tutorial-finish'); else this.focusArena();
+    this.renderReading();
+    if(step==='club') this.focus('#tutorial-finish'); else if(this.reading)this.focus('#tutorial-practice');else this.focusArena();
+  }
+  private renderReading():void {
+    const touch=this.root.dataset.touch==='true',reading=touch&&this.lecture;
+    if(touch)this.root.dataset.tutorialReading=String(reading);else delete this.root.dataset.tutorialReading;
+    this.root.querySelector<HTMLElement>('#tutorial-practice')!.hidden=!reading||this.lessonStep==='club';
+    this.root.querySelector<HTMLElement>('#tutorial-help')!.hidden=!touch||reading||this.lessonStep==='club';
+  }
+  private changePage(direction:number):void {
+    this.page=Math.max(0,Math.min(this.pages.length-1,this.page+direction));this.renderPage();
+  }
+  private renderPage():void {
+    const touch=this.root.dataset.touch==='true';
+    const description=this.root.querySelector('#tutorial-description')!;
+    if(touch)description.textContent=this.pages[this.page];else description.innerHTML=this.pages[this.page];
+    (this.root.querySelector('#tutorial-reader') as HTMLElement).hidden=!touch || this.pages.length<2;
+    this.root.querySelector<HTMLButtonElement>('#tutorial-page-prev')!.disabled=this.page===0;
+    this.root.querySelector<HTMLButtonElement>('#tutorial-page-next')!.disabled=this.page===this.pages.length-1;
+    this.root.querySelector('#tutorial-page-count')!.textContent=`ПОДСКАЗКА ${this.page+1} / ${this.pages.length}`;
   }
   update(trainer:CombatTutorial):void {
     const p=trainer.world.player,e=trainer.world.enemy;
@@ -101,4 +151,5 @@ export class TutorialView extends ScreenView {
       <button class="button primary dialog-done" data-close>Продолжить обучение</button><button class="button secondary dialog-done" id="tutorial-menu">Сохранить и выйти в меню</button>`,'tutorial-pause');
     this.on('#tutorial-menu','click',onMenu);
   }
+  destroy():void { delete this.root.dataset.tutorialReading;super.destroy(); }
 }

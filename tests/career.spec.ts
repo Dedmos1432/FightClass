@@ -9,6 +9,8 @@ import { settleCareerRound, winCareerMatch } from './helpers/career';
 import { combatPagesFor } from '../src/assets/combatAssets';
 import type { EnemySkin } from '../src/combat/Opponents';
 import { walkTo } from './helpers/walkTo';
+import { TUTORIAL_STEPS } from '../src/tutorial/Progress';
+import { CLUB_GUIDE_STEPS } from '../src/tutorial/ClubGuide';
 
 function session(order=0, checkpoint?: Partial<CareerCheckpoint>, side:'player'|'enemy'|null='player', priorRounds?:number) {
   const saves=new SaveService(new StorageService(null));
@@ -293,4 +295,65 @@ test('раунды: загрузка после решающего раунда 
   await page.locator('#career-result-lobby').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.getByRole('dialog')).toHaveCount(0);await page.keyboard.press('Escape');
   await page.reload();await page.locator('#continue-game').click();
   expect((await saved(page)).career.records.kim.wins).toBe(1);
+});
+
+test.describe('карьерная доска на телефоне без прокрутки',()=>{
+  test.use({hasTouch:true});
+  async function fits(page:Page) {
+    const bounds=await page.locator('.career-ranking').evaluate(el=>{
+      const rect=el.getBoundingClientRect();
+      return {scroll:el.scrollHeight,client:el.clientHeight,top:rect.top,bottom:rect.bottom,width:el.scrollWidth,clientWidth:el.clientWidth,screen:innerHeight};
+    });
+    expect(bounds.scroll).toBeLessThanOrEqual(bounds.client+1);
+    expect(bounds.width).toBeLessThanOrEqual(bounds.clientWidth+1);
+    expect(bounds.top).toBeGreaterThanOrEqual(0);
+    expect(bounds.bottom).toBeLessThanOrEqual(bounds.screen);
+  }
+  for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]]) {
+    test(`список, досье и правила помещаются ${width}x${height}`,async({page})=>{
+      await page.setViewportSize({width,height});await seed(page);await board(page);
+      const dialog=page.locator('.career-ranking');
+      await expect(dialog).toHaveAttribute('data-board-view','roster');await fits(page);
+      await expect(page.locator('.opponent-row')).toHaveCount(4);
+      await page.screenshot({path:`.cache/mobile-layout/career-list-${width}.png`});
+      await page.locator('[data-opponent="shim"]').tap();
+      await expect(dialog).toHaveAttribute('data-board-view','profile');await fits(page);
+      await expect(page.locator('#career-start')).toBeInViewport();await expect(page.locator('#career-start')).toBeDisabled();
+      await expect(page.locator('.career-lock-note')).toBeInViewport();
+      await page.screenshot({path:`.cache/mobile-layout/career-profile-${width}.png`});
+      await page.locator('#career-list-back').tap();await page.locator('#career-mobile-help').tap();
+      await expect(dialog).toHaveAttribute('data-board-view','rules');await fits(page);
+      await expect(page.locator('#class-unlock')).toBeInViewport();
+      await page.locator('#career-list-back').tap();await page.locator('[data-opponent="kim"]').tap();
+      await expect(page.locator('#career-start')).toBeEnabled();
+    });
+  }
+  for(const [width,height] of [[320,568],[568,320]])test(`урок карьеры листается страницами ${width}x${height}`,async({page})=>{
+    await page.setViewportSize({width,height});
+    const saves=new SaveService(new StorageService(null));saves.startNew();
+    for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
+    for(const step of CLUB_GUIDE_STEPS){if(step==='career-board')break;saves.advanceClubGuide(step);}
+    await page.addInitScript(({key,value})=>localStorage.setItem(key,JSON.stringify(value)),{key:GAME.storage.session,value:saves.current});
+    await page.goto('/');await page.locator('#continue-game').tap();await board(page);
+    for(let i=0;i<4;i++){
+      await expect(page.locator('#career-guide-page-number')).toHaveText(`${i+1} / 4`);await fits(page);
+      await expect(page.locator('#career-guide-next')).toBeInViewport();await page.locator('#career-guide-next').tap();
+    }
+    await expect(page.locator('.career-ranking')).toHaveAttribute('data-board-view','roster');
+    await page.locator('[data-opponent="kim"]').tap();await expect(page.locator('#career-start')).toBeEnabled();
+    await page.locator('#career-mobile-help').tap();await page.locator('#career-guide-done').tap();
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
+  });
+  for(const [width,height] of [[320,568],[568,320]])test(`все двенадцать досье читаются без прокрутки ${width}x${height}`,async({page})=>{
+    await page.setViewportSize({width,height});await seed(page);await board(page);
+    for(const tier of [1,2,3]) {
+      await page.locator(`[data-tier="${tier}"]`).tap();
+      for(const opponent of CAREER_ROSTER.filter(opponent=>opponent.tier===tier)) {
+        await page.locator(`[data-opponent="${opponent.id}"]`).tap();await fits(page);
+        await expect(page.locator('.opponent-tactic')).toBeInViewport();
+        await expect(page.locator('#career-start')).toBeInViewport();
+        await page.locator('#career-list-back').tap();
+      }
+    }
+  });
 });

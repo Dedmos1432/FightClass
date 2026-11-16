@@ -78,16 +78,18 @@ export class ExplorationView extends ScreenView {
 
   private showStyles(): void {
     const current = this.services.saves.lobbyState.style;
+    const touch = this.root.dataset.touch==='true';
     const guidingStyle = this.services.saves.needsClubGuide && this.services.saves.clubGuide.step === 'style';
     const dialog = this.openDialog(`
       <div class="dialog-top"><span class="eyebrow">ЛИЧНОЕ ДЕЛО / ТЕХНИКА</span><button class="icon-button" data-close aria-label="Закрыть выбор стиля">${icons.close}</button></div>
       <div class="styles-heading"><h2 id="dialog-title">Боевой стиль</h2><span>05 <small>ВАРИАНТОВ</small></span></div>
       <p class="dialog-description">Стиль меняет анимации атак. Характеристики и боевые параметры остаются прежними.</p>
-      ${guidingStyle ? `<aside class="style-guide" id="style-guide" aria-label="Обучение выбору стиля"><b>Твоя техника</b><p>Выбери любой из четырёх базовых стилей или «Свободный стиль», чтобы назначить по одному приёму на Q, W и E. Выбор сохраняется сразу и применяется в следующих боях. Можно оставить текущий стиль. Когда закончишь, нажми «Готово» — дальше познакомимся с качалкой.</p></aside>` : ''}
+      <nav class="style-mobile-tabs" aria-label="Разделы техники"><button type="button" data-style-panel="styles" aria-pressed="true">Стили</button><button type="button" data-style-panel="loadout" id="style-custom-tab" ${current==='freestyle'?'':'disabled'} aria-pressed="false">Свой набор</button><button type="button" data-style-panel="info" aria-pressed="false">Правила</button></nav>
+      ${guidingStyle ? `<aside class="style-guide" id="style-guide" aria-label="Обучение выбору стиля"><b>Твоя техника</b><p>${touch ? 'Выбери стиль и нажми «Готово». Свободный стиль открывает свой набор атак.' : 'Выбери любой из четырёх базовых стилей или «Свободный стиль», чтобы назначить по одному приёму на Q, W и E. Выбор сохраняется сразу и применяется в следующих боях. Можно оставить текущий стиль. Когда закончишь, нажми «Готово» — дальше познакомимся с качалкой.'}</p></aside>` : ''}
       <div class="style-workspace">
         <fieldset id="style-options" class="style-options"><legend class="sr-only">Боевой стиль</legend>${STYLES.map((style) => `<label class="style-option"><input type="radio" name="style" value="${style.id}" ${current === style.id ? 'checked' : ''} /><span class="style-choice"><span class="style-number">${style.number}</span><span class="style-choice-name"><strong>${style.name}</strong><small>${(style.id === 'freestyle' ? this.services.saves.freestyle.map(move => moveById(move).name) : style.moves).join(' · ')}</small></span><span class="style-check">${icons.check}</span></span></label>`).join('')}</fieldset>
         <div class="style-notes">
-          <div class="style-rules"><span class="eyebrow">НА ПРАКТИКЕ</span><dl><div><dt>Q / W / E</dt><dd>Три атакующих приёма в бою</dd></div><div><dt>УРОН</dt><dd>Общая характеристика бойца</dd></div><div><dt>КОМБО</dt><dd>Следующая атака в конце восстановления</dd></div></dl></div>
+          <div class="style-rules"><span class="eyebrow">НА ПРАКТИКЕ</span><dl><div><dt>Q / W / E</dt><dd>Три атакующих приёма${touch?'':' в бою'}</dd></div><div><dt>УРОН</dt><dd>${touch?'Общий для всех атак':'Общая характеристика бойца'}</dd></div><div><dt>КОМБО</dt><dd>${touch?'До трёх ударов подряд':'Следующая атака в конце восстановления'}</dd></div></dl></div>
           <section id="freestyle-editor" class="freestyle-editor" ${current === 'freestyle' ? '' : 'hidden'}>
             <h3>Свой набор</h3><p>Три приёма из двенадцати. Занятые приёмы меняются местами.</p>
             ${this.services.saves.freestyle.map((selected, slot) => `<label for="custom-slot-${slot}"><span><kbd>${['Q','W','E'][slot]}</kbd> Слот ${slot + 1}</span><select id="custom-slot-${slot}" data-custom-slot="${slot}">${MOVES.map(move => `<option value="${move.id}" ${move.id === selected ? 'selected' : ''}>${move.name} · ${getStyle(move.style).name}</option>`).join('')}</select></label>`).join('')}
@@ -95,9 +97,19 @@ export class ExplorationView extends ScreenView {
           </section>
         </div>
       </div>
-      <p class="style-info">Любой из пяти стилей использует те же HP, выносливость, скорость и защиту.</p>
+      <p class="style-info">${touch?'Все стили имеют одинаковые характеристики.':'Любой из пяти стилей использует те же HP, выносливость, скорость и защиту.'}<span id="style-selected-moves">${(current==='freestyle'?this.services.saves.freestyle.map(move=>moveById(move).name):getStyle(current).moves).join(' · ')}</span></p>
       <button class="button primary dialog-done" id="styles-done">Готово${guidingStyle ? ' · дальше в качалку' : ''} ${icons.arrow}</button>
     `, 'styles-dialog');
+    if(dialog)dialog.dataset.stylePanel='styles';
+    const showPanel=(panel:string):void=>{
+      if(!dialog)return;
+      dialog.dataset.stylePanel=panel;
+      dialog.querySelectorAll<HTMLButtonElement>('[data-style-panel]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.stylePanel===panel)));
+    };
+    dialog?.querySelector('.style-mobile-tabs')?.addEventListener('click',event=>{
+      const button=(event.target as HTMLElement).closest<HTMLButtonElement>('button[data-style-panel]');
+      if(button&&!button.disabled)showPanel(button.dataset.stylePanel!);
+    });
     dialog?.querySelector('#styles-done')?.addEventListener('click', () => {
       if(inputSuspended())return;
       if(guidingStyle)this.services.saves.advanceClubGuide('style');
@@ -108,8 +120,11 @@ export class ExplorationView extends ScreenView {
       const value = (event.target as HTMLInputElement).value;
       if (!isStyleId(value)) return;
       this.services.saves.updateLobby({ style: value });
+      dialog!.querySelector<HTMLButtonElement>('#style-custom-tab')!.disabled=value!=='freestyle';
+      if(touch&&value==='freestyle')showPanel('loadout');
       this.root.querySelector<HTMLElement>('#freestyle-editor')!.hidden = value !== 'freestyle';
       this.root.querySelector('#current-style')!.textContent = getStyle(value).name;
+      dialog!.querySelector('#style-selected-moves')!.textContent=(value==='freestyle'?this.services.saves.freestyle.map(move=>moveById(move).name):getStyle(value).moves).join(' · ');
       this.services.audio.play();
       this.warnIfTemporary();
     });
@@ -126,6 +141,7 @@ export class ExplorationView extends ScreenView {
       moves.forEach((move, index) => { dialog.querySelector<HTMLSelectElement>(`#custom-slot-${index}`)!.value = move; });
       const freeChoice = dialog.querySelector<HTMLInputElement>('input[value="freestyle"]')?.closest('label')?.querySelector('small');
       if (freeChoice) freeChoice.textContent = moves.map(move => moveById(move).name).join(' · ');
+      dialog.querySelector('#style-selected-moves')!.textContent=moves.map(move=>moveById(move).name).join(' · ');
       this.services.audio.play();
     });
   }

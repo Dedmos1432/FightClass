@@ -101,6 +101,7 @@
 .career-ranking > .dialog-done { background:#202924; color:#e9dfc8; border:1px solid #b5aa8a77; box-shadow:3px 3px 0 #0005; font-size:12px; }
 .career-ranking > .dialog-done:hover { background:#354036; border-color:#dbc8a1; }
 .career-ranking :is(button,a):focus-visible { outline:3px solid #edab88; outline-offset:3px; }
+.career-mobile-toolbar,.career-guide-pages { display:none; }
 
 /* Match score elements retain the game's existing bout layout. */
 .career-result .run-result { grid-template-columns:repeat(2,minmax(0,1fr)); }
@@ -213,4 +214,128 @@
   .career-ranking .career-fighter-title h3 { font-size:26px; }
   .career-portrait { flex-basis:79px; height:118px; }
   .career-total > span { min-width:0; flex-basis:100%; }
+}
+
+/* Touch board: browse four cards, open one dossier, or read the rules.
+   Each view has its own fixed amount of content rather than a scrollable board. */
+.dialog.career-ranking[data-mobile-board='true'] {
+  width:min(900px,calc(100vw - 16px)); max-height:calc(100dvh - 16px);
+  padding:12px; border-width:5px; overflow:visible;
+}
+.career-ranking[data-mobile-board='true'] .dialog-top { margin:0 0 8px; padding:0 0 6px; min-height:38px; }
+.career-ranking[data-mobile-board='true'] .dialog-top .icon-button { width:44px; height:44px; }
+.career-ranking[data-mobile-board='true'] .board-club-label > b { width:28px; height:30px; font-size:20px; }
+.career-ranking[data-mobile-board='true'] .dialog-top .eyebrow { font-size:10px; letter-spacing:.6px; }
+.career-ranking[data-mobile-board='true'] .ranking-heading { gap:8px; }
+.career-ranking[data-mobile-board='true'] .ranking-heading { display:none; }
+.career-ranking[data-mobile-board='true'] .career-mobile-class { font:11px/1.3 var(--body); color:#e4dcc6; letter-spacing:0; }
+.career-ranking[data-mobile-board='true'] .ranking-heading h2 { font-size:26px; }
+.career-ranking[data-mobile-board='true'] .rank-class-badge { padding:3px 7px; transform:none; }
+.career-ranking[data-mobile-board='true'] .rank-class-badge::before { display:none; }
+.career-ranking[data-mobile-board='true'] .rank-class-badge b { font-size:25px; }
+.career-ranking[data-mobile-board='true'] .rank-class-badge > span { font-size:9px; }
+.career-ranking[data-mobile-board='true'] .ranking-tabs { margin:10px 0 6px; gap:5px; padding:0; }
+.career-ranking[data-mobile-board='true'] .ranking-tab { min-height:44px; padding:7px 4px 5px; font-size:17px; }
+.career-ranking[data-mobile-board='true'] .ranking-tab[aria-pressed='true'] { padding-top:5px; }
+.career-ranking[data-mobile-board='true'] .ranking-tab > span { font-size:10px; margin-top:2px; line-height:1.2; }
+.career-ranking[data-mobile-board='true'] .ranking-tab::before { display:none; }
+.career-ranking[data-mobile-board='true'] .career-mobile-toolbar { display:flex; justify-content:space-between; gap:8px; margin:0 0 8px; }
+.career-ranking[data-mobile-board='true'] .career-mobile-toolbar button { min-height:44px; padding:7px 10px; font-size:12px; }
+.career-ranking[data-mobile-board='true'][data-board-view='roster'] #career-list-back { visibility:hidden; }
+.career-ranking[data-mobile-board='true'] .ranking-layout { display:block; }
+.career-ranking[data-mobile-board='true'] .board-roster-label { display:none; }
+.career-ranking[data-mobile-board='true'] .opponent-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; padding:0; }
+.career-ranking[data-mobile-board='true'] .opponent-row { display:grid; grid-template-columns:23px minmax(0,1fr); gap:4px; min-height:108px; padding:9px 7px; }
+.career-ranking[data-mobile-board='true'] .opponent-row > b { grid-row:1; font-size:20px; align-self:start; }
+.career-ranking[data-mobile-board='true'] .board-row-photo { display:none; }
+.career-ranking[data-mobile-board='true'] .opponent-row > span { grid-column:2; align-self:start; font-size:13px; line-height:1.3; }
+.career-ranking[data-mobile-board='true'] .opponent-row small { font-size:11px; line-height:1.3; margin-top:4px; }
+.career-ranking[data-mobile-board='true'] .opponent-row > i { grid-column:1/-1; font-size:10px; margin:3px 0 0; align-self:end; }
+.career-ranking[data-mobile-board='true'] .career-total { margin:9px 0 3px; font-size:11px; }
+.career-ranking[data-mobile-board='true'] > .dialog-done { margin-top:5px; min-height:44px; padding:8px 12px; font-size:12px; }
+.career-ranking[data-mobile-board='true'] :is(.ranking-progress,.career-pending,.career-board-intro,.career-guide,.opponent-profile) { display:none; }
+.career-ranking[data-mobile-board='true']:not([data-board-view='roster']) .board-roster { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='profile'] :is(.ranking-heading,.ranking-tabs,.career-total) { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='profile'] > .dialog-done { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='profile'] .opponent-profile { display:block; padding:12px; }
+.career-ranking[data-mobile-board='true'] .opponent-file-top { padding:0 0 6px; gap:8px; }
+.career-ranking[data-mobile-board='true'] .opponent-monogram { font-size:25px; }
+.career-ranking[data-mobile-board='true'] .opponent-file-top .eyebrow { font-size:10px; letter-spacing:0; }
+.career-ranking[data-mobile-board='true'] .opponent-file-top p { margin-top:3px; font-size:10px; }
+.career-ranking[data-mobile-board='true'] .career-fighter-title { min-height:74px; gap:8px; }
+.career-ranking[data-mobile-board='true'] .career-fighter-title h3 { font-size:25px; margin:5px 0; }
+.career-ranking[data-mobile-board='true'] .career-portrait { flex-basis:65px; height:70px; border:3px solid #f8efdc; border-bottom-width:7px; }
+.career-ranking[data-mobile-board='true'] .career-portrait img { height:122px; top:-6px; }
+.career-ranking[data-mobile-board='true'] .opponent-style { font-size:12px; }
+.career-ranking[data-mobile-board='true'] .opponent-stats { padding:7px 0; margin:5px 0; }
+.career-ranking[data-mobile-board='true'] .opponent-stats dt { font-size:10px; }
+.career-ranking[data-mobile-board='true'] .opponent-stats dd { font-size:23px; margin-top:2px; }
+.career-ranking[data-mobile-board='true'] .opponent-tactic { font-size:12px; line-height:1.4; }
+.career-ranking[data-mobile-board='true'] .career-match-format { font-size:10px; line-height:1.4; margin-top:7px; }
+.career-ranking[data-mobile-board='true'] .career-fight-record { font-size:10px; margin:7px 0; gap:3px 8px; }
+.career-ranking[data-mobile-board='true'] .career-lock-note { margin-top:6px; font-size:11px; line-height:1.4; }
+.career-ranking[data-mobile-board='true'] .career-start { margin-top:9px; min-height:44px; padding:8px 12px; font-size:13px; }
+.career-ranking[data-mobile-board='true'][data-board-view='rules'] :is(.ranking-progress,.career-pending,.career-board-intro) { display:block; }
+.career-ranking[data-mobile-board='true'][data-board-view='rules'] .career-pending { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='rules'] .ranking-tabs { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='rules'] .ranking-progress { margin:6px 0; padding:12px 0; }
+.career-ranking[data-mobile-board='true'][data-board-view='rules'] .ranking-progress p { margin-top:8px; font-size:13px; }
+.career-ranking[data-mobile-board='true'] .career-pending { margin-top:8px; padding:10px; }
+.career-ranking[data-mobile-board='true'] .career-pending p { font-size:12px; line-height:1.4; }
+.career-ranking[data-mobile-board='true'] .career-pending button { min-height:44px; margin-top:8px; }
+.career-ranking[data-mobile-board='true'][data-board-view='guide'] :is(.ranking-heading,.ranking-tabs,.career-mobile-toolbar,.ranking-layout,.career-total) { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='guide'] > .dialog-done { display:none; }
+.career-ranking[data-mobile-board='true'][data-board-view='guide'] .career-guide { display:block; margin:0; padding:12px; }
+.career-ranking[data-mobile-board='true'] .career-guide h3 { font-size:24px; }
+.career-ranking[data-mobile-board='true'] .career-guide .eyebrow { font-size:9px; letter-spacing:.5px; }
+.career-ranking[data-mobile-board='true'] .career-guide > p,.career-ranking[data-mobile-board='true'] .career-guide-actions > span { display:none; }
+.career-ranking[data-mobile-board='true'] .career-guide-pages { display:block; }
+.career-ranking[data-mobile-board='true'] #career-guide-page { font:13px/1.55 var(--body); margin:12px 0; min-height:100px; }
+.career-ranking[data-mobile-board='true'] .career-reading-nav { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.career-ranking[data-mobile-board='true'] .career-reading-nav button { min-height:44px; font-size:12px; padding:8px 12px; }
+.career-ranking[data-mobile-board='true'] #career-guide-page-number { font:12px var(--mono); }
+.career-ranking[data-mobile-board='true'] .career-guide-actions { margin-top:10px; padding-top:10px; }
+.career-ranking[data-mobile-board='true'] #career-guide-done { width:100%; min-height:44px; font-size:12px; justify-content:space-between; }
+@media(max-width:380px) {
+  .career-ranking[data-mobile-board='true'][data-board-view='profile'] .opponent-profile { padding:10px; }
+  .career-ranking[data-mobile-board='true'] .career-fighter-title h3 { font-size:23px; }
+  .career-ranking[data-mobile-board='true'] .opponent-stats { padding-block:5px; margin-block:3px; }
+  .career-ranking[data-mobile-board='true'] .opponent-file-top { padding-bottom:4px; }
+  .career-ranking[data-mobile-board='true'] .opponent-file-top p { margin-top:1px; }
+  .career-ranking[data-mobile-board='true'] .career-start { margin-top:6px; }
+}
+@media (orientation:landscape) and (max-height:600px) {
+  .dialog.career-ranking[data-mobile-board='true'] { padding:8px 10px; }
+  .career-ranking[data-mobile-board='true'] .dialog-top { min-height:0; height:26px; padding:0; margin:0 0 4px; border:0; }
+  .career-ranking[data-mobile-board='true'] .dialog-top .icon-button { position:absolute; right:5px; top:0; z-index:2; }
+  .career-ranking[data-mobile-board='true'] .board-club-label > b { width:22px; height:24px; font-size:17px; }
+  .career-ranking[data-mobile-board='true'] .ranking-heading { display:none; }
+  .career-ranking[data-mobile-board='true'] .ranking-tabs { margin:0 0 4px; padding-right:0; }
+  .career-ranking[data-mobile-board='true'] .career-mobile-toolbar { margin-bottom:4px; }
+  .career-ranking[data-mobile-board='true'] .opponent-list { grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+  .career-ranking[data-mobile-board='true'] .opponent-row { min-height:86px; }
+  .career-ranking[data-mobile-board='true'] .career-total { margin:5px 0 0; font-size:10px; }
+  .career-ranking[data-mobile-board='true'][data-board-view='roster'] .career-total { display:none; }
+  .career-ranking[data-mobile-board='true'][data-board-view='guide'] .board-club-label { display:none; }
+  .career-ranking[data-mobile-board='true'][data-board-view='guide'] .dialog-top { height:0; margin:0; }
+  .career-ranking[data-mobile-board='true'][data-board-view='guide'] .career-guide > div:first-child { padding-right:40px; }
+  .career-ranking[data-mobile-board='true'][data-board-view='profile'] .dialog-top { display:none; }
+  .career-ranking[data-mobile-board='true'][data-board-view='profile'] .opponent-profile { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 14px; padding:8px 12px; }
+  .career-ranking[data-mobile-board='true'] .opponent-file-top { grid-column:1; grid-row:1; padding:0; border:0; }
+  .career-ranking[data-mobile-board='true'] .opponent-monogram { display:none; }
+  .career-ranking[data-mobile-board='true'] .opponent-file-top p { display:none; }
+  .career-ranking[data-mobile-board='true'] .career-fighter-title { grid-column:1; grid-row:2; min-height:44px; }
+  .career-ranking[data-mobile-board='true'] .career-fighter-title h3 { font-size:23px; margin:0 0 2px; }
+  .career-ranking[data-mobile-board='true'] .career-portrait { flex-basis:42px; height:46px; }
+  .career-ranking[data-mobile-board='true'] .career-portrait img { height:88px; }
+  .career-ranking[data-mobile-board='true'] .opponent-stats { grid-column:1; grid-row:3; margin:0; padding:4px 0; }
+  .career-ranking[data-mobile-board='true'] .opponent-stats dd { font-size:22px; }
+  .career-ranking[data-mobile-board='true'] .opponent-tactic { grid-column:2; grid-row:1/3; font-size:12px; line-height:1.35; }
+  .career-ranking[data-mobile-board='true'] .career-match-format { grid-column:2; grid-row:3; margin:0; align-self:center; }
+  .career-ranking[data-mobile-board='true'] .career-fight-record { grid-column:2; grid-row:4; margin:0; }
+  .career-ranking[data-mobile-board='true'] .career-lock-note { grid-column:1; grid-row:4; margin:0; }
+  .career-ranking[data-mobile-board='true'] .career-start { grid-column:1/-1; grid-row:5; margin:0; }
+  .career-ranking[data-mobile-board='true'] #career-guide-page { min-height:50px; margin:7px 0; }
+  .career-ranking[data-mobile-board='true'] .career-guide { padding:8px 12px; }
+  .career-ranking[data-mobile-board='true'] .career-guide-actions { margin-top:6px; padding-top:6px; }
 }

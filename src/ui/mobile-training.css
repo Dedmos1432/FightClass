@@ -1,0 +1,109 @@
+/* Phone training screens keep the action button in view; sections replace scrolling. */
+.style-mobile-tabs,.bench-mobile-pages { display:none; }
+#style-selected-moves { display:block; margin-top:8px; }
+  #ui[data-touch='true'] .styles-dialog { width:min(720px,calc(100dvw - 20px)); padding:12px; overflow:visible; }
+  #ui[data-touch='true'] .styles-dialog .dialog-top { margin-bottom:8px; padding-bottom:6px; }
+  #ui[data-touch='true'] .styles-heading h2 { font-size:26px; }
+  #ui[data-touch='true'] .styles-heading > span { font-size:22px; }
+  #ui[data-touch='true'] .styles-heading > span small { font-size:10px; }
+  #ui[data-touch='true'] .style-mobile-tabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; margin:10px 0; }
+  #ui[data-touch='true'] .style-mobile-tabs button { min-height:40px; padding:6px 4px; border:1px solid #17191a40; color:var(--ink); background:transparent; font:600 11px var(--body); }
+  #ui[data-touch='true'] .style-mobile-tabs button[aria-pressed='true'] { background:var(--ink); color:var(--paper); }
+  #ui[data-touch='true'] .style-mobile-tabs button:disabled { opacity:.35; }
+  #ui[data-touch='true'] .styles-dialog .style-workspace { display:block; margin:0; }
+  #ui[data-touch='true'] .styles-dialog .style-options { display:grid; grid-template-columns:1fr 1fr; gap:5px; }
+  #ui[data-touch='true'] .styles-dialog .style-choice { min-height:58px; padding:7px; gap:8px; border:1px solid #17191a36; }
+  #ui[data-touch='true'] .styles-dialog .style-number { font-size:20px; }
+  #ui[data-touch='true'] .styles-dialog .style-choice strong { font-size:17px; }
+  #ui[data-touch='true'] .styles-dialog .style-choice small { display:none; }
+  #ui[data-touch='true'] .styles-dialog .style-check { width:16px; }
+  #ui[data-touch='true'] .styles-dialog .style-guide { margin:0 0 10px; padding:7px 9px; }
+  #ui[data-touch='true'] .styles-dialog .style-guide > b { display:none; }
+  #ui[data-touch='true'] .styles-dialog .style-guide > p { margin:0; font-size:11px; line-height:1.4; }
+  #ui[data-touch='true'] .styles-dialog:not([data-style-panel='styles']) :is(.style-options,.style-guide) { display:none; }
+  #ui[data-touch='true'] .styles-dialog:not([data-style-panel='loadout']) .freestyle-editor { display:none; }
+  #ui[data-touch='true'] .styles-dialog:not([data-style-panel='info']) :is(.style-rules,.style-info,.dialog-description) { display:none; }
+  #ui[data-touch='true'] .styles-dialog .style-notes { min-width:0; }
+  #ui[data-touch='true'] .styles-dialog .style-rules { padding-top:0; border-top:0; }
+  #ui[data-touch='true'] .styles-dialog .style-rules .eyebrow { display:none; }
+  #ui[data-touch='true'] .styles-dialog .style-rules dl { margin:8px 0 0; }
+  #ui[data-touch='true'] .styles-dialog .style-rules dl > div { padding:7px 0; }
+  #ui[data-touch='true'] .styles-dialog .style-info { padding:10px 0; font-size:11px; line-height:1.45; }
+  #ui[data-touch='true'] .styles-dialog .dialog-description { display:none; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor { padding:0; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor h3 { font-size:21px; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor p { font-size:11px; line-height:1.4; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor label { margin:10px 0; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor label > span { margin-bottom:4px; font-size:11px; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor select { min-height:42px; font-size:12px; padding:5px; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor > small { display:none; }
+  #ui[data-touch='true'] #styles-done { min-height:44px; margin-top:12px; font-size:12px; padding:8px 12px; }
+
+  #ui[data-touch='true'] .bench-tutorial { width:min(580px,calc(100dvw - 20px)); overflow:visible; }
+  #ui[data-touch='true'] .bench-tutorial h2 { font-size:26px; line-height:1.1; }
+  #ui[data-touch='true'] .bench-rhythm { display:none; }
+  #ui[data-touch='true'] .bench-lesson { margin:10px 0; min-height:110px; }
+  #ui[data-touch='true'] .bench-lesson li { padding:10px 0; gap:12px; }
+  #ui[data-touch='true'] .bench-lesson strong { font-size:14px; }
+  #ui[data-touch='true'] .bench-lesson small { font-size:12px; line-height:1.6; margin-top:7px; }
+  #ui[data-touch='true'] .bench-lesson-note { margin:10px 0; padding:10px 0 0 10px; font-size:12px; line-height:1.6; }
+  #ui[data-touch='true'] .bench-tutorial[data-lesson-page='3'] .bench-lesson { display:none; }
+  #ui[data-touch='true'] .bench-mobile-pages { display:grid; grid-template-columns:44px 1fr 44px; align-items:center; gap:8px; margin-top:8px; }
+  #ui[data-touch='true'] .bench-mobile-pages button { min-height:44px; font-size:20px; color:var(--ink); border:1px solid #17191a40; background:transparent; }
+  #ui[data-touch='true'] .bench-mobile-pages button:disabled { opacity:.3; }
+  #ui[data-touch='true'] .bench-mobile-pages span { text-align:center; font:12px var(--mono); }
+  #ui[data-touch='true'] #bench-tutorial-start { min-height:44px; padding:8px 12px; font-size:12px; }
+  #ui[data-touch='true'] .bench-result { width:min(580px,calc(100dvw - 20px)); }
+  #ui[data-touch='true'] .bench-result-count { margin:12px 0; gap:14px; }
+  #ui[data-touch='true'] .bench-result-count strong { font-size:50px; }
+  #ui[data-touch='true'] .bench-result-stats { padding:12px 0; gap:16px; }
+  #ui[data-touch='true'] .bench-result-stats span { font-size:11px; }
+  #ui[data-touch='true'] .bench-result-stats strong { font-size:30px; margin-top:6px; }
+
+  #ui[data-touch='true'] .bench-panel { width:min(360px,calc(100dvw - 24px)); max-height:none; overflow:visible; padding:10px 12px; bottom:max(12px,env(safe-area-inset-bottom)); }
+  #ui[data-touch='true'] .bench-panel .bench-title { font-size:20px; }
+  #ui[data-touch='true'] .bench-panel .bench-help { width:32px; height:32px; }
+  #ui[data-touch='true'] .bench-panel .bench-rep-line { padding-right:36px; }
+  #ui[data-touch='true'] .bench-panel #bench-status { font-size:11px; }
+  #ui[data-touch='true'] .bench-panel .bench-panel-actions button { min-height:44px; font-size:12px; }
+  #ui[data-touch='true'] .bench-panel kbd { display:none; }
+  #ui[data-touch='true'] .bench-panel .bench-footnote { display:none; }
+  #ui[data-touch='true'] .bench-panel #bench-next-gain { display:block; grid-column:1/-1; margin:7px 0 0; font-size:11px; line-height:1.4; }
+@media(max-height:550px) and (min-width:480px) {
+  #ui[data-touch='true'] .styles-dialog .dialog-top { margin-bottom:4px; padding-bottom:3px; }
+  #ui[data-touch='true'] .styles-heading h2 { font-size:23px; }
+  #ui[data-touch='true'] .styles-heading > span { display:none; }
+  #ui[data-touch='true'] .style-mobile-tabs { margin:6px 0; }
+  #ui[data-touch='true'] .style-mobile-tabs button { min-height:36px; }
+  #ui[data-touch='true'] .styles-dialog .style-options { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  #ui[data-touch='true'] .styles-dialog .style-choice { min-height:60px; gap:4px; padding:5px; }
+  #ui[data-touch='true'] .styles-dialog :is(.style-number,.style-check) { display:none; }
+  #ui[data-touch='true'] .styles-dialog .style-choice strong { font-size:16px; }
+  #ui[data-touch='true'] .styles-dialog .style-guide { margin-bottom:6px; padding:5px 8px; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px 10px; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor h3 { display:none; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor > p { grid-column:1/-1; }
+  #ui[data-touch='true'] .styles-dialog .freestyle-editor label { margin:4px 0; }
+  #ui[data-touch='true'] .styles-dialog .style-rules dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+  #ui[data-touch='true'] .styles-dialog .style-rules dl > div { display:block; }
+  #ui[data-touch='true'] .styles-dialog .style-rules dd { margin:5px 0 0; }
+  #ui[data-touch='true'] .styles-dialog .style-info { padding:6px 0; }
+  #ui[data-touch='true'] .styles-dialog #style-selected-moves { margin-top:4px; }
+  #ui[data-touch='true'] #styles-done { margin-top:8px; }
+  #ui[data-touch='true'] .bench-tutorial h2 { font-size:23px; }
+  #ui[data-touch='true'] .bench-tutorial h2 br { display:none; }
+  #ui[data-touch='true'] .bench-tutorial .dialog-top { margin-bottom:5px; padding-bottom:4px; }
+  #ui[data-touch='true'] .bench-lesson { min-height:70px; margin:6px 0; }
+  #ui[data-touch='true'] .bench-lesson li { padding:5px 0; }
+  #ui[data-touch='true'] .bench-lesson small { margin-top:4px; line-height:1.4; }
+  #ui[data-touch='true'] .bench-lesson-note { margin:6px 0; padding:6px 0 0 10px; line-height:1.4; }
+  #ui[data-touch='true'] .bench-mobile-pages { margin-top:5px; }
+  #ui[data-touch='true'] .bench-result { display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; }
+  #ui[data-touch='true'] .bench-result .dialog-top { grid-column:1/-1; margin:0; }
+  #ui[data-touch='true'] .bench-result h2 { align-self:center; }
+  #ui[data-touch='true'] .bench-result-count { margin:0; justify-content:flex-end; }
+  #ui[data-touch='true'] .bench-result-stats { grid-column:1/-1; padding:8px 0; }
+  #ui[data-touch='true'] .bench-result .dialog-description { grid-column:1/-1; margin:0; }
+  #ui[data-touch='true'] .bench-result .dialog-done { grid-column:1/-1; margin:0; }
+  #ui[data-touch='true'] .bench-panel { left:0; transform:none; width:280px; }
+}

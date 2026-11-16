@@ -14,6 +14,8 @@ import './ui/combat-training.css';
 import './ui/career.css';
 import './ui/tutorial.css';
 import './ui/touch.css';
+import './ui/mobile.css';
+import './ui/mobile-training.css';
 import { browserStorage, StorageService } from './services/StorageService';
 import { deadline, initializeYandex } from './platform/YandexPlatform';
 import { CloudSaves } from './platform/CloudSaves';

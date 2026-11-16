@@ -19,7 +19,7 @@ export default defineConfig({
     { name: 'storage', testMatch: /(storage|training|combat-core|combat-feel|career-core|career-ai|career-assets|tutorial-core|platform-core|balance-core)\.spec\.ts/ },
     {
       name: 'chrome',
-      testMatch: /(menu|lobby|gym|combat|combat-response|career|board|tutorial|touch)\.spec\.ts/,
+      testMatch: /(menu|lobby|gym|combat|combat-response|career|board|tutorial|touch|mobile-layout)\.spec\.ts/,
       workers: 1,
       use: {
         ...devices['Desktop Chrome'],

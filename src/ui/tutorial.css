@@ -96,3 +96,75 @@
   .tutorial-actions button { min-height:30px; padding-block:6px; }
   .tutorial-lesson[data-lesson='club'] { max-height:calc(100svh - 160px); }
 }
+
+/* Phone lessons are short reading cards, not scrollable documents. */
+.lesson-reader { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.lesson-reader button { width:44px; height:36px; flex:0 0 auto; color:var(--ink); border:1px solid #17191a50; background:transparent; font:600 20px var(--body); }
+.lesson-reader button:disabled { opacity:.25; }
+.lesson-reader span { font:700 9px var(--mono); letter-spacing:.3px; }
+#ui[data-touch='true'][data-screen='tutorial'] .screen { height:100dvh; }
+#ui[data-touch='true'][data-screen='tutorial'] .topbar { min-height:42px; padding-block:4px; }
+#ui[data-touch='true'] .tutorial-hud { padding-block:8px; gap:14px; }
+#ui[data-touch='true'] .tutorial-vital { flex:1; max-width:none; }
+#ui[data-touch='true'] .tutorial-vital > span { font-size:9px; letter-spacing:0; }
+#ui[data-touch='true'] .tutorial-safe { display:none; }
+#ui[data-touch='true'] .tutorial-lesson { max-height:none; overflow:visible; display:flex; flex-direction:column; gap:8px; margin-top:8px; padding:12px 14px; }
+#ui[data-touch='true'] .tutorial-copy h1 { font-size:22px; margin:4px 0 6px; line-height:1.08; }
+#ui[data-touch='true'] .tutorial-copy .eyebrow { font-size:8px; letter-spacing:.6px; }
+#ui[data-touch='true'] .tutorial-copy p { font:12px/1.4 var(--body); min-height:3em; }
+#ui[data-touch='true'] .tutorial-tasks { padding:6px 0 0; border-left:0; border-top:1px solid #17191a30; align-self:stretch; }
+#ui[data-touch='true'] #tutorial-checks { display:flex; gap:6px 12px; flex-wrap:wrap; }
+#ui[data-touch='true'] #tutorial-checks li { font-size:10px; line-height:1.25; gap:5px; }
+#ui[data-touch='true'] #tutorial-checks i { width:14px; height:14px; }
+#ui[data-touch='true'] #tutorial-feedback { margin-top:5px; min-height:13px; font-size:10px; line-height:1.3; }
+#ui[data-touch='true'] #tutorial-timing > span { font-size:8px; }
+#ui[data-touch='true'] .tutorial-timing-track { margin-top:5px; height:6px; }
+#ui[data-touch='true'] #tutorial-club { display:block; }
+#ui[data-touch='true'] #tutorial-club > :not(#tutorial-finish) { display:none; }
+#ui[data-touch='true'] #tutorial-finish { width:100%; min-height:42px; padding:9px 12px; font-size:12px; }
+#ui[data-touch='true'] .club-guide { position:fixed; top:170px; left:14px; right:14px; width:auto; max-height:none; overflow:visible; padding:11px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px 8px; }
+#ui[data-touch='true'] .club-guide > :is(.eyebrow,h2,p,.club-guide-route) { grid-column:1 / -1; }
+#ui[data-touch='true'] .club-guide .eyebrow { font-size:8px; letter-spacing:.4px; }
+#ui[data-touch='true'] .club-guide h2 { font-size:22px; line-height:1.1; margin:5px 0 7px; }
+#ui[data-touch='true'] .club-guide > p { font:12px/1.4 var(--body); min-height:3em; }
+#ui[data-touch='true'] .club-guide .lesson-reader { margin-top:0; grid-column:1; grid-row:4; gap:5px; }
+#ui[data-touch='true'] .club-guide-route { font:700 10px/1.3 var(--body); padding-top:7px; margin-top:7px; }
+#ui[data-touch='true'] .club-guide > button { margin-top:0; min-height:36px; padding:7px 8px; font-size:10px; grid-column:2; grid-row:4; }
+@media (orientation:landscape) and (max-height:550px) {
+  #ui[data-touch='true'] .tutorial-lesson { width:calc(100% - 150px); max-width:700px; gap:4px; padding:7px 10px; margin-top:4px; }
+  #ui[data-touch='true'] .tutorial-copy h1 { font-size:18px; margin:2px 0 4px; }
+  #ui[data-touch='true'] .tutorial-copy p { font-size:11px; line-height:1.3; min-height:2.6em; }
+  #ui[data-touch='true'] .tutorial-tasks { padding-top:4px; }
+  #ui[data-touch='true'] #tutorial-feedback { margin-top:3px; font-size:9px; min-height:12px; }
+  #ui[data-touch='true'] .lesson-reader button { height:32px; }
+  #ui[data-touch='true'] .tutorial-lesson[data-lesson='club'] { max-width:700px; width:calc(100% - 150px); }
+  #ui[data-touch='true'] #tutorial-finish { min-height:34px; padding:6px 10px; }
+  #ui[data-touch='true'] .club-guide { top:114px; left:160px; right:160px; padding:8px 12px; }
+  #ui[data-touch='true'] .club-guide h2 { font-size:20px; margin:3px 0 5px; }
+  #ui[data-touch='true'] .club-guide > p { font-size:11px; line-height:1.35; min-height:2.7em; }
+  #ui[data-touch='true'] .club-guide .lesson-reader { margin-top:0; }
+  #ui[data-touch='true'] .club-guide-route { font-size:9px; margin-top:4px; padding-top:4px; }
+  #ui[data-touch='true'] .club-guide > button { margin-top:0; min-height:32px; padding:5px 8px; }
+}
+
+/* Read while the sparring is paused; practise with a small coach above the arena. */
+#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-main::before { content:''; position:fixed; inset:0; z-index:20; background:#0b1012cb; pointer-events:auto; }
+#ui[data-touch='true'][data-tutorial-reading='true'] .touch-controls { display:none; }
+#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-lesson { position:fixed; z-index:21; left:50%; top:calc(50dvh - 24px); transform:translate(-50%,-50%); width:calc(100vw - 28px); max-width:540px; margin:0; padding:18px 20px; gap:14px; }
+#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy h1 { font-size:26px; margin:7px 0 10px; line-height:1.12; }
+#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy p { font:13px/1.5 var(--body); min-height:3em; }
+#ui[data-touch='true'][data-tutorial-reading='true'] :is(.tutorial-tasks,#tutorial-timing) { display:none; }
+#ui[data-touch='true'][data-tutorial-reading='true'] .lesson-reader button { min-height:44px; }
+#ui[data-touch='true'][data-tutorial-reading='true'] #tutorial-practice { width:100%; min-height:44px; padding:9px 14px; font-size:13px; }
+#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-actions { z-index:22; left:14px; right:14px; bottom:max(10px,env(safe-area-inset-bottom)); justify-content:space-between; }
+#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-lesson { position:relative; padding:8px 10px; gap:4px; }
+#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-copy :is(.eyebrow,p) { display:none; }
+#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-copy h1 { margin:0; padding-right:34px; font-size:17px; line-height:1.15; }
+#ui[data-touch='true'][data-tutorial-reading='false'] #tutorial-reader { display:none; }
+#ui[data-touch='true'][data-tutorial-reading='false'] #tutorial-help { position:absolute; right:4px; top:3px; width:30px; height:30px; background:transparent; color:var(--ink); border:1px solid #17191a50; font:700 15px var(--body); }
+#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-tasks { padding-top:4px; }
+@media (orientation:landscape) and (max-height:350px) {
+  #ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-lesson { max-width:510px; padding:12px 16px; gap:10px; }
+  #ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy h1 { font-size:23px; margin:4px 0 7px; }
+  #ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy p { font-size:12px; min-height:2.7em; }
+}
