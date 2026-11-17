@@ -6,7 +6,7 @@ import { COMBAT, type AttackSlot } from '../src/config/combat';
 import { SaveService, isSessionSave } from '../src/services/SaveService';
 import { StorageService, type StorageLike } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
-import { CLUB_GUIDE_STEPS, clubGuideRoom, freshClubGuide, observedClubStep, type ClubGuideProgress } from '../src/tutorial/ClubGuide';
+import { CLUB_GUIDE_STEPS, clubGuideRoom, clubGuideTarget, clubGuideAllows, freshClubGuide, observedClubStep, type ClubGuideProgress } from '../src/tutorial/ClubGuide';
 
 class Memory implements StorageLike {
   data=new Map<string,string>();getItem(key:string){return this.data.get(key)??null;}setItem(key:string,value:string){this.data.set(key,value);}
@@ -57,6 +57,44 @@ test('экскурсия: реальные комнаты и повторени�
   progress={...progress,step:'dojo-door'};
   progress={...progress,step:observedClubStep(progress,'dojo',false,8)};expect(progress.step).toBe('dojo-start');
   expect(observedClubStep(progress,'dojo',false,8)).toBe('dojo-start');
+});
+
+test('экскурсия разрешает только текущее назначение: стиль, качалка, доска, зал',()=>{
+  for(const room of ['lobby','gym','dojo'] as const){
+    expect(clubGuideTarget('style',room)).toBe('style');
+    for(const action of ['gym','board','dojo','bench','series'] as const)expect(clubGuideAllows('style',room,action)).toBe(false);
+  }
+  for(const step of ['gym-door','bench','press','gym-exit'] as const){
+    expect(clubGuideAllows(step,'lobby','gym')).toBe(true);
+    expect(clubGuideAllows(step,'lobby','board')).toBe(false);
+    expect(clubGuideAllows(step,'lobby','dojo')).toBe(false);
+  }
+  for(const step of ['career-board','career-review'] as const){
+    expect(clubGuideAllows(step,'lobby','board')).toBe(true);
+    expect(clubGuideAllows(step,'lobby','gym')).toBe(false);
+    expect(clubGuideAllows(step,'lobby','dojo')).toBe(false);
+    expect(clubGuideAllows(step,'dojo','series')).toBe(false);
+  }
+  for(const step of ['dojo-door','dojo-start'] as const){
+    expect(clubGuideAllows(step,'lobby','dojo')).toBe(true);
+    expect(clubGuideAllows(step,'lobby','board')).toBe(false);
+    expect(clubGuideAllows(step,'dojo','series')).toBe(true);
+  }
+  expect(clubGuideAllows('bench','gym','bench')).toBe(true);
+  expect(clubGuideAllows('press','gym','bench')).toBe(true);
+  expect(clubGuideAllows('gym-exit','gym','bench')).toBe(false);
+});
+
+test('выход и продолжение незавершённого жима не пропускают этапы, завершение снимает ограничения',()=>{
+  const progress:ClubGuideProgress={step:'press',repsBefore:7};
+  expect(observedClubStep(progress,'lobby',false,7)).toBe('press');
+  expect(clubGuideTarget('press','lobby')).toBe('gym');
+  for(const step of CLUB_GUIDE_STEPS)for(const room of ['lobby','gym','dojo'] as const){
+    expect(clubGuideAllows(step,room,'exit')).toBe(true);
+    expect(clubGuideAllows(step,room,'style')).toBe(true);
+  }
+  for(const room of ['lobby','gym','dojo'] as const)for(const action of ['gym','board','dojo','bench','series'] as const)
+    expect(clubGuideAllows('complete',room,action)).toBe(true);
 });
 
 test('повтор экскурсии учитывает прежние повторения, пропуск не меняет прокачку и сохранённые бои',()=>{

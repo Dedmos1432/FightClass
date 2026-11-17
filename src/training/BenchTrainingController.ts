@@ -40,7 +40,7 @@ export class BenchTrainingController {
   get active(): boolean { return this.phase !== 'idle'; }
   get nearby(): boolean { return Math.abs(this.player.x - BENCH.x) <= BENCH.radius; }
 
-  highlight(): void { this.marker.setVisible(this.nearby && !this.active); }
+  highlight(allowed=true): void { this.marker.setVisible(allowed && this.nearby && !this.active); }
 
   tryStart(): void {
     if (this.active || !this.nearby || this.view.hasDialog) return;
@@ -50,8 +50,8 @@ export class BenchTrainingController {
     } else this.begin();
   }
 
-  update(deltaMs: number): void {
-    this.highlight();
+  update(deltaMs: number, allowed=true): void {
+    this.highlight(allowed);
     if (!this.active) return;
     const paused = this.view.hasDialog || document.hidden || this.pausedByFocus;
     const delta = Math.min(deltaMs, 50);

@@ -103,6 +103,45 @@ async function guideSave(page:Page,current:ClubGuideStep):Promise<void> {
   await expect(page.locator('#club-guide')).toHaveAttribute('data-step',current);
 }
 
+for(const device of [
+  {name:'клавиатура',touch:false,width:1440,height:900},
+  {name:'телефон вертикально',touch:true,width:320,height:568},
+  {name:'телефон горизонтально',touch:true,width:844,height:390},
+])test.describe(`порядок экскурсии: ${device.name}`,()=>{
+  test.use({hasTouch:device.touch,viewport:{width:device.width,height:device.height}});
+  test('E ведёт к стилю, неверные двери и карьера ждут своего шага, пропуск возвращает свободу',async({page})=>{
+    const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+    const action=async()=>{if(device.touch)await page.locator('[data-touch="KeyE"]').tap();else await page.keyboard.press('e');};
+    await guideSave(page,'style');const before=await saved(page);
+    await expect(page.locator('#choose-style')).toBeFocused();
+    await expect(page.locator('#interact-object')).toContainText('Выбрать боевой стиль');
+    await action();await expect(page.locator('.styles-dialog')).toBeVisible();
+    await expect(page.locator('.career-ranking')).toHaveCount(0);
+    await page.getByRole('button',{name:'Закрыть выбор стиля',exact:true}).click();
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','style');
+    await action();await page.locator('input[name="style"][value="mma"]').check();await page.locator('#styles-done').click();
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
+    await expect(page.locator('#interact-object')).toBeHidden();
+    await action();await expect(page.locator('.career-ranking')).toHaveCount(0);
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
+    await walkTo(page,1468);await action();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','gym-door');
+    await page.screenshot({path:`.cache/club-guide/order-${device.width}.png`});
+    await walkTo(page,457);await action();await expect(page.locator('#ui')).toHaveAttribute('data-screen','gym');
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','bench');
+    if(device.touch)await page.locator('[data-touch="Escape"]').tap();else await page.keyboard.press('Escape');
+    await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
+    await expect(page.locator('#club-guide')).toHaveAttribute('data-step','bench');
+    await walkTo(page,965);await action();await expect(page.locator('.career-ranking')).toHaveCount(0);
+    await page.locator('#club-guide-skip').click();
+    await expect(page.locator('#interact-object')).toContainText('Открыть доску');
+    await action();await expect(page.locator('.career-ranking')).toBeVisible();
+    const after=await saved(page);expect(after.clubGuide.step).toBe('complete');expect(after.player.style).toBe('mma');
+    for(const field of ['id','stats','training','career','endless','activeRun','activeCareer'])expect(after[field]).toEqual(before[field]);
+    expect(errors).toEqual([]);
+  });
+});
+
 test('выбор стиля в обучении: закрытие и перезагрузка сохраняют урок, готово продолжает экскурсию',async({page})=>{
   await guideSave(page,'style');const before=await saved(page);
   await expect(page.locator('#club-guide')).toContainText('Техника');
@@ -161,7 +200,8 @@ test('карьерная экскурсия: закрытие и перезаг�
   await expect(page.locator('#club-guide-number')).toContainText('8 ИЗ 9');
   const after=await saved(page);
   for(const field of ['stats','training','career','endless','activeRun','activeCareer'])expect(after[field]).toEqual(before[field]);
-  await page.keyboard.press('e');await expect(page.locator('.career-ranking')).toBeVisible();await expect(page.locator('#career-guide')).toHaveCount(0);
+  await page.keyboard.press('e');await expect(page.locator('.career-ranking')).toHaveCount(0);
+  await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
 });
 
 test('карьерная экскурсия позволяет начать настоящий матч и продолжить маршрут после выхода',async({page})=>{

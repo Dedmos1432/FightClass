@@ -12,6 +12,7 @@ const ROOM_NAMES = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', 
 export class ExplorationView extends ScreenView {
   private readonly region: HTMLElement;
   private lastAction = '';
+  private readonly defaultInteractionHint:string;
   private elapsed = 0;
 
   constructor(services: GameServices, room: RoomId, onInteract: () => void) {
@@ -37,6 +38,7 @@ export class ExplorationView extends ScreenView {
       </section>
     `);
     this.region = this.root.querySelector<HTMLElement>('#world-focus')!;
+    this.defaultInteractionHint=this.root.querySelector('#interaction-hint')!.textContent!;
     this.region.addEventListener('pointerdown', () => this.focusWorld(), { signal: this.events.signal });
     this.on('#interact-object', 'click', onInteract);
     this.on('#lobby-settings', 'click', () => this.showSettings());
@@ -57,13 +59,15 @@ export class ExplorationView extends ScreenView {
     if (note) note.textContent = `Повторений всего: ${this.services.saves.training.totalReps} · Рекорд: ${this.services.saves.training.bestSession}`;
   }
 
-  setInteraction(action: string | null): void {
-    if ((action ?? '') === this.lastAction) return;
-    this.lastAction = action ?? '';
+  setInteraction(action: string | null, hint=this.defaultInteractionHint): void {
+    const key=JSON.stringify([action,hint]);
+    if (key === this.lastAction) return;
+    this.lastAction = key;
     const button = this.root.querySelector<HTMLButtonElement>('#interact-object')!;
     button.hidden = action === null;
     this.root.querySelector('#interaction-label')!.textContent = action ?? '';
     this.root.querySelector<HTMLElement>('#interaction-hint')!.hidden = action !== null;
+    this.root.querySelector('#interaction-hint')!.textContent=hint;
   }
 
   syncPlayer(player: ExplorationPlayer, delta: number): void {
@@ -76,7 +80,7 @@ export class ExplorationView extends ScreenView {
     this.region.dataset.footY = String(player.sprite.y);
   }
 
-  private showStyles(): void {
+  showStyles(): void {
     const current = this.services.saves.lobbyState.style;
     const touch = this.root.dataset.touch==='true';
     const guidingStyle = this.services.saves.needsClubGuide && this.services.saves.clubGuide.step === 'style';

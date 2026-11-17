@@ -53,6 +53,9 @@
 .club-guide > button { margin-top:12px; min-height:30px; padding:6px 10px; font-size:10px; }
 #ui[data-club-guide='style'] #choose-style { outline:2px solid #a9cf99; outline-offset:5px; background:#a9cf9914; }
 #ui[data-club-guide='style'] #choose-style :is(strong,svg) { color:#c5e5b7; }
+#ui[data-club-guide='style']::before { background:linear-gradient(180deg,#0c110d22,#0c110d99); }
+#ui[data-club-guide='style'] #choose-style { box-shadow:0 0 0 5px #102117,0 0 24px #a9cf9940; }
+.club-guide[data-reminding='true'] { outline:2px solid var(--action); outline-offset:3px; }
 .style-guide { margin-block:16px; padding:12px 16px; border-left:3px solid #476648; background:#47664812; }
 .style-guide > b { font:600 18px var(--display); }
 .style-guide > p { margin-top:6px; font:11px/1.65 var(--body); }

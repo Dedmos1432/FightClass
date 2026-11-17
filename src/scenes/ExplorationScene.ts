@@ -12,6 +12,7 @@ import { RoomBackdrop } from './RoomBackdrop';
 import { preloadGym } from '../assets/gymAssets';
 import { BenchTrainingController } from '../training/BenchTrainingController';
 import { ClubGuideController } from '../tutorial/ClubGuideController';
+import { clubGuideAllows, type ClubInteraction } from '../tutorial/ClubGuide';
 
 export class ExplorationScene extends Phaser.Scene {
   private player: ExplorationPlayer | null = null;
@@ -106,7 +107,7 @@ export class ExplorationScene extends Phaser.Scene {
     const direction = this.controls.direction;
     if (!this.bench?.active) this.player.update(direction, delta);
     if(direction!==0&&!this.bench?.active)this.services.audio.play('step');
-    this.bench?.update(delta);
+    this.bench?.update(delta,this.guideAllows('bench'));
     this.clubGuide?.update();
     this.view.syncPlayer(this.player, delta);
     this.refreshInteraction();
@@ -148,15 +149,21 @@ export class ExplorationScene extends Phaser.Scene {
 
   private refreshInteraction(): void {
     if (!this.player || !this.view) return;
+    const hint=this.services.saves.needsClubGuide ? this.clubGuide?.interactionHint : undefined;
+    if(this.services.saves.needsClubGuide && this.services.saves.clubGuide.step==='style') {
+      this.nearest=null;this.view.setInteraction('Выбрать боевой стиль');
+      this.markers.forEach(marker=>marker.setVisible(false));this.boardHighlight?.setVisible(false);return;
+    }
     if (this.room === 'lobby') {
-      this.nearest = nearestLobbyObject(this.player.x);
-      this.view.setInteraction(this.nearest?.action ?? null);
+      const nearest=nearestLobbyObject(this.player.x);
+      this.nearest = nearest && this.guideAllows(nearest.id) ? nearest : null;
+      this.view.setInteraction(this.nearest?.action ?? null,hint);
       this.markers.forEach((marker, key) => marker.setVisible(key === this.nearest?.id));
       this.boardHighlight?.setVisible(this.nearest?.id === 'board');
     } else {
       const nearExit = Math.abs(this.player.x - 160) <= WORLD.interactionRadius;
-      const nearFight = this.room === 'dojo' && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius;
-      this.view.setInteraction(this.bench?.active ? null : this.bench?.nearby ? 'Начать жим лёжа' : nearFight ? this.services.saves.activeRun ? 'Продолжить серию боёв' : 'Начать серию боёв' : nearExit ? 'Вернуться в лобби' : null);
+      const nearFight = this.room === 'dojo' && this.guideAllows('series') && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius;
+      this.view.setInteraction(this.bench?.active ? null : this.bench?.nearby && this.guideAllows('bench') ? 'Начать жим лёжа' : nearFight ? this.services.saves.activeRun ? 'Продолжить серию боёв' : 'Начать серию боёв' : nearExit ? 'Вернуться в лобби' : null,hint);
       this.markers.get('exit')?.setAlpha(nearExit ? 1 : 0.35);
       this.markers.get('start')?.setAlpha(nearFight ? 1 : 0.35);
     }
@@ -166,29 +173,43 @@ export class ExplorationScene extends Phaser.Scene {
     if (!this.player || !this.view || this.view.hasDialog) return;
     this.controls?.clear();
     this.player.stop();
+    if(this.services.saves.needsClubGuide && this.services.saves.clubGuide.step==='style') { this.view.showStyles();return; }
     if (this.room !== 'lobby') {
-      if (this.bench?.nearby) { this.bench.tryStart(); return; }
+      if (this.bench?.nearby) { if(this.requireGuideAction('bench'))this.bench.tryStart(); return; }
       if (this.room === 'dojo' && Math.abs(this.player.x - COMBAT.centerX) <= COMBAT.startRadius) {
+        if(!this.requireGuideAction('series'))return;
         const run=this.services.saves.beginEndless();
         if(!run)return;
         this.services.saves.advanceClubGuide('dojo-start');
         this.services.audio.play('open'); this.scene.start(SCENES.fight); return;
       }
       if (Math.abs(this.player.x - 160) <= WORLD.interactionRadius) this.returnToLobby();
+      else if(this.services.saves.needsClubGuide)this.clubGuide?.remind();
       return;
     }
     const target = nearestLobbyObject(this.player.x);
-    if (!target) return;
+    if (!target) { if(this.services.saves.needsClubGuide)this.clubGuide?.remind();return; }
+    if(!this.requireGuideAction(target.id))return;
     this.persistPosition();
     if (target.id === 'board') this.openRanking();
     else { this.services.audio.play('open'); this.scene.start(SCENES[target.id]); }
   }
 
   private openRanking(): void {
+    if(!this.requireGuideAction('board'))return;
     if (this.view) showRanking(this.view, () => {
       this.services.audio.play('open');
       this.scene.start(SCENES.career);
     });
+  }
+
+  private guideAllows(action:ClubInteraction):boolean {
+    const saves=this.services.saves;
+    return !saves.needsClubGuide || clubGuideAllows(saves.clubGuide.step,this.room,action);
+  }
+  private requireGuideAction(action:ClubInteraction):boolean {
+    if(this.guideAllows(action))return true;
+    this.clubGuide?.remind();return false;
   }
 
   private escape(): void {

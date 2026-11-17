@@ -17,6 +17,7 @@ export class ClubGuideController {
   private lastHint='';
   private pages:string[]=[];
   private page=0;
+  private reminderUntil=0;
   constructor(scene:Phaser.Scene,private readonly view:ExplorationView,private readonly room:ClubRoom,
     private readonly player:ExplorationPlayer,private readonly bench:BenchTrainingController|null) {
     view.root.querySelector('.exploration-layer')!.insertAdjacentHTML('beforeend',`
@@ -33,6 +34,12 @@ export class ClubGuideController {
     view.on('#club-guide-prev','click',()=>{this.page=Math.max(0,this.page-1);this.renderPage();});
     view.on('#club-guide-next','click',()=>{this.page=Math.min(this.pages.length-1,this.page+1);this.renderPage();});
     this.update();
+    if(view.services.saves.clubGuide.step==='style')view.focus('#choose-style');
+  }
+  get interactionHint():string { return this.actionLabel(this.hint().action); }
+  remind():void {
+    this.page=0;this.renderPage();this.reminderUntil=performance.now()+1400;
+    this.panel.dataset.reminding='true';
   }
   update():void {
     const saves=this.view.services.saves;
@@ -43,6 +50,7 @@ export class ClubGuideController {
     if(next!==progress.step)saves.advanceClubGuide(progress.step);
     const step=saves.clubGuide.step;
     this.view.root.dataset.clubGuide=step;this.panel.dataset.step=step;
+    this.panel.dataset.reminding=String(performance.now()<this.reminderUntil);
     const hidden=this.view.hasDialog;
     this.panel.hidden=hidden;this.marker.setVisible(!hidden);this.arrow.setVisible(!hidden);
     const hint=this.hint(),key=JSON.stringify([step,hint]);
@@ -80,8 +88,8 @@ export class ClubGuideController {
   private hint():Hint {
     const saves=this.view.services.saves,step=saves.clubGuide.step;
     if(step==='style')return {title:'Выбери боевой стиль',
-      text:'Нажми подсвеченную кнопку «Техника» в верхней панели. Доступны бокс, ММА, тхэквондо, муай-тай и свободный стиль: в нём можно собрать три атаки из двенадцати. Стиль меняет только анимации — урон, скорость и остальные характеристики сохраняются. Выбери понравившийся вариант и нажми «Готово». Менять стиль можно и позже в любой комнате.',
-      target:null,action:'↑ ТЕХНИКА — В ВЕРХНЕЙ ПАНЕЛИ'};
+      text:'Нажми E или подсвеченную кнопку «Техника» в верхней панели. Доступны бокс, ММА, тхэквондо, муай-тай и свободный стиль: в нём можно собрать три атаки из двенадцати. Стиль меняет только анимации — урон, скорость и остальные характеристики сохраняются. Выбери понравившийся вариант и нажми «Готово». Менять стиль можно и позже в любой комнате.',
+      target:null,action:'E — выбрать боевой стиль'};
     const exit={title:'Вернись в лобби',text:'Выход — слева. Подойди к нему и нажми E или нажми Escape. Следующая подсказка появится в лобби.',target:160,action:'E / Esc — в лобби'};
     if(this.room==='lobby') {
       if(step==='career-board'||step==='career-review')return {title:'Карьера — на доске',
