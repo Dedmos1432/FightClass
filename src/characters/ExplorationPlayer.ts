@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { WORLD } from '../config/lobby';
+import { textureRef } from '../assets/deliveryAssets';
 
 export type Facing = 'left' | 'right';
 
@@ -12,7 +13,8 @@ export class ExplorationPlayer {
   constructor(scene: Phaser.Scene, x: number, facing: Facing) {
     this.facing = facing;
     this.shadow = scene.add.ellipse(x, WORLD.floorY - 1, 150, 23, 0x030603, 0.5).setDepth(4);
-    this.sprite = scene.add.sprite(x, WORLD.floorY, `player-idle-${facing}-01`)
+    const idle = textureRef(`player-idle-${facing}-01`);
+    this.sprite = scene.add.sprite(x, WORLD.floorY, idle.key, idle.frame)
       .setScale(0.8).setDepth(5);
     this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => this.alignFeet());
     this.play('idle');
@@ -57,7 +59,7 @@ export class ExplorationPlayer {
 
   private alignFeet(): void {
     // Source canvases are all 256×448. Frame 01 has its sole one pixel higher.
-    const footEdge = this.sprite.texture.key.endsWith('-01') ? 434 : 435;
+    const footEdge = String(this.sprite.frame.name).endsWith('-01') ? 434 : 435;
     this.sprite.setOrigin(0.5, footEdge / 448);
   }
 }

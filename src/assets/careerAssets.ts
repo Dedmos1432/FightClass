@@ -1,7 +1,8 @@
 import type Phaser from 'phaser';
 import arenaUrl from '../../assets/optimized/arena.webp?url';
 
-export const CAREER_ARENA_KEY = 'career-underground-arena';
+// The menu and career use the same bitmap, so share its decoded/GPU texture.
+export const CAREER_ARENA_KEY = 'arena';
 
 export function preloadCareerArena(scene: Phaser.Scene): void {
   if (!scene.textures.exists(CAREER_ARENA_KEY)) {

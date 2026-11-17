@@ -5,7 +5,7 @@ import { ScreenView } from '../ui/ScreenView';
 import { icons } from '../ui/icons';
 import { ArenaBackdrop } from './ArenaBackdrop';
 import { clubGuideRoom } from '../tutorial/ClubGuide';
-import fighterUrl from '../../resourse/player/ilde_fight/combat_idle_left/idle_01.png?url';
+import { portraitURL } from '../assets/deliveryAssets';
 
 export class MainMenuScene extends Phaser.Scene {
   constructor(private readonly services: GameServices) {
@@ -13,6 +13,7 @@ export class MainMenuScene extends Phaser.Scene {
   }
 
   create(): void {
+    const fighterUrl=portraitURL('player');
     new ArenaBackdrop(this, this.services);
     const saved = this.services.saves.current;
     const savedDate = saved ? new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(saved.updatedAt)) : '';

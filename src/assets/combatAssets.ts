@@ -1,6 +1,7 @@
 import type Phaser from 'phaser';
 import rawManifest from './combatManifest.json' with { type: 'json' };
 import { ENDLESS_ENEMY_SKINS, type FighterSkin } from '../combat/Opponents';
+import { queueDeliveryAtlases } from './deliveryAssets';
 
 interface FrameMeta { page: string; ox: number; oy: number }
 export const combatManifest = rawManifest as {
@@ -35,14 +36,7 @@ export function queueCombatAtlases(
   scene: { textures: { exists(key: string): boolean }; load: { atlas(key: string, textureURL: string, atlasURL: string): unknown } },
   skins: readonly FighterSkin[],
 ): boolean {
-  let queued = false;
-  const base = import.meta.env?.BASE_URL ?? '/';
-  for (const page of combatPagesFor(skins)) {
-    if (scene.textures.exists(page)) continue;
-    scene.load.atlas(page, `${base}combat/${page}.png`, `${base}combat/${page}.json`);
-    queued = true;
-  }
-  return queued;
+  return queueDeliveryAtlases(scene, combatPagesFor(skins));
 }
 
 export function preloadCombat(scene: Phaser.Scene, skins: readonly FighterSkin[] = ENDLESS_COMBAT_SKINS): void {

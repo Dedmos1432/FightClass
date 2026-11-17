@@ -3,10 +3,7 @@ import { GAME } from '../config/game';
 import lobbyUrl from '../../assets/optimized/lobby.webp?url';
 import gymUrl from '../../assets/optimized/gym.webp?url';
 import dojoUrl from '../../assets/optimized/dojo.webp?url';
-
-const sprites = import.meta.glob<string>('../../resourse/player/{idle,walk}/**/*.png', {
-  eager: true, query: '?url', import: 'default',
-});
+import { queueGroup, textureRef } from './deliveryAssets';
 
 const backgrounds = { lobby: lobbyUrl, gym: gymUrl, dojo: dojoUrl } as const;
 export type RoomId = keyof typeof backgrounds;
@@ -34,16 +31,7 @@ export function preloadExploration(scene: Phaser.Scene, room: RoomId): void {
   if (!scene.textures.exists(`background-${room}`)) {
     scene.load.image({ key: `background-${room}`, url: backgrounds[room], xhrSettings: { responseType: 'blob', timeout: 20000 } });
   }
-  for (const state of ['idle', 'walk']) {
-    for (const direction of ['left', 'right']) {
-      for (let frame = 1; frame <= 8; frame++) {
-        const key = playerTextureKey(state, direction, frame);
-        if (scene.textures.exists(key)) continue;
-        const file = `../../resourse/player/${state}/${state}_${direction}/${state}_${direction}_${String(frame).padStart(2, '0')}.png`;
-        scene.load.image({ key, url: sprites[file], xhrSettings: { responseType: 'blob', timeout: 20000 } });
-      }
-    }
-  }
+  queueGroup(scene, 'exploration');
 }
 
 export function createPlayerAnimations(scene: Phaser.Scene): void {
@@ -51,7 +39,7 @@ export function createPlayerAnimations(scene: Phaser.Scene): void {
     for (const direction of ['left', 'right']) {
       const key = `player-${state}-${direction}`;
       if (scene.anims.exists(key)) continue;
-      scene.anims.create({ key, frames: Array.from({ length: 8 }, (_, index) => ({ key: playerTextureKey(state, direction, index + 1) })), frameRate: state === 'walk' ? 11 : 7, repeat: -1 });
+      scene.anims.create({ key, frames: Array.from({ length: 8 }, (_, index) => textureRef(playerTextureKey(state, direction, index + 1))), frameRate: state === 'walk' ? 11 : 7, repeat: -1 });
     }
   }
 }

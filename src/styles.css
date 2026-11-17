@@ -1,12 +1,12 @@
 @font-face {
   font-family: 'Oswald';
-  src: url('./assets/fonts/Oswald-Variable.ttf') format('truetype');
+  src: url('./assets/fonts/Oswald-Variable.woff2') format('woff2');
   font-weight: 200 700;
   font-display: swap;
 }
 @font-face {
   font-family: 'Golos Text';
-  src: url('./assets/fonts/GolosText-Variable.ttf') format('truetype');
+  src: url('./assets/fonts/GolosText-Variable.woff2') format('woff2');
   font-weight: 400 900;
   font-display: swap;
 }

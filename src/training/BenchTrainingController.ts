@@ -7,6 +7,7 @@ import { BenchTrainingView, type BenchPhase } from '../ui/BenchTrainingView';
 import { pressTexture } from '../assets/gymAssets';
 import { BenchPressQte } from './BenchPressQte';
 import { inputSuspended } from '../input/VirtualInput';
+import { textureRef } from '../assets/deliveryAssets';
 
 export class BenchTrainingController {
   private phase: BenchPhase = 'idle';
@@ -29,8 +30,9 @@ export class BenchTrainingController {
   constructor(scene: Phaser.Scene, private readonly player: ExplorationPlayer, private readonly view: ExplorationView) {
     scene.add.ellipse(BENCH.x, WORLD.floorY - 1, 420, 28, 0x030603, 0.45).setDepth(3);
     this.marker = scene.add.ellipse(BENCH.x, WORLD.floorY + 5, 220, 25, 0xd8e391, 0.1).setDepth(3).setStrokeStyle(2, 0xd8e391, 0.7).setVisible(false);
-    this.empty = scene.add.image(BENCH.x, WORLD.floorY, 'gym-bench').setOrigin(0.5, BENCH.footOrigin).setScale(BENCH.scale).setDepth(4);
-    this.combined = scene.add.image(BENCH.x, WORLD.floorY, 'gym-prepare_00').setOrigin(0.5, BENCH.footOrigin).setScale(BENCH.scale).setDepth(6).setVisible(false);
+    const bench=textureRef('gym-bench'), prepare=textureRef('gym-prepare_00');
+    this.empty = scene.add.image(BENCH.x, WORLD.floorY, bench.key, bench.frame).setOrigin(0.5, BENCH.footOrigin).setScale(BENCH.scale).setDepth(4);
+    this.combined = scene.add.image(BENCH.x, WORLD.floorY, prepare.key, prepare.frame).setOrigin(0.5, BENCH.footOrigin).setScale(BENCH.scale).setDepth(6).setVisible(false);
     scene.add.text(BENCH.x, WORLD.floorY - 415, 'ЖИМ ЛЁЖА', { fontFamily: 'Consolas, monospace', fontSize: '22px', color: '#e1e8c4', backgroundColor: '#182016bb', padding: { x: 15, y: 9 } }).setOrigin(0.5).setDepth(2);
     this.ui = new BenchTrainingView(view, () => this.tap(), () => this.stop());
     document.addEventListener('keydown', this.onKey, { signal: this.events.signal });
@@ -168,7 +170,11 @@ export class BenchTrainingController {
     this.ui.update(this.phase, this.lift, this.reps, false);
   }
 
-  private texture(key: string): void { if (this.combined.texture.key !== key) this.combined.setTexture(key); }
+  private texture(key: string): void {
+    if (this.combined.frame.name !== key) {
+      const next=textureRef(key);this.combined.setTexture(next.key,next.frame);
+    }
+  }
 
   private finish(): void {
     const approached = this.phase !== 'approaching';

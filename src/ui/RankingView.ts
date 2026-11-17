@@ -6,12 +6,7 @@ import { icons } from './icons';
 import { CLUB_GUIDE_STEPS } from '../tutorial/ClubGuide';
 import boardTexture from '../../assets/optimized/career-board.webp?url';
 import './career.css';
-
-const portraits=import.meta.glob<string>('../../resourse/enemy/*/idle/idle_right/idle_00.png',{
-  eager:true,query:'?url',import:'default',
-});
-const folders:Record<string,string>={kim:'kim dong won',kwon:'kwon tae-young',yeo:'yeo eun-sol',shim:'shim ha-min',
-  bang:'bang jung-eum',jang:'chun-soo jang',cha:'cha so-wol',young:'young woong',sunny:'sunny jaa',lee:'ja-kyung lee',yang:'ki-hoon yang',maria:'maria'};
+import { portraitURL } from '../assets/deliveryAssets';
 
 /** The lobby board is the sole entrance to career matches. */
 export function showRanking(view: ScreenView, onFight?: () => void): void {
@@ -67,7 +62,7 @@ export function showRanking(view: ScreenView, onFight?: () => void): void {
   };
   renderGuidePage();
 
-  const portraitFor=(opponent:CareerOpponent):string=>portraits[`../../resourse/enemy/${folders[opponent.skin]}/idle/idle_right/idle_00.png`];
+  const portraitFor=(opponent:CareerOpponent):string=>portraitURL(opponent.skin);
 
   const status=(opponent:CareerOpponent):string=>progress.victories.includes(opponent.id) ? 'ПОБЕЖДЁН'
     : active?.opponentId===opponent.id ? 'В БОЮ' : careerAvailable(progress,opponent.id) ? 'ДОСТУПЕН' : 'ЗАКРЫТ';

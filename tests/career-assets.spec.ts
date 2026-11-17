@@ -126,7 +126,7 @@ test('предзагрузка следующей волны добавляет 
   const loader={
     textures:{exists:(key:string)=>resident.has(key)},
     load:{atlas:(key:string,png:string,json:string)=>{
-      expect(png).toBe(`/combat/${key}.png`); expect(json).toBe(`/combat/${key}.json`);
+      expect(png).toBe(`/assets/delivery/combat/${key}.webp`); expect(json).toBe(`/assets/delivery/combat/${key}.json`);
       queued.push(key);
     }},
   };

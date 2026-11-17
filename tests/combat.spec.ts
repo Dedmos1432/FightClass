@@ -8,6 +8,9 @@ import { walkTo } from './helpers/walkTo';
 
 const arena=(page:Page)=>page.locator('#combat-focus');
 const room=(page:Page,name:string)=>expect(page.locator('#ui')).toHaveAttribute('data-screen',name);
+// Match actual atlas images in dev and content-hashed builds, excluding Vite URL modules.
+const combatPage=(url:URL):string|undefined=>url.searchParams.has('import') || url.searchParams.has('url')
+  ? undefined : url.pathname.match(/\/([a-z]+-\d+)(?:-[\w-]+)?\.webp$/)?.[1];
 async function seed(page:Page, run?:Partial<ActiveRun>, style='boxing'):Promise<void> {
   const runId=run?.id??'run-test';
   const enemy=opponentAt(run?.wins??0,runId,run?.roundStartedMs);
@@ -50,13 +53,13 @@ for(const [skin,next] of [['bang','jang'],['jang','cha'],['cha','bang']] as cons
     const errors:string[]=[],pages=new Set<string>();
     page.on('pageerror',e=>errors.push(e.message));
     page.on('response',response=>{
-      const pageName=new URL(response.url()).pathname.match(/\/combat\/([^/]+)\.png$/)?.[1];
+      const pageName=response.headers()['content-type']?.startsWith('image/') ? combatPage(new URL(response.url())) : undefined;
       if(pageName) { expect(response.ok(),pageName).toBe(true); pages.add(pageName); }
     });
     let release=()=>{};
     const gate=new Promise<void>(resolve=>{release=resolve;});
     // Exercise a slow connection as well as the ordinary between-round preload.
-    if(skin==='jang') await page.route(`**/combat/${next}-*`,async route=>{await gate;await route.continue();});
+    if(skin==='jang') await page.route(url=>combatPage(url)?.startsWith(`${next}-`)===true,async route=>{await gate;await route.continue();});
     try {
       await seedSkinWave(page,skin,next); await startFight(page);
       await expect(arena(page)).toHaveAttribute('data-enemy-skin',skin);
@@ -88,7 +91,7 @@ for(const [skin,next] of [['bang','jang'],['jang','cha'],['cha','bang']] as cons
 
 test('ошибка подгрузки следующей модели: повторная загрузка продолжает сохранённую волну без потери HP',async({page})=>{
   let fail=true;
-  await page.route('**/combat/jang-*',route=>fail?route.abort('failed'):route.continue());
+  await page.route(url=>combatPage(url)?.startsWith('jang-')===true,route=>fail?route.abort('failed'):route.continue());
   await seedSkinWave(page,'bang','jang'); await startFight(page);
   await room(page,'load-error'); await expect(page.locator('#retry-combat')).toBeVisible();
   expect((await save(page)).activeRun).toMatchObject({wins:1,hp:37});

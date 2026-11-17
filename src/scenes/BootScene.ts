@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import arenaUrl from '../../assets/optimized/arena.webp?url';
+import { preloadCareerArena } from '../assets/careerAssets';
 import { GAME, SCENES } from '../config/game';
 import type { GameServices } from '../core/GameServices';
 
@@ -22,7 +22,7 @@ export class BootScene extends Phaser.Scene {
       ui.innerHTML = '<div class="loading-screen"><h1>Не удалось загрузить фон</h1><p>Проверь подключение и повтори загрузку.</p><button class="button primary" id="retry-load">Повторить загрузку</button></div>';
       ui.querySelector('#retry-load')?.addEventListener('click', () => window.location.reload());
     });
-    this.load.image('arena', arenaUrl);
+    preloadCareerArena(this);
   }
 
   create(): void {
