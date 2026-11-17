@@ -6,6 +6,7 @@ import type { ExplorationView } from '../ui/ExplorationView';
 import { BenchTrainingView, type BenchPhase } from '../ui/BenchTrainingView';
 import { pressTexture } from '../assets/gymAssets';
 import { BenchPressQte } from './BenchPressQte';
+import { inputSuspended } from '../input/VirtualInput';
 
 export class BenchTrainingController {
   private phase: BenchPhase = 'idle';
@@ -53,7 +54,7 @@ export class BenchTrainingController {
   update(deltaMs: number, allowed=true): void {
     this.highlight(allowed);
     if (!this.active) return;
-    const paused = this.view.hasDialog || document.hidden || this.pausedByFocus;
+    const paused = inputSuspended() || this.view.hasDialog || document.hidden || this.pausedByFocus;
     const delta = Math.min(deltaMs, 50);
     if (!paused) this.advance(delta);
     this.uiElapsed += delta;
@@ -152,12 +153,12 @@ export class BenchTrainingController {
   }
 
   private tap(): void {
-    if (this.phase !== 'pressing' || this.view.hasDialog || document.hidden || this.pausedByFocus) return;
+    if (inputSuspended() || this.phase !== 'pressing' || this.view.hasDialog || document.hidden || this.pausedByFocus) return;
     this.qte.tap();
   }
 
   private readonly onKey = (event: KeyboardEvent): void => {
-    if (!this.active || this.view.hasDialog || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (inputSuspended() || !this.active || this.view.hasDialog || event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
     if (event.code === 'KeyE') { event.preventDefault(); this.tap(); }
     if (event.code === 'Escape') { event.preventDefault(); this.stop(); }
   };

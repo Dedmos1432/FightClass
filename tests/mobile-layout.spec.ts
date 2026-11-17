@@ -3,6 +3,7 @@ import { SaveService } from '../src/services/SaveService';
 import { StorageService } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
 import { CLUB_GUIDE_STEPS } from '../src/tutorial/ClubGuide';
+import { desktopViewport } from './helpers/desktopViewport';
 
 test.use({hasTouch:true,reducedMotion:'reduce'});
 
@@ -69,7 +70,7 @@ async function fits(page:Page,selector:string):Promise<void>{
 
 for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]]){
   test(`мобильные окна без прокрутки ${width}x${height}`,async({page})=>{
-    test.setTimeout(120_000);await page.setViewportSize({width,height});await setup(page);
+    test.setTimeout(120_000);await desktopViewport(page,{width,height});await setup(page);
     await fits(page,'.screen');await page.locator('#settings').tap();await fits(page,'.settings-dialog');
     await page.getByRole('button',{name:'Готово',exact:true}).tap();
     for(const kind of ['confirm','styles','bench-intro','bench-active','bench-result','pause','result','career-result']){
@@ -85,7 +86,7 @@ for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]]){
     }
   });
   test(`все страницы обучения без прокрутки ${width}x${height}`,async({page})=>{
-    test.setTimeout(120_000);await page.setViewportSize({width,height});await setup(page);
+    test.setTimeout(120_000);await desktopViewport(page,{width,height});await setup(page);
     for(const lesson of ['movement','attacks','combo','block','dodge','stamina','club']){
       await render(page,'lesson:'+lesson);await fits(page,'#tutorial-card');
       const next=page.locator('#tutorial-page-next');
@@ -107,7 +108,7 @@ for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]]){
     }
   });
   test(`экскурсия во всех комнатах без прокрутки ${width}x${height}`,async({page})=>{
-    test.setTimeout(120_000);await page.setViewportSize({width,height});
+    test.setTimeout(120_000);await desktopViewport(page,{width,height});
     await page.addInitScript(key=>{const value=sessionStorage.getItem('layout-guide-seed');if(value)localStorage.setItem(key,value);},GAME.storage.session);
     await page.goto('/');await expect(page.locator('#settings')).toBeVisible();
     const saves=new SaveService(new StorageService(null));saves.startNew();saves.skipTutorial();

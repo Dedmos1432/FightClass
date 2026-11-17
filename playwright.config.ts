@@ -19,12 +19,14 @@ export default defineConfig({
     { name: 'storage', testMatch: /(storage|training|combat-core|combat-feel|career-core|career-ai|career-assets|tutorial-core|platform-core|balance-core)\.spec\.ts/ },
     {
       name: 'chrome',
-      testMatch: /(menu|lobby|gym|combat|combat-response|career|board|tutorial|touch|mobile-layout)\.spec\.ts/,
+      testMatch: /(menu|lobby|gym|combat|combat-response|career|board|tutorial|touch|mobile-layout|orientation)\.spec\.ts/,
       workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         channel: 'chrome',
         viewport: { width: 1440, height: 900 },
+        // Viewport-only layout cases resize a desktop; phone scenarios set their physical screen explicitly.
+        screen: { width: 1440, height: 900 },
         launchOptions: { args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] },
       },
     },

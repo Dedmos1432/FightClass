@@ -4,6 +4,7 @@ import { StorageService } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
 import { skipTutorial } from './helpers/tutorial';
 import { TUTORIAL_STEPS, type PracticeStep } from '../src/tutorial/Progress';
+import { desktopViewport } from './helpers/desktopViewport';
 
 test.use({hasTouch:true,viewport:{width:844,height:390}});
 const button=(page:Page,code:string)=>page.locator(`[data-touch="${code}"]`);
@@ -124,7 +125,7 @@ test('карьерный бой: мобильный автоблок защищ�
 });
 
 for(const [width,height] of [[320,568],[844,390]])test(`сенсорные кнопки доступны и не пересекаются ${width}x${height}`,async({page})=>{
-  await page.setViewportSize({width,height});await page.goto('/');await page.locator('#start-game').tap();
+  await desktopViewport(page,{width,height});await page.goto('/');await page.locator('#start-game').tap();
   await page.locator('#tutorial-practice').tap();
   const codes=['KeyA','KeyD','ShiftLeft','KeyQ','KeyW','KeyE'];const boxes=[];
   await expect(button(page,'Space')).toHaveCount(0);

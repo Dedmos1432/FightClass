@@ -1,0 +1,30 @@
+#orientation-prompt {
+  position:fixed; inset:0; z-index:1001; width:100dvw; height:100dvh; max-width:none; max-height:none;
+  margin:0; padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left));
+  display:grid; place-items:center; border:0; outline:0; background:transparent; color:var(--paper);
+  overflow:hidden; overscroll-behavior:none; touch-action:none;
+}
+#orientation-prompt::backdrop { background:#080d10b8; }
+.orientation-content { width:min(340px,100%); text-align:center; }
+.orientation-symbol { display:block; width:180px; height:144px; margin:0 auto 16px; overflow:visible; }
+.orientation-target { fill:none; stroke:#eee8d8; opacity:.22; stroke-width:2; stroke-dasharray:5 6; }
+.orientation-phone { transform-box:view-box; transform-origin:center; transform:rotate(90deg); animation:turn-phone 3s ease-in-out infinite; }
+.orientation-phone > rect:first-child { fill:#171d20; stroke:#eee8d8; stroke-width:3; }
+.orientation-phone path { stroke:#eee8d8; stroke-width:3; stroke-linecap:round; }
+.orientation-screen { fill:#bc352a28; stroke:#eee8d83d; stroke-width:1; }
+.orientation-arrow { fill:none; stroke:var(--accent); stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+.orientation-caption { color:#d29583; font:700 10px var(--mono); letter-spacing:2px; }
+.orientation-content h1 { margin:12px 0; font:600 34px/1.1 var(--display); text-transform:uppercase; }
+.orientation-content p { font:13px/1.6 var(--body); color:#ddd8cc; }
+.orientation-content small { display:block; margin-top:20px; color:#969b91; font:10px/1.5 var(--body); }
+@keyframes turn-phone {
+  0%,15% { transform:rotate(0deg); }
+  45%,75% { transform:rotate(90deg); }
+  95%,100% { transform:rotate(0deg); }
+}
+@media(prefers-reduced-motion:reduce) { .orientation-phone { animation:none; } }
+@media(max-height:500px) {
+  .orientation-symbol { width:130px; height:104px; margin-bottom:10px; }
+  .orientation-content h1 { font-size:28px; margin-block:8px; }
+  .orientation-content small { margin-top:12px; }
+}

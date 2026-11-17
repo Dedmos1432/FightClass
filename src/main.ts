@@ -12,10 +12,13 @@ import './styles.css';
 import './ui/exploration.css';
 import './ui/combat-training.css';
 import './ui/career.css';
+import './ui/career-mobile.css';
 import './ui/tutorial.css';
 import './ui/touch.css';
 import './ui/mobile.css';
 import './ui/mobile-training.css';
+import './ui/orientation.css';
+import { OrientationPrompt } from './ui/OrientationPrompt';
 import { browserStorage, StorageService } from './services/StorageService';
 import { deadline, initializeYandex } from './platform/YandexPlatform';
 import { CloudSaves } from './platform/CloudSaves';
@@ -24,6 +27,7 @@ import { bindPlatform } from './platform/PlatformRuntime';
 let game:Phaser.Game|null=null;
 let dispose:(()=>void)|null=null;
 let cancelled=false;
+const orientation=new OrientationPrompt();
 async function start():Promise<void> {
   document.querySelector('#ui')!.innerHTML='<div class="loading-screen"><span class="brand-mark">FC</span><p>FIGHT CLASS</p><small>ПОДГОТОВКА ИГРЫ</small></div>';
   const storage=new StorageService(browserStorage());
@@ -47,14 +51,14 @@ async function start():Promise<void> {
   const unsubscribe = services.settings.subscribe((settings) => {
   document.body.dataset.motion = String(settings.animatedBackground);
   });
-  const release=bindPlatform(game,services,platform,cloud);
+  const release=bindPlatform(game,services,platform,cloud,orientation);
   dispose=()=>{unsubscribe();release();};
 }
 void start();
 
 if (import.meta.hot) {
   import.meta.hot.dispose(() => {
-    cancelled=true;dispose?.();game?.destroy(true);
+    cancelled=true;dispose?.();orientation.destroy();game?.destroy(true);
     document.querySelector('#ui')?.replaceChildren();
   });
 }

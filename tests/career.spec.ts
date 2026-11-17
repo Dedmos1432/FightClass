@@ -9,6 +9,7 @@ import { settleCareerRound, winCareerMatch } from './helpers/career';
 import { combatPagesFor } from '../src/assets/combatAssets';
 import type { EnemySkin } from '../src/combat/Opponents';
 import { walkTo } from './helpers/walkTo';
+import { desktopViewport } from './helpers/desktopViewport';
 import { TUTORIAL_STEPS } from '../src/tutorial/Progress';
 import { CLUB_GUIDE_STEPS } from '../src/tutorial/ClubGuide';
 
@@ -308,20 +309,38 @@ test.describe('карьерная доска на телефоне без про
     expect(bounds.width).toBeLessThanOrEqual(bounds.clientWidth+1);
     expect(bounds.top).toBeGreaterThanOrEqual(0);
     expect(bounds.bottom).toBeLessThanOrEqual(bounds.screen);
+    if(await page.locator('#opponent-profile').isVisible()){
+      const overlapping=await page.locator('#opponent-profile').evaluate(profile=>{
+        const paper=profile.getBoundingClientRect(),action=profile.querySelector('#career-start')!.getBoundingClientRect();
+        return [...profile.querySelectorAll<HTMLElement>('h3,.opponent-style,dt,dd,.opponent-tactic,.career-match-format,.career-fight-record,.career-lock-note')].filter(node=>{
+          const r=node.getBoundingClientRect();return r.width>0&&r.height>0&&(r.bottom>action.top+1||r.top<paper.top||r.left<paper.left||r.right>paper.right);
+        }).map(node=>node.className||node.tagName);
+      });
+      expect(overlapping,'Dossier text must fit above the fight button').toEqual([]);
+    }
   }
   for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]]) {
     test(`список, досье и правила помещаются ${width}x${height}`,async({page})=>{
-      await page.setViewportSize({width,height});await seed(page);await board(page);
+      await desktopViewport(page,{width,height});await seed(page);await board(page);
       const dialog=page.locator('.career-ranking');
-      await expect(dialog).toHaveAttribute('data-board-view','roster');await fits(page);
+      await expect(dialog).toHaveAttribute('data-board-view','board');await fits(page);
       await expect(page.locator('.opponent-row')).toHaveCount(4);
+      await expect(page.locator('.board-roster')).toBeVisible();await expect(page.locator('#opponent-profile')).toBeVisible();
+      for(const photo of await page.locator('.board-row-photo').all())await expect(photo).toBeInViewport();
+      await expect.poll(()=>page.locator('.board-row-photo img').evaluateAll((images:HTMLImageElement[])=>images.every(img=>img.complete&&img.naturalWidth>0))).toBe(true);
       await page.screenshot({path:`.cache/mobile-layout/career-list-${width}.png`});
       await page.locator('[data-opponent="shim"]').tap();
-      await expect(dialog).toHaveAttribute('data-board-view','profile');await fits(page);
+      await expect(dialog).toHaveAttribute('data-board-view','board');await fits(page);
+      await expect(page.locator('.board-roster')).toBeVisible();
+      await expect(page.locator('#opponent-profile h3')).toHaveText('Shim Ha-min');
       await expect(page.locator('#career-start')).toBeInViewport();await expect(page.locator('#career-start')).toBeDisabled();
       await expect(page.locator('.career-lock-note')).toBeInViewport();
       await page.screenshot({path:`.cache/mobile-layout/career-profile-${width}.png`});
-      await page.locator('#career-list-back').tap();await page.locator('#career-mobile-help').tap();
+      if(await page.locator('#career-profile-notes').isVisible()){
+        await page.locator('#career-profile-notes').tap();await expect(page.locator('.opponent-tactic')).toBeInViewport();await fits(page);
+        await expect(page.locator('.board-roster')).toBeVisible();await page.locator('#career-profile-notes').tap();
+      }
+      await page.locator('#career-mobile-help').tap();
       await expect(dialog).toHaveAttribute('data-board-view','rules');await fits(page);
       await expect(page.locator('#class-unlock')).toBeInViewport();
       await page.locator('#career-list-back').tap();await page.locator('[data-opponent="kim"]').tap();
@@ -329,7 +348,7 @@ test.describe('карьерная доска на телефоне без про
     });
   }
   for(const [width,height] of [[320,568],[568,320]])test(`урок карьеры листается страницами ${width}x${height}`,async({page})=>{
-    await page.setViewportSize({width,height});
+    await desktopViewport(page,{width,height});
     const saves=new SaveService(new StorageService(null));saves.startNew();
     for(const step of TUTORIAL_STEPS.slice(0,-1))saves.advanceTutorial(step);
     for(const step of CLUB_GUIDE_STEPS){if(step==='career-board')break;saves.advanceClubGuide(step);}
@@ -339,21 +358,52 @@ test.describe('карьерная доска на телефоне без про
       await expect(page.locator('#career-guide-page-number')).toHaveText(`${i+1} / 4`);await fits(page);
       await expect(page.locator('#career-guide-next')).toBeInViewport();await page.locator('#career-guide-next').tap();
     }
-    await expect(page.locator('.career-ranking')).toHaveAttribute('data-board-view','roster');
+    await expect(page.locator('.career-ranking')).toHaveAttribute('data-board-view','board');
     await page.locator('[data-opponent="kim"]').tap();await expect(page.locator('#career-start')).toBeEnabled();
     await page.locator('#career-mobile-help').tap();await page.locator('#career-guide-done').tap();
     await expect(page.locator('#club-guide')).toHaveAttribute('data-step','dojo-door');
   });
-  for(const [width,height] of [[320,568],[568,320]])test(`все двенадцать досье читаются без прокрутки ${width}x${height}`,async({page})=>{
-    await page.setViewportSize({width,height});await seed(page);await board(page);
+  for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]])test(`все двенадцать досье читаются без прокрутки ${width}x${height}`,async({page})=>{
+    await desktopViewport(page,{width,height});await seed(page);await board(page);
     for(const tier of [1,2,3]) {
       await page.locator(`[data-tier="${tier}"]`).tap();
       for(const opponent of CAREER_ROSTER.filter(opponent=>opponent.tier===tier)) {
         await page.locator(`[data-opponent="${opponent.id}"]`).tap();await fits(page);
+        await expect(page.locator('#opponent-profile h3')).toHaveText(opponent.name);
+        await expect(page.locator('.board-roster')).toBeVisible();
+        const notes=page.locator('#career-profile-notes'),turned=await notes.isVisible();
+        if(turned)await notes.tap();await fits(page);
         await expect(page.locator('.opponent-tactic')).toBeInViewport();
         await expect(page.locator('#career-start')).toBeInViewport();
-        await page.locator('#career-list-back').tap();
+        if(turned)await notes.tap();await fits(page);
       }
     }
+  });
+  for(const [width,height] of [[320,568],[844,390]])test(`единая мобильная доска сохраняет выбор и продолжение боя ${width}x${height}`,async({page})=>{
+    await desktopViewport(page,{width,height});await seed(page,1,{hp:63,enemyHP:45,elapsedMs:15000},null);await board(page);
+    await expect(page.locator('#opponent-profile h3')).toHaveText('Kwon Tae-young');
+    await expect(page.locator('#career-start')).toHaveText(/Продолжить бой/);await fits(page);
+    await page.locator('[data-opponent="kim"]').tap();await expect(page.locator('#career-start')).toBeDisabled();
+    await expect(page.locator('.career-lock-note')).toContainText('Kwon Tae-young');await fits(page);
+    await page.locator('[data-opponent="kwon"]').tap();await page.locator('#career-start').tap();
+    await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
+    await page.locator('#fight-pause').tap();await page.locator('#pause-exit').tap();
+    await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
+  });
+  test('поворот телефона сохраняет единую доску и выбранного бойца',async({page})=>{
+    const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));
+    await desktopViewport(page,{width:390,height:844});await seed(page);await board(page);
+    await page.locator('[data-opponent="shim"]').tap();
+    for(const [width,height] of [[568,320],[844,390],[320,568],[390,844]]){
+      await desktopViewport(page,{width,height});
+      await page.evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+      await fits(page);await expect(page.locator('#opponent-profile h3')).toHaveText('Shim Ha-min');
+      await expect(page.locator('.board-roster')).toBeVisible();await expect(page.locator('#career-start')).toBeDisabled();
+      if(await page.locator('#career-profile-notes').isVisible()){
+        await page.locator('#career-profile-notes').tap();await fits(page);
+        await expect(page.locator('.opponent-tactic')).toBeInViewport();await page.locator('#career-profile-notes').tap();
+      }
+    }
+    expect(errors).toEqual([]);
   });
 });
