@@ -195,7 +195,7 @@ for (const [back, late] of [[-1,false],[1,false],[-1,true],[1,true]] as const) t
   }
   expect(t.dodgeCue).toBe(true);expect(w.dodge(p,back)).toBe(true);
   advance(t,600);expect(t.checks).toEqual([true,false]);expect(p.hp).toBe(100);
-  expect(w.enemy.hitLanded).toBe(late); // Early retreats leave the hitbox entirely.
+  expect(w.enemy.hitLanded).toBe(true);
   expect(t.dodgePracticeDirection).toBe(forward);
 
   p.direction=forward;advance(t,64);p.direction=0;
@@ -204,9 +204,23 @@ for (const [back, late] of [[-1,false],[1,false],[-1,true],[1,true]] as const) t
   advance(t,64);expect(t.checks).toEqual([true,true]);expect(t.ready).toBe(true);
 });
 
+test('отход по подсказке засчитывается, если герой вышел из зоны удара', () => {
+  const t = new CombatTutorial('dodge');
+  const { player, enemy } = t.world;
+  enemy.x = player.x + 160;
+  expect(t.world.attack(enemy, 2)).toBe(true);
+  expect(t.dodgeCue).toBe(true);
+  expect(t.world.dodge(player, -1)).toBe(true);
+  advance(t, ATTACK_SLOTS[2].startup + ATTACK_SLOTS[2].active);
+  expect(enemy.hitLanded).toBe(false);
+  expect(player.hp).toBe(100);
+  expect(t.checks).toEqual([true, false]);
+});
+
 test('уклонение до подсказки не засчитывает промах партнёра', () => {
   const t = new CombatTutorial('dodge');
   const { player, enemy } = t.world;
+  enemy.x = player.x + 160;
   expect(t.dodgeCue).toBe(false);
   expect(t.world.dodge(player, -1)).toBe(true);
   t.update(8);

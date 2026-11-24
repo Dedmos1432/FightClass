@@ -112,7 +112,7 @@ test('directional dodges use the chosen side and keep their facing when crossing
       const startingFacing = p.facing;
       p.direction = -direction;
       advance(w, COMBAT.dodgeTravelMs);
-      expect((p.x - start) * direction).toBeCloseTo(360);
+      expect((p.x - start) * direction).toBeCloseTo(forward ? 360 : 240);
       expect(p.facing).toBe(startingFacing);
       expect(p.action).toBe('dodge');
       const landingX = p.x;
@@ -124,7 +124,7 @@ test('directional dodges use the chosen side and keep their facing when crossing
   }
 });
 
-test('an opponent dodges the same 360 units and stops at the arena boundary', () => {
+test('an opponent retreats 240 units and stops at the arena boundary', () => {
   const w = battle(600, 1100);
   w.enemy = fighter({ skin: 'kwon', x: 1100, maxHP: 200, stamina: 150, damage: 10,
     speed: 300, canDodge: true, facing: -1, autoFace: false });
@@ -132,11 +132,11 @@ test('an opponent dodges the same 360 units and stops at the arena boundary', ()
   expect(w.dodge(enemy)).toBe(true);
   // Uneven frame times include one update that straddles the end of travel.
   for (const duration of [97, 97, 97, 89]) w.update(duration);
-  expect(enemy.x).toBeCloseTo(1460);
+  expect(enemy.x).toBeCloseTo(1340);
   expect(enemy.action).toBe('dodge');
   w.update(70);
   expect(enemy.action).toBe('idle');
-  expect(enemy.x).toBeCloseTo(1460);
+  expect(enemy.x).toBeCloseTo(1340);
 
   enemy.x = COMBAT.maxX - 40;
   expect(w.dodge(enemy)).toBe(true);
