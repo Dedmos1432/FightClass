@@ -14,6 +14,7 @@ export class ScreenView {
   get hasDialog(): boolean { return this.dialog !== null; }
 
   constructor(readonly services: GameServices, screen: string, content: string) {
+    const menu = screen === 'menu';
     const world = ['lobby', 'gym', 'dojo', 'fight', 'career-fight', 'tutorial'].includes(screen);
     const locations: Record<string, string> = { lobby: 'ЛОББИ', gym: 'ТРЕНАЖЁРНЫЙ ЗАЛ', dojo: 'ЗАЛ ЕДИНОБОРСТВ', fight: 'БЕСКОНЕЧНАЯ СЕРИЯ', 'career-fight': 'КАРЬЕРНЫЙ ПОЕДИНОК', tutorial:'ПЕРВАЯ ТРЕНИРОВКА' };
     const location = locations[screen];
@@ -23,12 +24,12 @@ export class ScreenView {
     delete this.root.dataset.training;
     delete this.root.dataset.tutorialReading;
     this.root.innerHTML = `
-      <div class="screen ${world ? 'exploration-screen' : ''}">
+      <div class="screen ${menu ? 'title-screen' : world ? 'exploration-screen' : ''}">
         <header class="topbar">
-          <a class="brand" href="#" aria-label="${GAME.title} — главное меню">
+          ${menu ? '' : `<a class="brand" href="#" aria-label="${GAME.title} — главное меню">
             <span class="brand-mark" aria-hidden="true">FC</span>
-            <span class="brand-name">${GAME.title.toUpperCase()}${screen === 'menu' ? '' : '<small>БОЙЦОВСКИЙ КЛУБ</small>'}</span>
-          </a>
+            <span class="brand-name">${GAME.title.toUpperCase()}<small>БОЙЦОВСКИЙ КЛУБ</small></span>
+          </a>`}
           <div class="top-actions">
             <button class="icon-button" id="mute-button" type="button" title="Звук игры"></button>
             <button class="icon-button" id="fullscreen-button" type="button" aria-label="Полный экран" title="Полный экран · F">${icons.fullscreen}</button>
@@ -36,9 +37,9 @@ export class ScreenView {
         </header>
         ${content}
         <footer class="footer">
-          <span class="build-label">${location ?? 'ГЛАВНОЕ МЕНЮ'}</span>
+          ${menu ? '' : `<span class="build-label">${location ?? ''}</span>`}
           <span class="keyboard-hint">${world ? '<kbd>A</kbd><kbd>D</kbd> движение <kbd>E</kbd> действие' : '<kbd>Tab</kbd> выбор <kbd>Enter</kbd> подтвердить'}</span>
-          <span class="version">FIGHT CLASS <b>v${GAME.version}</b></span>
+          <span class="version">${menu ? '' : 'FIGHT CLASS '}<b>v${GAME.version}</b></span>
         </footer>
       </div>`;
     if(world)new TouchControls(this,['fight','career-fight','tutorial'].includes(screen));

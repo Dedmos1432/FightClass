@@ -33,7 +33,7 @@ test('новая игра, возврат, перезагрузка и прод�
   await expect(page.locator('#continue-game')).toBeEnabled();
   for(const id of ['start-game','continue-game','settings']) {
     const button=page.locator(`#${id}`);await button.hover();
-    await expect(button.locator('.button-text')).toHaveCSS('color','rgb(217, 68, 54)');
+    await expect(button.locator('.button-text')).toHaveCSS('color','rgb(255, 138, 119)');
   }
   await page.reload();
   await expect(page.locator('#continue-game')).toBeEnabled();
@@ -142,14 +142,15 @@ test('запрет хранилища не ломает меню и честно
   await expect(page.locator('#continue-game')).toBeEnabled();
 });
 
-test('ошибка загрузки фона показывает рабочую кнопку повтора', async ({ page }) => {
-  // Match the actual texture, not Vite's .webp?import JavaScript module.
-  await page.route(/\.webp$/, (route) => route.abort());
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Не удалось загрузить фон' })).toBeVisible();
-  await page.unroute(/\.webp$/);
-  await page.getByRole('button', { name: 'Повторить загрузку' }).click();
-  await expect(screen(page)).toHaveAttribute('data-screen', 'menu');
+test('меню остаётся доступным, если не загрузилась иллюстрация', async ({ page }) => {
+  await page.route(/before-the-bell(?:-[\w-]+)?\.webp$/, route => route.abort());
+  await openMenu(page);
+  await expect(page.locator('.menu-art img')).toHaveAttribute('hidden', '');
+  await page.locator('#settings').click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.locator('#start-game').click();
+  await expect(screen(page)).toHaveAttribute('data-screen', 'tutorial');
 });
 
 test('полноэкранный режим включается и выключается кнопкой', async ({ page }) => {

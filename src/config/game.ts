@@ -9,7 +9,6 @@ export const GAME = {
 } as const;
 
 export const SCENES = {
-  boot: 'Boot',
   menu: 'MainMenu',
   lobby: 'Lobby',
   gym: 'Gym',

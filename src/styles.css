@@ -43,7 +43,6 @@ svg { width: 22px; height: 22px; flex: 0 0 auto; }
 #game canvas { display: block; image-rendering: pixelated; }
 #ui { position: relative; min-height: 100svh; isolation: isolate; }
 #ui::before { content: ''; position: fixed; z-index: -1; inset: 0; pointer-events: none; }
-#ui[data-screen='menu']::before { background: linear-gradient(90deg, #101213f5 0%, #101213e8 29%, #101213a6 58%, #10121380 100%), linear-gradient(0deg, #101213 0%, transparent 40%); }
 .screen { min-height: 100svh; display: flex; flex-direction: column; padding: 0 clamp(24px, 4.5vw, 80px); }
 .topbar { min-height: 84px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
 .brand { display: inline-flex; align-items: center; gap: 13px; width: max-content; }
@@ -59,43 +58,6 @@ svg { width: 22px; height: 22px; flex: 0 0 auto; }
 .eyebrow { font: 700 10px/1.4 var(--mono); letter-spacing: 1.7px; text-transform: uppercase; }
 .accent { color: var(--accent); }
 
-/* Title screen: a club poster and the player's actual training record. */
-.menu-layout { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: center; padding: 26px 0 34px; position: relative; }
-.menu-main { position: relative; z-index: 2; max-width: 500px; }
-.intro-tag { display: flex; align-items: center; gap: 11px; color: #c1bdb3; margin-bottom: 20px; font-size: 9px; }
-.intro-tag > span { width: 25px; height: 3px; background: var(--accent); }
-#game-title { font: 700 clamp(100px, 12.2vw, 190px)/.88 var(--display); letter-spacing: -5px; color: var(--paper); }
-#game-title > span { color: var(--paper); }
-.hero-description { color: #aca99f; font: 11px/1.8 var(--body); margin-top: 20px; }
-.menu-buttons { display: grid; margin-top: 32px; width: min(390px, 100%); }
-.menu-button { display: flex; align-items: center; width: 100%; min-height: 62px; padding: 11px 4px; gap: 19px; text-align: left; background: transparent; border-top: 1px solid #eee8d825; transition: color 140ms; }
-.menu-button:last-child { border-bottom: 1px solid #eee8d825; }
-.button-number { align-self: center; color: #807f78; font: 10px var(--mono); }
-.button-text { font: 500 27px/1.15 var(--display); }
-.button-text small { display: block; margin-top: 4px; font: 10px/1.5 var(--body); color: #a4a096; }
-.button-arrow { margin-left: auto; color: var(--accent); display: flex; align-items: center; }
-.button-arrow svg { width: 22px; }
-.menu-button:hover:not(:disabled) .button-text, .menu-button:focus-visible:not(:disabled) .button-text { color: var(--accent); }
-.menu-button:hover:not(:disabled) .button-arrow { transform: translateX(4px); }
-.menu-button:disabled { color: #696b67; }
-.menu-button:disabled .button-number, .menu-button:disabled .button-text small { color: #676963; }
-.menu-button:disabled .button-arrow { visibility: hidden; }
-.save-note { margin-top: 17px; color: #99988f; font: 8px/1.5 var(--mono); letter-spacing: .6px; }
-.menu-art { height: min(71svh, 740px); min-height: 500px; position: relative; pointer-events: none; }
-.poster-plane { position: absolute; inset: 5% 9% 6% 14%; background: var(--accent); transform: rotate(-7deg); overflow: hidden; }
-.poster-plane::before { content: ''; position: absolute; inset: 15px; border: 1px solid #eee8d866; }
-.poster-plane::after { content: ''; position: absolute; inset: 0; opacity: .15; background: repeating-linear-gradient(-20deg, transparent 0 16px, #101213 16px 17px); }
-.poster-heading { position: absolute; top: 30px; left: 30px; font: 700 12px/1.6 var(--mono); letter-spacing: 2px; }
-.poster-numeral { position: absolute; bottom: -50px; left: 13%; font: 700 clamp(300px, 42vw, 600px)/1 var(--display); color: #eee8d85c; }
-.poster-serial { position: absolute; right: 22px; top: 23%; writing-mode: vertical-rl; font: 10px var(--mono); letter-spacing: 2px; }
-.menu-fighter { position: absolute; right: 4%; bottom: 1%; height: 98%; width: auto; max-width: none; image-rendering: pixelated; filter: drop-shadow(17px 10px 0 #11141540); }
-.menu-record { position: absolute; right: 0; bottom: 0; width: min(340px, 95%); padding: 17px 20px 14px; background: var(--paper); color: var(--ink); transform: rotate(2deg); box-shadow: 6px 7px 0 #0004; }
-.record-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; font: 700 9px var(--mono); letter-spacing: .8px; border-bottom: 1px solid #17191a40; padding-bottom: 13px; }
-.record-heading b { color: var(--action); border: 1px solid var(--action); padding: 5px 8px; font-weight: 700; }
-.record-stats { display: flex; justify-content: space-between; gap: 14px; padding: 13px 0; }
-.record-stats > span { font: 8px var(--mono); color: #62635c; }
-.record-stats strong { display: block; color: var(--ink); font: 600 33px/1.2 var(--display); margin-top: 3px; }
-.menu-record p { padding-top: 10px; border-top: 1px solid #17191a40; font: 10px/1.6 var(--body); }
 .footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 47px; border-top: 1px solid var(--line); color: #a29f95; font: 8px/1.5 var(--mono); letter-spacing: .8px; }
 .build-label { color: #d0cabd; }
 .version { color: #85867e; }
@@ -146,16 +108,8 @@ input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-
 .loading-screen progress { width: 220px; height: 4px; accent-color: var(--accent); }
 .loading-screen small { font: 9px var(--mono); color: var(--muted); letter-spacing: 2px; }
 
-@media (min-width: 1700px) {
-  .menu-layout { gap: 80px; }
-  .menu-main { margin-left: 4vw; }
-  .menu-art { margin-right: 4vw; }
-}
 @media (max-width: 1050px) {
   .keyboard-hint { display: none; }
-  .menu-art { min-height: 460px; }
-  .menu-record { width: min(300px, 100%); }
-  #game-title { font-size: clamp(100px, 13.5vw, 150px); }
 }
 @media (max-width: 760px) {
   .screen { padding-inline: 24px; }
@@ -165,21 +119,8 @@ input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-
   .brand-name small { font-size: 6px; }
   .top-actions { gap: 3px; }
   .icon-button { width: 34px; height: 34px; }
-  .menu-layout { display: block; padding: 28px 0; }
-  .menu-main { max-width: 450px; margin: 0 auto; }
-  #game-title { font-size: clamp(96px, 28vw, 160px); letter-spacing: -3px; }
-  .intro-tag { font-size: 8px; letter-spacing: 1px; gap: 8px; margin-bottom: 16px; }
-  .intro-tag > span { width: 15px; }
-  .hero-description { font-size: 10px; margin-top: 17px; }
-  .menu-buttons { margin-top: 27px; }
-  .menu-button { min-height: 60px; }
-  .menu-art { position: absolute; inset: 0 -24px 0 33%; height: 100%; min-height: 0; opacity: .18; z-index: 0; overflow: hidden; }
-  .poster-plane { inset: 8% -35% 8% 30%; }
-  .poster-heading, .poster-serial, .menu-record { display: none; }
-  .menu-fighter { right: -50%; height: 96%; }
   .footer { min-height: 40px; font-size: 7px; letter-spacing: .4px; }
   .version { font-size: 7px; }
-  .save-note { font-size: 7px; }
   .dialog { padding: 22px; }
   .dialog h2 { font-size: 34px; }
   .setting-row { font-size: 13px; }
@@ -187,45 +128,17 @@ input:focus-visible + .switch-track { outline: 2px solid var(--accent); outline-
 }
 @media (max-height: 760px) and (min-width: 761px) {
   .topbar { min-height: 62px; }
-  .menu-layout { padding-block: 18px; }
-  .menu-art { height: 73svh; min-height: 390px; }
-  #game-title { font-size: clamp(98px, 11vw, 145px); }
-  .intro-tag { margin-bottom: 14px; }
-  .hero-description { margin-top: 14px; }
-  .menu-buttons { margin-top: 20px; }
-  .menu-button { min-height: 53px; padding-block: 9px; }
-  .button-text { font-size: 24px; }
-  .save-note { margin-top: 12px; }
-  .menu-record { padding: 12px 16px; }
-  .record-stats { padding-block: 8px; }
-  .record-stats strong { font-size: 27px; }
 }
 @media (max-height: 480px) and (min-width: 761px) {
   .topbar { min-height: 48px; }
   .brand-mark { width: 28px; height: 30px; font-size: 20px; }
   .brand-name small { display: none; }
-  .menu-layout { padding-block: 12px; }
-  #game-title { font-size: 80px; }
-  .intro-tag { margin-bottom: 10px; font-size: 7px; }
-  .hero-description { display: none; }
-  .menu-buttons { margin-top: 16px; }
-  .menu-button { min-height: 42px; padding-block: 6px; }
-  .button-text { font-size: 21px; }
-  .button-text small { font-size: 8px; }
-  .menu-art { height: 290px; min-height: 0; }
-  .menu-record { display: none; }
-  .save-note { margin-top: 10px; font-size: 7px; }
   .footer { min-height: 30px; }
 }
 @media (max-width: 380px) {
   .screen { padding-inline: 18px; }
-  .menu-art { right: -18px; }
-  .menu-layout { padding-block: 20px; }
   .brand-name { font-size: 12px; }
   .brand-name small { display: none; }
-  .menu-button { min-height: 54px; }
-  .button-text { font-size: 24px; }
-  .menu-buttons { margin-top: 20px; }
   .version { display: none; }
   .confirm-actions { flex-direction: column; }
 }

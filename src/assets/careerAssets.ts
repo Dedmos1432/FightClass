@@ -1,7 +1,7 @@
 import type Phaser from 'phaser';
 import arenaUrl from '../../assets/optimized/arena.webp?url';
 
-// The menu and career use the same bitmap, so share its decoded/GPU texture.
+// Load the arena on the first career bout and reuse it across later matches.
 export const CAREER_ARENA_KEY = 'arena';
 
 export function preloadCareerArena(scene: Phaser.Scene): void {
