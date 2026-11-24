@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { CombatTutorial } from '../src/tutorial/CombatTutorial';
 import { TUTORIAL_STEPS } from '../src/tutorial/Progress';
 import { attackDuration } from '../src/combat/CombatWorld';
-import { COMBAT, type AttackSlot } from '../src/config/combat';
+import { ATTACK_SLOTS, COMBAT, type AttackSlot } from '../src/config/combat';
 import { SaveService, isSessionSave } from '../src/services/SaveService';
 import { StorageService, type StorageLike } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
@@ -178,7 +178,7 @@ test('блок: нажатие без удара не засчитывается
   advance(t,1800);expect(t.blocked).toBe(true);expect(w.player.hp).toBe(100);
 });
 
-for(const back of [-1,1] as const) test(`уклонение: уход от удара и рывок к партнёру, когда отход направлен ${back===-1?'влево':'вправо'}`,()=>{
+for (const [back, late] of [[-1,false],[1,false],[-1,true],[1,true]] as const) test(`уклонение: отход ${back===-1?'влево':'вправо'} ${late?'в конце':'в начале'} сигнала и рывок к партнёру`,()=>{
   const t=new CombatTutorial('dodge'),{world:w}=t,{player:p}=w;
   const forward=back===-1?1:-1;
   const setSide=()=>{ p.x=w.enemy.x+back*150; };
@@ -189,6 +189,10 @@ for(const back of [-1,1] as const) test(`уклонение: уход от уд�
 
   t.enter('dodge');setSide();
   for(let i=0;i<2000 && !t.dodgeCue;i+=8)t.update(8);
+  if (late) {
+    const lastCueMs = ATTACK_SLOTS[w.enemy.slot].startup - COMBAT.dodgeInvulnerableFrom - 1;
+    advance(t,lastCueMs - w.enemy.elapsed);
+  }
   expect(t.dodgeCue).toBe(true);expect(w.dodge(p,back)).toBe(true);
   advance(t,600);expect(t.checks).toEqual([true,false]);expect(p.hp).toBe(100);
   expect(t.dodgePracticeDirection).toBe(forward);

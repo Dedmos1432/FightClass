@@ -116,7 +116,8 @@ export class CombatWorld {
         } else f.action = 'idle';
       }
     } else if (f.action === 'dodge') {
-      if (f.elapsed < COMBAT.dodgeTravelMs) f.x += f.dodgeDirection * COMBAT.dodgeSpeed * delta / 1000;
+      const travelMs = clamp(COMBAT.dodgeTravelMs - (f.elapsed - delta), 0, delta);
+      f.x += f.dodgeDirection * COMBAT.dodgeSpeed * travelMs / 1000;
       if (f.elapsed >= COMBAT.dodgeDuration) this.finishAction(f,other);
     } else if (f.action === 'hit') {
       if (f.elapsed >= f.stun) this.finishAction(f,other);
