@@ -9,12 +9,13 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'public/combat'
-OUT.mkdir(parents=True, exist_ok=True)
 COMMON = {
  'idle': 'ilde_fight', 'walk': 'combat_move/combat_move',
  'retreat': 'combat_move/combat_move_backward', 'block': 'block',
  'dodge': 'dash', 'hit': 'get_hit', 'ko': 'defeat',
 }
+PLAYER_MOVEMENT = {**COMMON, 'dodge': 'dash/combat_back_dash'}
+PLAYER_FORWARD_DODGE = {'dodge-forward': 'dash/combat_forward_dash'}
 MOVES = {
  'jab':'Boxing/jab', 'hook':'Boxing/hook', 'uppercut':'Boxing/uppercut',
  'mma-jab':'MMA/jab', 'cross':'MMA/cross', 'low-kick':'MMA/low_kick',
@@ -40,63 +41,114 @@ ENEMIES = {
 BODY_OFFSETS = {'player':41.5, 'kim':20.5, 'kwon':.5, 'yeo':4.5,
  'shim':8.5, 'bang':3.5, 'jang':8.5, 'cha':5.5, 'young':17,
  'sunny':1.5, 'lee':-8.5, 'yang':11.5, 'maria':7.5}
-manifest = {'characters':{}, 'frames':{}, 'pages':[]}
 SCALE = 0.56
 SIZE = 2048
-for skin in ['player', *ENEMIES]:
- if skin == 'player':
-  base = ROOT/'resourse/player'
-  clips = {**COMMON, **MOVES}
- else:
-  folder, clips = ENEMIES[skin]
-  base = ROOT/'resourse/enemy'/folder
- manifest['characters'][skin] = {}
- page = Image.new('RGBA',(SIZE,SIZE)); frames = {}; x=y=rowh=0; pageid=0
- def flush():
-  if not frames: return
-  key = f'{skin}-{pageid}'
-  page.quantize(colors=128, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE).save(OUT/f'{key}.png', optimize=True)
-  (OUT/f'{key}.json').write_text(json.dumps({'frames':frames,'meta':{'image':f'{key}.png','size':{'w':SIZE,'h':SIZE},'scale':'1'}}),encoding='utf-8')
-  manifest['pages'].append(key)
- for action, rel in clips.items():
-  # The movement directory prefix selects exactly one direction, excluding retreat.
-  parent = base/rel
-  for direction in ['left','right']:
-   if parent.is_dir() and list(parent.glob('*.png')):
-    raise RuntimeError('Expected direction directories')
-   if parent.is_dir():
-    candidates = sorted(parent.rglob(f'*{direction}/*.png'))
-   else:
-    candidates = sorted(parent.parent.glob(f'{parent.name}_{direction}/*.png'))
-   if action == 'walk' and skin == 'player':
-    candidates = sorted((base/'combat_move'/f'combat_move_{direction}').glob('*.png'))
-   if not candidates: raise RuntimeError(f'Missing {skin}/{action}/{direction}: {parent}')
-   # Keep every player attack frame, limit long enemy clips to 12 sampled poses.
-   indices = sorted(set(round(i*(len(candidates)-1)/(min(12,len(candidates))-1)) for i in range(min(12,len(candidates)))))
-   clip=[]
-   for logical, idx in enumerate(indices):
-    file=candidates[idx]; image=Image.open(file).convert('RGBA'); box=image.getbbox()
-    if not box: raise RuntimeError(f'Empty frame {file}')
-    crop=image.crop(box)
-    crop=crop.resize((max(1,round(crop.width*SCALE)),max(1,round(crop.height*SCALE))),Image.Resampling.NEAREST)
-    w,h=crop.size
-    if x+w+2>SIZE: x=0;y+=rowh+2;rowh=0
-    if y+h+2>SIZE:
-     flush(); pageid+=1;page=Image.new('RGBA',(SIZE,SIZE));frames={};x=y=rowh=0
-    key=f'{skin}:{action}:{direction}:{logical}'
-    page.alpha_composite(crop,(x,y))
-    frames[key]={'frame':{'x':x,'y':y,'w':w,'h':h},'rotated':False,'trimmed':False,'spriteSourceSize':{'x':0,'y':0,'w':w,'h':h},'sourceSize':{'w':w,'h':h}}
-    # Fixed root across every action and canvas width. Offsets come from the
-    # mirrored idle stance, never the changing attack silhouette.
-    offset = BODY_OFFSETS[skin]
-    anchorx=image.width/2 + (-offset if direction=='right' else offset)
-    # Ground poses get a common sole line. Keep jump and fall silhouettes airborne.
-    anchory=box[3] if box[3]>=590 else (604 if skin=='player' else 601)
-    if action=='idle' and skin=='player': anchory=624
-    manifest['frames'][key]={'page':f'{skin}-{pageid}','ox':(anchorx-box[0])*SCALE/w,'oy':(anchory-box[1])*SCALE/h}
-    clip.append(key)
-    x+=w+2;rowh=max(rowh,h)
-   manifest['characters'][skin][f'{action}-{direction}']=clip
- flush()
-(ROOT/'src/assets/combatManifest.json').write_text(json.dumps(manifest,separators=(',',':')),encoding='utf-8')
-print(f'Packed {len(manifest["frames"])} poses into {len(manifest["pages"])} pages')
+
+
+def pack_clips(manifest, skin, base, clips, page_id=0, *, preserve_colors=False):
+    """Append clips to a fighter, starting on a new page."""
+    OUT.mkdir(parents=True, exist_ok=True)
+    character = manifest['characters'].setdefault(skin, {})
+    page = Image.new('RGBA', (SIZE, SIZE))
+    frames = {}
+    x = y = row_height = 0
+
+    def flush():
+        if not frames:
+            return
+        key = f'{skin}-{page_id}'
+        bitmap = page if preserve_colors else page.quantize(
+            colors=128, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE,
+        )
+        bitmap.save(OUT / f'{key}.png', optimize=True)
+        data = {'frames': frames, 'meta': {'image': f'{key}.png', 'size': {'w': SIZE, 'h': SIZE}, 'scale': '1'}}
+        (OUT / f'{key}.json').write_text(json.dumps(data), encoding='utf-8')
+        manifest['pages'].append(key)
+
+    for action, relative_path in clips.items():
+        folder = base / relative_path
+        if folder.is_dir() and any(folder.glob('*.png')):
+            raise RuntimeError(f'Expected direction directories in {folder}')
+        for direction in ('left', 'right'):
+            if action == 'walk' and skin == 'player':
+                candidates = sorted((base / 'combat_move' / f'combat_move_{direction}').glob('*.png'))
+            elif folder.is_dir():
+                candidates = sorted(folder.rglob(f'*{direction}/*.png'))
+            else:
+                candidates = sorted((folder.parent / f'{folder.name}_{direction}').glob('*.png'))
+            if not candidates:
+                raise RuntimeError(f'Missing {skin}/{action}/{direction}: {folder}')
+
+            # Keep the complete forward dodge. Existing clips retain their sampled poses.
+            limit = len(candidates) if action == 'dodge-forward' else min(12, len(candidates))
+            indices = [round(i * (len(candidates) - 1) / max(1, limit - 1)) for i in range(limit)]
+            clip = []
+            for logical, index in enumerate(indices):
+                path = candidates[index]
+                with Image.open(path) as source:
+                    image = source.convert('RGBA')
+                box = image.getbbox()
+                if not box:
+                    raise RuntimeError(f'Empty frame {path}')
+                crop = image.crop(box)
+                width = max(1, round(crop.width * SCALE))
+                height = max(1, round(crop.height * SCALE))
+                crop = crop.resize((width, height), Image.Resampling.NEAREST)
+                if x + width + 2 > SIZE:
+                    x = 0
+                    y += row_height + 2
+                    row_height = 0
+                if y + height + 2 > SIZE:
+                    flush()
+                    page_id += 1
+                    page = Image.new('RGBA', (SIZE, SIZE))
+                    frames = {}
+                    x = y = row_height = 0
+
+                key = f'{skin}:{action}:{direction}:{logical}'
+                page.alpha_composite(crop, (x, y))
+                frames[key] = {
+                    'frame': {'x': x, 'y': y, 'w': width, 'h': height},
+                    'rotated': False,
+                    'trimmed': False,
+                    'spriteSourceSize': {'x': 0, 'y': 0, 'w': width, 'h': height},
+                    'sourceSize': {'w': width, 'h': height},
+                }
+                # Offset from the mirrored idle stance, independent of pose or canvas width.
+                offset = BODY_OFFSETS[skin]
+                anchor_x = image.width / 2 + (-offset if direction == 'right' else offset)
+                anchor_y = box[3] if box[3] >= 590 else (604 if skin == 'player' else 601)
+                if skin == 'player' and action in ('idle', 'dodge-forward'):
+                    # The first and last dash frames are the idle pose. A single floor reference
+                    # also preserves the lift in the middle of the dash instead of snapping feet down.
+                    anchor_y = 624
+                manifest['frames'][key] = {
+                    'page': f'{skin}-{page_id}',
+                    'ox': (anchor_x - box[0]) * SCALE / width,
+                    'oy': (anchor_y - box[1]) * SCALE / height,
+                }
+                clip.append(key)
+                x += width + 2
+                row_height = max(row_height, height)
+            character[f'{action}-{direction}'] = clip
+    flush()
+
+
+def pack_forward_dodge(manifest):
+    # Start a fresh page so adding the dash never repacks existing player frames.
+    page_id = 1 + max(int(key.removeprefix('player-')) for key in manifest['pages'] if key.startswith('player-'))
+    pack_clips(manifest, 'player', ROOT / 'resourse/player', PLAYER_FORWARD_DODGE, page_id, preserve_colors=True)
+
+
+def main():
+    manifest = {'characters': {}, 'frames': {}, 'pages': []}
+    pack_clips(manifest, 'player', ROOT / 'resourse/player', {**PLAYER_MOVEMENT, **MOVES})
+    for skin, (folder, clips) in ENEMIES.items():
+        pack_clips(manifest, skin, ROOT / 'resourse/enemy' / folder, clips)
+    pack_forward_dodge(manifest)
+    (ROOT / 'src/assets/combatManifest.json').write_text(json.dumps(manifest, separators=(',', ':')), encoding='utf-8')
+    print(f'Packed {len(manifest["frames"])} poses into {len(manifest["pages"])} pages')
+
+
+if __name__ == '__main__':
+    main()

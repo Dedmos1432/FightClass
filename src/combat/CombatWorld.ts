@@ -1,4 +1,4 @@
-import { ATTACK_SLOTS, COMBAT, guardStaminaCost, type AttackSlot } from '../config/combat';
+import { ATTACK_SLOTS, COMBAT, guardStaminaCost, type AttackSlot, type DodgeDirection } from '../config/combat';
 import type { FighterSkin, Opponent } from './Opponents';
 
 export type FighterAction = 'idle' | 'walk' | 'retreat' | 'block' | 'dodge' | 'attack' | 'hit' | 'ko';
@@ -6,13 +6,15 @@ export interface Fighter {
   skin: FighterSkin; autoFace: boolean; x: number; facing: -1 | 1; hp: number; maxHP: number;
   stamina: number; maxStamina: number; damage: number; speed: number; canDodge: boolean;
   action: FighterAction; elapsed: number; slot: AttackSlot; hitLanded: boolean; combo: number;
-  buffered: AttackSlot | null; bufferedDodge: boolean; bufferMs: number;
+  buffered: AttackSlot | null; bufferedDodge: DodgeDirection | null; bufferMs: number;
+  dodgeDirection: DodgeDirection; dodgeForward: boolean;
   direction: number; blocking: boolean; autoGuard: boolean; guardMs: number; stun: number;
 }
 export interface CombatEvent { type: 'hit' | 'block' | 'guard-break' | 'dodge'; target: Fighter; source: Fighter; damage: number }
 export function fighter(values: Pick<Fighter, 'skin' | 'maxHP' | 'damage' | 'speed' | 'canDodge'> & { stamina: number; x: number; hp?: number; facing?: -1 | 1; autoFace?: boolean }): Fighter {
   return { ...values, autoFace: values.autoFace ?? true, hp: values.hp ?? values.maxHP, maxStamina: values.stamina, facing: values.facing ?? 1,
-    action: 'idle', elapsed: 0, slot: 0, hitLanded: false, combo: 0, buffered: null, bufferedDodge: false, bufferMs: 0,
+    action: 'idle', elapsed: 0, slot: 0, hitLanded: false, combo: 0, buffered: null, bufferedDodge: null, bufferMs: 0,
+    dodgeDirection: values.facing === -1 ? 1 : -1, dodgeForward: false,
     direction: 0, blocking: false, autoGuard: false, guardMs: 0, stun: COMBAT.hitStun };
 }
 export function enemyFighter(profile: Opponent): Fighter {
@@ -35,11 +37,12 @@ const free = (f: Fighter): boolean => ['idle', 'walk', 'retreat', 'block'].inclu
 export class CombatWorld {
   readonly events: CombatEvent[] = [];
   constructor(readonly player: Fighter, public enemy: Fighter) {}
-  clearInputBuffer(f: Fighter): void { f.buffered=null; f.bufferedDodge=false; f.bufferMs=0; }
-  private queue(f: Fighter, slot: AttackSlot | 'dodge', remaining: number): boolean {
-    const cost=slot==='dodge' ? COMBAT.dodgeCost : ATTACK_SLOTS[slot].stamina;
+  clearInputBuffer(f: Fighter): void { f.buffered=null; f.bufferedDodge=null; f.bufferMs=0; }
+  private queue(f: Fighter, command: AttackSlot | { dodge: DodgeDirection }, remaining: number): boolean {
+    const cost=typeof command==='number' ? ATTACK_SLOTS[command].stamina : COMBAT.dodgeCost;
     if(f.stamina<cost) return false;
-    f.buffered=slot==='dodge' ? null : slot; f.bufferedDodge=slot==='dodge';
+    f.buffered=typeof command==='number' ? command : null;
+    f.bufferedDodge=typeof command==='number' ? null : command.dodge;
     f.bufferMs=remaining+COMBAT.bufferGraceMs; return true;
   }
   attack(f: Fighter, slot: AttackSlot): boolean {
@@ -60,13 +63,19 @@ export class CombatWorld {
     f.blocking = false; f.guardMs = 0;
     return true;
   }
-  dodge(f: Fighter): boolean {
+  dodge(f: Fighter, direction: DodgeDirection = f.facing === 1 ? -1 : 1): boolean {
     if (!f.canDodge || f.hp<=0 || f.stamina < COMBAT.dodgeCost || this.over) return false;
     if(!free(f)) {
       const remaining=f.action==='attack' ? attackDuration(f.slot)-f.elapsed : f.action==='hit' ? f.stun-f.elapsed
         : f.action==='dodge' ? COMBAT.dodgeDuration-f.elapsed : Infinity;
-      return remaining>=0 && remaining<=COMBAT.inputBufferMs && this.queue(f,'dodge',remaining);
+      return remaining>=0 && remaining<=COMBAT.inputBufferMs && this.queue(f,{ dodge: direction },remaining);
     }
+    if (f.skin === 'player') {
+      const other = f === this.player ? this.enemy : this.player;
+      if (Math.abs(other.x - f.x) > 1) f.facing = other.x > f.x ? 1 : -1;
+    }
+    f.dodgeDirection = direction;
+    f.dodgeForward = f.skin === 'player' && direction === f.facing;
     f.stamina -= COMBAT.dodgeCost; f.action = 'dodge'; f.elapsed = 0; this.clearInputBuffer(f); f.combo = 0; f.blocking = false; f.guardMs = 0;
     return true;
   }
@@ -107,7 +116,7 @@ export class CombatWorld {
         } else f.action = 'idle';
       }
     } else if (f.action === 'dodge') {
-      if (f.elapsed < 300) f.x -= f.facing * COMBAT.dodgeSpeed * delta / 1000;
+      if (f.elapsed < COMBAT.dodgeTravelMs) f.x += f.dodgeDirection * COMBAT.dodgeSpeed * delta / 1000;
       if (f.elapsed >= COMBAT.dodgeDuration) this.finishAction(f,other);
     } else if (f.action === 'hit') {
       if (f.elapsed >= f.stun) this.finishAction(f,other);
@@ -123,7 +132,7 @@ export class CombatWorld {
     // A new commitment may face the enemy; an active strike remains locked.
     if(f.autoFace && (!f.blocking || live) && Math.abs(other.x-f.x)>1) f.facing=other.x>f.x ? 1 : -1;
     if(!live) return;
-    if(dodge) this.dodge(f);
+    if(dodge!==null) this.dodge(f,dodge);
     else if(slot!==null && chain<COMBAT.maxCombo && this.attack(f,slot)) f.combo=chain+1;
   }
   private resolve(source: Fighter, target: Fighter): void {

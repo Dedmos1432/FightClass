@@ -68,7 +68,7 @@ export class CareerScene extends Phaser.Scene {
     }
     this.controls=new CombatInput(() => this.phase!=='fighting' || Boolean(this.view?.hasDialog),
       slot => { if(this.world) this.world.attack(this.world.player,slot); },
-      () => { if(this.world) this.world.dodge(this.world.player); }, () => this.pause(), () => {
+      direction => { if (this.world) this.world.dodge(this.world.player, direction); }, () => this.pause(), () => {
         if(this.world) { this.world.clearInputBuffer(this.world.player); this.world.clearInputBuffer(this.world.enemy); }
       }, () => this.view?.root.dataset.touch==='true');
     this.view.on('#fight-pause','click',() => this.pause());
@@ -126,7 +126,7 @@ export class CareerScene extends Phaser.Scene {
           this.result=round.matchOver ? this.services.saves.finishCareer(this.runId) : null;
           this.controls?.clear();
           for(const f of [world.player,world.enemy]) {
-            f.direction=0; f.blocking=false; f.buffered=null;
+            f.direction=0; f.blocking=false; world.clearInputBuffer(f);
             if(!world.over) { f.action='idle'; f.elapsed=0; }
           }
           this.phase=round.matchOver ? 'finished' : 'intermission';

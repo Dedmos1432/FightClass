@@ -35,7 +35,7 @@ export class TutorialScene extends Phaser.Scene {
     const w=this.trainer.world,loadout=loadoutFor(this.services.saves.lobbyState.style,this.services.saves.freestyle);
     this.playerView=new CombatFighterView(this,w.player,loadout); this.partnerView=new CombatFighterView(this,w.enemy,loadout);
     this.controls=new CombatInput(()=>this.loadFailed || Boolean(this.view?.hasDialog) || Boolean(this.view?.reading) || this.trainer!.ready || this.trainer!.step==='club',
-      slot=>{w.attack(w.player,slot);},()=>{w.dodge(w.player);},()=>this.pause(),()=>{w.clearInputBuffer(w.player);},()=>this.view?.root.dataset.touch==='true');
+      slot=>{w.attack(w.player,slot);},direction=>{w.dodge(w.player,direction);},()=>this.pause(),()=>{w.clearInputBuffer(w.player);},()=>this.view?.root.dataset.touch==='true');
     this.view.on('#tutorial-skip','click',()=>{this.services.saves.skipTutorial();this.scene.start(SCENES.lobby);});
     this.view.on('#tutorial-finish','click',()=>{if(this.trainer?.step==='club'){this.services.saves.advanceTutorial('club');this.scene.start(SCENES.lobby);}});
     this.view.on('#tutorial-pause','click',()=>this.pause());

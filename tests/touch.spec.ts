@@ -66,7 +66,14 @@ test('мультитач: движение с атакой, отмена кас�
   await expect(button(page,'KeyA')).toHaveAttribute('aria-pressed','true');
   await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await expect(button(page,'KeyA')).toHaveAttribute('aria-pressed','false');
   await expect(arena).toHaveAttribute('data-player-action','idle');
-  await button(page,'ShiftLeft').tap();await expect(arena).toHaveAttribute('data-player-action','dodge');
+  const dodge=await point(page,'ShiftLeft',2);
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge]});
+  await expect(button(page,'ShiftLeft')).toHaveAttribute('aria-pressed','true');
+  await expect(arena).toHaveAttribute('data-player-action','idle');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge,move]});
+  await expect(arena).toHaveAttribute('data-player-dodge-direction','1');
+  await expect(arena).toHaveAttribute('data-player-dodge-forward','true');
+  await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await page.locator('#fight-pause').tap();await expect(page.getByRole('dialog')).toBeVisible();await expect(page.locator('.touch-controls')).toBeHidden();
   await page.locator('#pause-exit').tap();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
   await page.screenshot({path:'.cache/stage6/touch-lobby.png'});expect(errors).toEqual([]);

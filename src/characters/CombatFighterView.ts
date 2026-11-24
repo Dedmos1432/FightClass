@@ -28,7 +28,10 @@ export class CombatFighterView {
     this.clock+=delta;
     if(f.action!=='idle') this.guardReleaseMs=0;
     else this.guardReleaseMs=Math.max(0,this.guardReleaseMs-delta);
-    const action = this.guardReleaseMs>0 ? 'block' : f.action === 'attack' ? f.skin === 'player' ? this.loadout[f.slot] : `attack${f.slot}` : f.action;
+    let action: string = f.action;
+    if (this.guardReleaseMs > 0) action = 'block';
+    else if (f.action === 'attack') action = f.skin === 'player' ? this.loadout[f.slot] : `attack${f.slot}`;
+    else if (f.action === 'dodge' && f.dodgeForward) action = 'dodge-forward';
     const clip = combatManifest.characters[f.skin][`${action}-${f.facing > 0 ? 'right' : 'left'}`];
     if (!clip) throw new Error(`Missing animation ${f.skin}/${action}`);
     let progress: number;

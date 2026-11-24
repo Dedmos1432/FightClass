@@ -178,14 +178,25 @@ test('блок: нажатие без удара не засчитывается
   advance(t,1800);expect(t.blocked).toBe(true);expect(w.player.hp).toBe(100);
 });
 
-test('уклонение: требуется избежать реального удара в активное окно неуязвимости',()=>{
-  const t=new CombatTutorial('dodge'),w=t.world;
-  w.dodge(w.player);advance(t,600);expect(t.dodged).toBe(false);
-  // Re-enter with identical placement: an early dodge cannot complete the lesson.
-  t.enter('dodge');
+for(const back of [-1,1] as const) test(`уклонение: уход от удара и рывок к партнёру, когда отход направлен ${back===-1?'влево':'вправо'}`,()=>{
+  const t=new CombatTutorial('dodge'),{world:w}=t,{player:p}=w;
+  const forward=back===-1?1:-1;
+  const setSide=()=>{ p.x=w.enemy.x+back*150; };
+  setSide();
+  expect(t.dodgePracticeDirection).toBe(back);
+  expect(w.dodge(p,back)).toBe(true);
+  advance(t,600);expect(t.checks).toEqual([false,false]);
+
+  t.enter('dodge');setSide();
   for(let i=0;i<2000 && !t.dodgeCue;i+=8)t.update(8);
-  expect(t.dodgeCue).toBe(true);expect(w.dodge(w.player)).toBe(true);
-  advance(t,600);expect(t.dodged).toBe(true);expect(w.player.hp).toBe(100);
+  expect(t.dodgeCue).toBe(true);expect(w.dodge(p,back)).toBe(true);
+  advance(t,600);expect(t.checks).toEqual([true,false]);expect(p.hp).toBe(100);
+  expect(t.dodgePracticeDirection).toBe(forward);
+
+  p.direction=forward;advance(t,64);p.direction=0;
+  expect(t.ready).toBe(false);
+  expect(w.dodge(p,forward)).toBe(true);
+  advance(t,64);expect(t.checks).toEqual([true,true]);expect(t.ready).toBe(true);
 });
 
 test('выносливость: сначала тратится настоящий запас, затем требуется восстановить его до 80',()=>{

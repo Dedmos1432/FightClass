@@ -57,7 +57,7 @@ export class CombatScene extends Phaser.Scene {
     this.buildRound();
     this.controls = new CombatInput(() => this.phase !== 'fighting' || this.loadFailed || Boolean(this.view?.hasDialog),
       slot => { if (this.world) this.world.attack(this.world.player,slot); },
-      () => { if (this.world) this.world.dodge(this.world.player); }, () => this.pause(), () => {
+      direction => { if (this.world) this.world.dodge(this.world.player, direction); }, () => this.pause(), () => {
         if(this.world) { this.world.clearInputBuffer(this.world.player); this.world.clearInputBuffer(this.world.enemy); }
       }, () => this.view?.root.dataset.touch==='true');
     this.view.on('#fight-pause','click',() => this.pause());
@@ -139,7 +139,7 @@ export class CombatScene extends Phaser.Scene {
           const timedOut=!w.over;
           this.controls?.clear();
           for(const f of [w.player,w.enemy]) {
-            f.direction=0; f.blocking=false; f.buffered=null;
+            f.direction=0; f.blocking=false; w.clearInputBuffer(f);
             if(timedOut) { f.action='idle'; f.elapsed=0; f.combo=0; }
           }
           if(outcome==='player') {

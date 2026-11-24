@@ -39,7 +39,18 @@ test('новая игра: полное практическое обучени�
   await expect.poll(()=>arena(page).getAttribute('data-combo-cue'),{intervals:[15]}).toBe('true');await page.keyboard.press('w');
   await step(page,'block');await page.keyboard.down('Space');
   try{await step(page,'dodge');}finally{await page.keyboard.up('Space');}
-  await expect.poll(()=>arena(page).getAttribute('data-dodge-cue'),{intervals:[15]}).toBe('true');await page.keyboard.press('Shift');
+  await page.keyboard.down('Shift');
+  try {
+    await expect.poll(()=>arena(page).getAttribute('data-dodge-cue'),{intervals:[15]}).toBe('true');
+    await expect(arena(page)).toHaveAttribute('data-player-action','idle');
+    await page.keyboard.press('ArrowLeft');
+  } finally { await page.keyboard.up('Shift'); }
+  await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
+  await expect(arena(page)).toHaveAttribute('data-player-action','idle');
+  await expect(page.locator('#tutorial-feedback')).toContainText('Shift + D / →');
+  await page.keyboard.down('d');
+  try { await page.keyboard.press('Shift'); } finally { await page.keyboard.up('d'); }
+  await expect(page.locator('[data-check="1"]')).toHaveAttribute('data-done','true');
   await step(page,'stamina');
   for(let i=0;i<8;i++){
     if(await page.locator('[data-check="0"]').getAttribute('data-done')==='true')break;
@@ -92,6 +103,35 @@ test('новая игра: полное практическое обучени�
   await page.keyboard.press('Escape');await page.locator('#pause-exit').click();
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');await expect(page.locator('#club-guide')).toHaveCount(0);
   expect(errors).toEqual([]);
+});
+
+test.describe('сенсорный урок уклонения',()=>{
+  test.use({hasTouch:true,viewport:{width:844,height:390}});
+  test('стрелка и кнопка уклонения выполняют оба задания разными пальцами',async({page,context})=>{
+    await seeded(page,'dodge');
+    const point=async(code:string,id:number)=>{
+      const box=(await page.locator(`[data-touch="${code}"]`).boundingBox())!;
+      return {x:box.x+box.width/2,y:box.y+box.height/2,id};
+    };
+    const cdp=await context.newCDPSession(page);
+    await expect(page.locator('#tutorial-description')).toContainText('стрелку движения одновременно');
+    await page.locator('#tutorial-practice').tap();
+    const dodge=await point('ShiftLeft',1),back=await point('KeyA',2),forward=await point('KeyD',2);
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge]});
+    try {
+      await expect.poll(()=>arena(page).getAttribute('data-dodge-cue'),{intervals:[15]}).toBe('true');
+      await expect(arena(page)).toHaveAttribute('data-player-action','idle');
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge,back]});
+    } finally { await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); }
+    await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
+    await expect(arena(page)).toHaveAttribute('data-player-action','idle');
+    await expect(page.locator('#tutorial-feedback')).toContainText('«Уклонение» + →');
+    await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[forward]});
+    try { await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge,forward]}); }
+    finally { await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); }
+    await expect(page.locator('[data-check="1"]')).toHaveAttribute('data-done','true');
+    await step(page,'stamina');
+  });
 });
 
 async function guideSave(page:Page,current:ClubGuideStep):Promise<void> {

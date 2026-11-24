@@ -62,7 +62,7 @@ test('early inputs are rejected and accepted inputs expire instead of firing muc
   expect(w.attack(p,0)).toBe(false); expect(w.dodge(p)).toBe(false);
   p.elapsed=p.stun-90; expect(w.attack(p,0)).toBe(true);
   p.stun+=500; advance(w,120);
-  expect(p.buffered).toBeNull(); expect(p.bufferedDodge).toBe(false);
+  expect(p.buffered).toBeNull(); expect(p.bufferedDodge).toBeNull();
   advance(w,600); expect(p.action).toBe('idle'); expect(p.stamina).toBe(150);
 });
 
@@ -97,6 +97,45 @@ test('the last buffered command wins; dodge begins after recovery and pays its c
   advance(w,99); expect(p.action).toBe('attack'); expect(p.stamina).toBe(before);
   advance(w,1); expect(p.action).toBe('dodge'); expect(p.stamina).toBe(before-COMBAT.dodgeCost);
   expect(p.combo).toBe(0); expect(p.buffered).toBeNull();
+});
+
+test('directional dodges use the chosen side and keep their facing when crossing an opponent', () => {
+  for (const direction of [-1, 1] as const) {
+    const start = 960;
+    for (const forward of [true, false]) {
+      const w = battle(start, start + (forward ? direction : -direction) * 120);
+      const p = w.player;
+      expect(w.dodge(p, direction)).toBe(true);
+      expect(p.dodgeForward).toBe(forward);
+      expect(p.dodgeDirection).toBe(direction);
+      expect(p.stamina).toBe(150 - COMBAT.dodgeCost);
+      const startingFacing = p.facing;
+      p.direction = -direction;
+      advance(w, COMBAT.dodgeTravelMs);
+      expect((p.x - start) * direction).toBeGreaterThan(120);
+      expect(p.facing).toBe(startingFacing);
+      expect(p.action).toBe('dodge');
+      const landingX = p.x;
+      p.direction = 0;
+      advance(w, COMBAT.dodgeDuration - COMBAT.dodgeTravelMs);
+      expect(p.x).toBe(landingX);
+      expect(p.facing).toBe(-direction);
+    }
+  }
+});
+
+test('a buffered dodge saves the screen direction even if the opponent crosses before recovery', () => {
+  const w = battle(700, 1200), p = w.player;
+  w.attack(p, 0);
+  advance(w, attackDuration(0) - 80);
+  expect(w.dodge(p, 1)).toBe(true);
+  w.enemy.x = 440;
+  advance(w, 80);
+  expect(p.action).toBe('dodge');
+  expect(p.dodgeDirection).toBe(1);
+  expect(p.dodgeForward).toBe(false);
+  advance(w, 16);
+  expect(p.x).toBeGreaterThan(700);
 });
 
 test('buffered attack after dodge respects the full dodge recovery and the last selected slot',()=>{

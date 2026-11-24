@@ -14,6 +14,16 @@ interface Atlas {
 }
 const asset = (page: string, extension: string) => new URL(`../public/combat/${page}.${extension}`, import.meta.url);
 
+test('игрок сохраняет анимации отхода и все 17 кадров рывка вперёд для каждой стороны', () => {
+  const clips = combatManifest.characters.player;
+  for (const direction of ['left', 'right']) {
+    expect(clips[`dodge-${direction}`]).toHaveLength(12);
+    expect(clips[`dodge-forward-${direction}`]).toEqual(
+      Array.from({ length: 17 }, (_, frame) => `player:dodge-forward:${direction}:${frame}`),
+    );
+  }
+});
+
 test('каждый карьерный боец имеет собственные атаки и общие анимации в обоих направлениях; Kim без уклонения', () => {
   expect(ENEMY_SKINS).toEqual(['kim','kwon','yeo','shim','bang','jang','cha','young','sunny','lee','yang','maria']);
   for (const skin of ENEMY_SKINS) {
@@ -85,7 +95,7 @@ test('бой загружает только двух участников; ка
     for (const page of pages) expect(wanted.includes(page.replace(/-\d+$/, '') as FighterSkin), page).toBe(true);
   }
   const endless = combatPagesFor(ENDLESS_COMBAT_SKINS);
-  expect(endless).toHaveLength(29);
+  expect(ENDLESS_COMBAT_SKINS).toEqual(['player', 'kim', 'kwon', 'yeo', 'bang', 'jang', 'cha']);
   expect(endless.every(page => /^(player|kim|kwon|yeo|bang|jang|cha)-\d+$/.test(page))).toBe(true);
   expect(combatPagesFor([])).toEqual([]);
 });

@@ -9,7 +9,7 @@ export class TouchControls {
     const arrow=(code:string,right:boolean)=>`<button type="button" class="touch-arrow" data-touch="${code}" aria-label="${right?'Вправо':'Влево'}" aria-pressed="false"><svg viewBox="0 0 72 72" aria-hidden="true"><path d="${right?'M15 8 58 36 15 64Z':'M57 8 14 36 57 64Z'}"/></svg></button>`;
     view.root.querySelector('.screen')!.insertAdjacentHTML('beforeend',`<nav class="touch-controls" aria-label="Сенсорное управление">
       <div class="touch-movement">${arrow('KeyA',false)}${arrow('KeyD',true)}</div>
-      <div class="touch-actions ${combat?'touch-combat-actions':'touch-room-actions'}">${combat ? button('KeyQ','Q','Удар 1')+button('KeyW','W','Удар 2')+button('KeyE','E','Удар 3')+button('ShiftLeft','↶','Уклонение') : button('Escape','↩','Назад')+button('KeyE','E','Действие')}</div>
+      <div class="touch-actions ${combat?'touch-combat-actions':'touch-room-actions'}">${combat ? button('KeyQ','Q','Удар 1')+button('KeyW','W','Удар 2')+button('KeyE','E','Удар 3')+button('ShiftLeft','↔','Уклонение') : button('Escape','↩','Назад')+button('KeyE','E','Действие')}</div>
     </nav>`);
     for(const node of view.root.querySelectorAll<HTMLButtonElement>('[data-touch]')) {
       node.addEventListener('pointerdown',event=>{

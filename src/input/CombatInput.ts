@@ -1,13 +1,17 @@
-import type { AttackSlot } from '../config/combat';
+import type { AttackSlot, DodgeDirection } from '../config/combat';
 import { ATTACK_KEYS } from '../config/controls';
 import { clearVirtualInput, inputSuspended, onVirtualInput } from './VirtualInput';
+
+const movementKeys = ['KeyA', 'KeyD', 'ArrowLeft', 'ArrowRight'];
+const dodgeKeys = ['ShiftLeft', 'ShiftRight'];
+const combatKeys = new Set([...movementKeys, ...dodgeKeys, 'Space', ...ATTACK_KEYS.map(key => key.code)]);
 
 export class CombatInput {
   private readonly held = new Set<string>();
   private readonly touch = new Set<string>();
   private readonly events = new AbortController();
   constructor(private readonly blocked: () => boolean, private readonly attack: (slot: AttackSlot) => void,
-    private readonly dodge: () => void, private readonly pause: () => void, private readonly releaseBuffered: () => void = () => {},
+    private readonly dodge: (direction: DodgeDirection) => void, private readonly pause: () => void, private readonly releaseBuffered: () => void = () => {},
     private readonly automaticGuard: () => boolean = () => false) {
     document.addEventListener('keydown', this.onDown, { signal: this.events.signal });
     document.addEventListener('keyup', event => this.held.delete(event.code), { signal: this.events.signal });
@@ -18,11 +22,16 @@ export class CombatInput {
       if(!command.down){this.touch.delete(command.code);return;}
       if(command.code==='Escape'){this.clear();this.pause();return;}
       if(this.blocked() || inputSuspended())return;
-      this.touch.add(command.code);this.action(command.code);
+      this.press(this.touch, command.code);
     },this.events.signal);
   }
   private has(code:string):boolean { return this.held.has(code)||this.touch.has(code); }
-  get direction(): number { return this.blocked() || inputSuspended() ? 0 : Number(this.has('KeyD') || this.has('ArrowRight')) - Number(this.has('KeyA') || this.has('ArrowLeft')); }
+  get direction(): DodgeDirection | 0 {
+    if (this.blocked() || inputSuspended()) return 0;
+    const left = this.has('KeyA') || this.has('ArrowLeft');
+    const right = this.has('KeyD') || this.has('ArrowRight');
+    return left === right ? 0 : right ? 1 : -1;
+  }
   get block(): boolean { return !this.blocked() && !inputSuspended() && this.has('Space'); }
   get autoBlock(): boolean {
     return this.automaticGuard() && !this.blocked() && !inputSuspended() && this.held.size===0 && this.touch.size===0;
@@ -33,14 +42,20 @@ export class CombatInput {
     if (event.ctrlKey || event.metaKey || event.altKey || event.repeat || inputSuspended()) return;
     if (event.code === 'Escape') { event.preventDefault(); this.clear(); this.pause(); return; }
     if (this.blocked() || (event.target as HTMLElement | null)?.closest('input,select,textarea,[contenteditable="true"]')) return;
-    const codes = ['KeyA','KeyD','ArrowLeft','ArrowRight','Space',...ATTACK_KEYS.map(key=>key.code),'ShiftLeft','ShiftRight'];
-    if (!codes.includes(event.code)) return;
-    event.preventDefault(); this.held.add(event.code);
-    this.action(event.code);
+    if (!combatKeys.has(event.code)) return;
+    event.preventDefault();
+    this.press(this.held, event.code);
   };
-  private action(code:string):void {
-    const slot = ATTACK_KEYS.findIndex(key=>key.code===code);
+  private dodgeChord(): DodgeDirection | 0 {
+    return dodgeKeys.some(code => this.has(code)) ? this.direction : 0;
+  }
+  private press(keys: Set<string>, code: string): void {
+    if (keys.has(code)) return;
+    const previousChord = this.dodgeChord();
+    keys.add(code);
+    const slot = ATTACK_KEYS.findIndex(key => key.code === code);
     if (slot >= 0) this.attack(slot as AttackSlot);
-    if (code.startsWith('Shift')) this.dodge();
+    const chord = this.dodgeChord();
+    if (chord !== 0 && chord !== previousChord) this.dodge(chord);
   }
 }

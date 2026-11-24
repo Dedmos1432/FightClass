@@ -1,5 +1,5 @@
 import { CombatWorld, fighter } from '../combat/CombatWorld';
-import { COMBAT } from '../config/combat';
+import { ATTACK_SLOTS, COMBAT } from '../config/combat';
 import type { PracticeStep } from './Progress';
 
 /** A safe scripted partner uses the same attacks, hitboxes and resource rules as real bouts. */
@@ -15,6 +15,7 @@ export class CombatTutorial {
   combo = false;
   blocked = false;
   dodged = false;
+  dashedForward = false;
   spent = false;
   recovered = false;
   private coachWait = 1100;
@@ -25,7 +26,7 @@ export class CombatTutorial {
       case 'attacks': return [0,1,2].map(slot=>this.strikes.has(slot));
       case 'combo': return [this.combo];
       case 'block': return [this.blocked];
-      case 'dodge': return [this.dodged];
+      case 'dodge': return [this.dodged,this.dashedForward];
       case 'stamina': return [this.spent,this.recovered];
       case 'club': return [];
     }
@@ -33,11 +34,17 @@ export class CombatTutorial {
   get ready(): boolean { const checks=this.checks; return checks.length>0 && checks.every(Boolean); }
   get dodgeCue(): boolean {
     const e=this.world.enemy;
-    return this.step==='dodge' && e.action==='attack' && e.elapsed<210;
+    return this.step==='dodge' && !this.dodged && e.action==='attack' &&
+      e.elapsed < ATTACK_SLOTS[e.slot].startup - COMBAT.dodgeInvulnerableFrom;
+  }
+  get dodgePracticeDirection(): -1 | 1 {
+    const { player, enemy } = this.world;
+    const toward = enemy.x === player.x ? player.facing : enemy.x > player.x ? 1 : -1;
+    return this.dodged ? toward : toward === 1 ? -1 : 1;
   }
   enter(step: PracticeStep): void {
     this.step=step; this.left=0; this.right=0; this.strikes.clear(); this.combo=false;
-    this.blocked=false; this.dodged=false; this.spent=false; this.recovered=false; this.coachWait=1100;
+    this.blocked=false; this.dodged=false; this.dashedForward=false; this.spent=false; this.recovered=false; this.coachWait=1100;
     Object.assign(this.world.player,fighter({skin:'player',x:780,maxHP:100,stamina:100,damage:10,speed:COMBAT.playerSpeed,canDodge:true}));
     Object.assign(this.world.enemy,fighter({skin:'kim',x:step==='block'||step==='dodge'?930:980,maxHP:100,stamina:100,damage:4,speed:250,canDodge:false,facing:-1}));
     this.world.events.length=0;
@@ -46,12 +53,12 @@ export class CombatTutorial {
     const dt=Math.min(50,Math.max(0,delta)),w=this.world,p=w.player,e=w.enemy;
     if(this.ready || this.step==='club') { p.direction=0; p.blocking=false; e.direction=0; w.update(dt); return; }
     const before=p.x;
-    if(this.step==='block' || this.step==='dodge') {
+    if(this.step==='block' || (this.step==='dodge' && !this.dodged)) {
       const distance=Math.abs(p.x-e.x);
       e.direction=distance>165 ? Math.sign(p.x-e.x) : 0;
       this.coachWait-=dt;
       if(distance<=190 && this.coachWait<=0 && w.attack(e,2)) this.coachWait=2300;
-    }
+    } else e.direction=0;
     w.update(dt);
     this.left+=Math.max(0,before-p.x); this.right+=Math.max(0,p.x-before);
     for(const event of w.events) {
@@ -59,8 +66,10 @@ export class CombatTutorial {
         this.strikes.add(p.slot); if(p.combo>=2) this.combo=true;
       }
       if(event.target===p && event.type==='block') this.blocked=true;
-      if(event.target===p && event.type==='dodge') this.dodged=true;
+      if(event.target===p && event.type==='dodge' && !p.dodgeForward) this.dodged=true;
     }
+    if(this.step==='dodge' && this.dodged && p.action==='dodge' && p.dodgeForward &&
+      Math.sign(p.x-before)===p.dodgeDirection) this.dashedForward=true;
     if(p.stamina<=40) this.spent=true;
     if(this.spent && p.stamina>=80 && p.action!=='attack' && p.action!=='dodge') this.recovered=true;
     // Practice never ends in a loss, and none of these HP/stamina values enter the save.

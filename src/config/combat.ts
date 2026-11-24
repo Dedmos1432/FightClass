@@ -5,12 +5,13 @@ export const ATTACK_SLOTS = [
   { startup: 280, active: 140, recovery: 315, range: 285, stamina: 20 },
 ] as const;
 export type AttackSlot = 0 | 1 | 2;
+export type DodgeDirection = -1 | 1;
 export const COMBAT = {
   centerX: 960, startRadius: 145, playerStart: 710, enemyStart: 1210,
   minX: 160, maxX: 1760, floorY: 910, playerSpeed: 340, bodyHalfWidth: 57,
   staminaRegen: 18, blockRegen: 5, guardCostBase: 3, guardCostPerDamage: .08,
   hitStun: 240, guardBreakStun: 580, autoGuardMs: 180,
-  dodgeCost: 25, dodgeDuration: 450, dodgeSpeed: 640, dodgeInvulnerableFrom: 65, dodgeInvulnerableTo: 290,
+  dodgeCost: 25, dodgeDuration: 450, dodgeTravelMs: 300, dodgeSpeed: 640, dodgeInvulnerableFrom: 65, dodgeInvulnerableTo: 290,
   comboBufferMs: 220, inputBufferMs: 140, bufferGraceMs: 24, maxCombo: 3, intermissionMs: 1800, countdownMs: 1800,
   damageGrowth: 3, rosterSize: 15,
   roundDurationMs: 90_000, enemyBoostAfterMs: 15_000,

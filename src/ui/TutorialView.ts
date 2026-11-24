@@ -14,7 +14,7 @@ const lessons: Record<PracticeStep,{title:string;body:string;checks:string[]}> =
   attacks:{title:'Три удара. Три кнопки.',body:'Попади каждым приёмом: <kbd>Q</kbd>, <kbd>W</kbd>, <kbd>E</kbd>. Между ударами дай анимации закончиться. Вне дальности удар не попадёт. Урон всех трёх приёмов одинаковый.',checks:['Попасть ударом Q','Попасть ударом W','Попасть ударом E']},
   combo:{title:'Свяжи удары в комбинацию',body:'Нажми <kbd>Q</kbd>. Когда указатель войдёт в красную зону восстановления, нажми <kbd>W</kbd> или <kbd>E</kbd>. В бою так можно связать до трёх ударов.',checks:['Попасть вторым ударом одной комбинации']},
   block:{title:'Встреть удар защитой',body:'Удерживай <kbd>Space</kbd>, пока партнёр не ударит. Блок защищает спереди; <kbd>A</kbd> / <kbd>D</kbd> разворачивают его без движения. Попадание расходует немного выносливости.',checks:['Заблокировать удар партнёра']},
-  dodge:{title:'Уйди в нужный момент',body:'Дождись сигнала и нажми <kbd>Shift</kbd>. Уклонение отводит назад и ненадолго даёт неуязвимость. Оно стоит 25 выносливости. Если промахнулся по времени — попробуй на следующем ударе.',checks:['Избежать удара уклонением']},
+  dodge:{title:'Уклонись назад и вперёд',body:`Для рывка нажми <kbd>Shift</kbd> и направление (<kbd>A</kbd> / <kbd>D</kbd> или стрелку) вместе, в любом порядке. По сигналу уйди от удара назад, затем сделай рывок к партнёру. Оба рывка стоят ${COMBAT.dodgeCost} выносливости и ненадолго дают неуязвимость.`,checks:['Уйти от удара рывком назад','Сделать рывок к партнёру']},
   stamina:{title:'Оставляй силы на защиту',body:'Следи за полосой выносливости сверху. Удары стоят 12 / 16 / 20, уклонение — 25. Потрать запас до 40 или ниже, затем сделай паузу в атаках и восстанови его до 80. В блоке восстановление медленнее; пустой блок могут пробить.',checks:['Потратить выносливость до 40','Восстановить запас до 80']},
   club:{title:'Теперь — твой путь в клубе',body:'HP — здоровье: при нуле будет нокаут. Эта тренировка не тратит твой прогресс. В лобби двигайся <kbd>A</kbd> / <kbd>D</kbd>, подходи к объектам и нажимай <kbd>E</kbd>.',checks:[]},
 };
@@ -23,7 +23,7 @@ const touchLessons:Partial<Record<PracticeStep,string>>={
   attacks:'Касайся кнопок Q, W и E внизу справа. Попади каждым приёмом и дай анимации закончиться между ударами. Вне дальности удар не попадёт. Урон всех трёх приёмов одинаковый.',
   combo:'Коснись Q. Когда указатель войдёт в красную зону восстановления, коснись W или E. Так можно связать до трёх ударов. Можно одновременно удерживать стрелку движения и нажимать атаку.',
   block:'Отпусти все кнопки и дождись удара партнёра. На мобильном боец автоматически блокирует удары спереди, когда стоит без действий. Во время движения, атаки и уклонения автоблок не работает. Блок расходует немного выносливости; пустую защиту могут пробить.',
-  dodge:'Дождись сигнала и коснись «Уклонение». Оно отводит назад, ненадолго даёт неуязвимость и стоит 25 выносливости. Если промахнулся по времени — попробуй на следующем ударе.',
+  dodge:`Удерживай «Уклонение» и стрелку движения одновременно. По сигналу уйди от удара, затем сделай рывок к партнёру. Оба рывка стоят ${COMBAT.dodgeCost} выносливости и ненадолго дают неуязвимость.`,
   club:'HP — здоровье: при нуле будет нокаут. Эта тренировка не тратит твой прогресс. В лобби удерживай стрелки ← / → и нажимай E у объектов. «Назад» возвращает в лобби из комнаты. В качалке для повторений есть кнопка «Жать».',
 };
 
@@ -42,7 +42,7 @@ export class TutorialView extends ScreenView {
         <span class="tutorial-safe">УЧЕБНЫЙ СПАРРИНГ<small>Без поражений и потери прогресса</small></span>
       </section>
       <section class="tutorial-main">
-        <div id="tutorial-focus" tabindex="0" role="application" aria-label="Обучение. A D движение, Q W E удары, пробел блок, Shift уклонение, Escape пауза"></div>
+        <div id="tutorial-focus" tabindex="0" role="application" aria-label="Обучение. A и D — движение, Q W E — удары, пробел — блок, Shift с направлением — уклонение, Escape — пауза"></div>
         <section id="tutorial-card" class="tutorial-lesson" aria-labelledby="tutorial-title">
           <div class="tutorial-copy"><span class="eyebrow" id="tutorial-number"></span><h1 id="tutorial-title"></h1><p id="tutorial-description"></p></div>
           <div class="tutorial-tasks"><ul id="tutorial-checks"></ul><p id="tutorial-feedback" role="status" aria-live="polite"></p></div>
@@ -61,7 +61,9 @@ export class TutorialView extends ScreenView {
         </section>
         <div class="tutorial-actions"><button id="tutorial-skip" class="button secondary small-button">Пропустить обучение</button><button id="tutorial-pause" class="button secondary small-button">Пауза <kbd>Esc</kbd></button></div>
       </section>`);
-    this.root.querySelector('.keyboard-hint')!.innerHTML='<kbd>A</kbd><kbd>D</kbd> движение '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' удары <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
+    this.root.querySelector('.keyboard-hint')!.innerHTML='<kbd>A</kbd><kbd>D</kbd> движение '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' удары <kbd>Space</kbd> блок <kbd>Shift + A/D</kbd> уклонение';
+    if(this.root.dataset.touch==='true') this.root.querySelector('#tutorial-focus')!.setAttribute('aria-label',
+      'Обучение. Стрелки — движение, Q W E — удары. Для рывка удерживай «Уклонение» и стрелку одновременно. Отпусти все кнопки для автоблока спереди.');
     this.on('#tutorial-focus','click',()=>this.focusArena());
     this.on('#tutorial-page-prev','click',()=>this.changePage(-1));
     this.on('#tutorial-page-next','click',()=>this.changePage(1));
@@ -135,8 +137,17 @@ export class TutorialView extends ScreenView {
     this.root.querySelector<HTMLElement>('#tutorial-needle')!.style.left=`${p.action==='attack'?Math.min(100,p.elapsed/duration*100):0}%`;
     this.root.querySelector<HTMLElement>('.tutorial-timing-window')!.style.width=`${COMBAT.comboBufferMs/duration*100}%`;
     const touch=this.root.dataset.touch==='true';
-    const message=trainer.ready ? 'Готово. Следующий приём…' : trainer.dodgeCue ? touch?'СЕЙЧАС — УКЛОНЕНИЕ':'СЕЙЧАС — SHIFT' : trainer.step==='block' && e.action==='attack' ? touch?'Отпусти кнопки — сработает автоблок':'Держи SPACE — партнёр атакует'
-      : trainer.step==='dodge' ? 'Дождись удара партнёра' : trainer.step==='combo' && open ? 'СЕЙЧАС — W ИЛИ E' : trainer.step==='stamina' && trainer.spent ? 'Отпусти атаки. Верни запас до 80.' : '';
+    let message='';
+    if(trainer.ready) message='Готово. Следующий приём…';
+    else if(trainer.step==='dodge') {
+      const right=trainer.dodgePracticeDirection===1;
+      const chord=touch ? `«Уклонение» + ${right?'→':'←'}` : `Shift + ${right?'D / →':'A / ←'}`;
+      if(trainer.dodgeCue) message=`Сейчас — ${chord}`;
+      else if(trainer.dodged) message=`К партнёру — ${chord}`;
+      else message='Дождись удара партнёра';
+    } else if(trainer.step==='block' && e.action==='attack') message=touch?'Отпусти кнопки — сработает автоблок':'Держи SPACE — партнёр атакует';
+    else if(trainer.step==='combo' && open) message='СЕЙЧАС — W ИЛИ E';
+    else if(trainer.step==='stamina' && trainer.spent) message='Отпусти атаки. Верни запас до 80.';
     if(message!==this.message) { this.root.querySelector('#tutorial-feedback')!.textContent=message; this.message=message; }
     this.root.querySelector('#tutorial-feedback')!.setAttribute('data-cue',String(trainer.dodgeCue || open));
     Object.assign(this.root.querySelector<HTMLElement>('#tutorial-focus')!.dataset,{

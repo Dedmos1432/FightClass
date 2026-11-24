@@ -36,7 +36,7 @@ export class CombatView extends ScreenView {
           <div class="fight-stamina" role="progressbar" aria-label="Выносливость соперника" aria-valuemin="0"><span></span></div>
         </div>
       </section>
-      <section class="combat-layer"><div id="combat-focus" tabindex="0" role="application" aria-label="Поединок. A D движение, Q W E атаки, пробел блок, Shift уклонение, Escape пауза"></div>
+      <section class="combat-layer"><div id="combat-focus" tabindex="0" role="application" aria-label="Поединок. A и D — движение, Q W E — атаки, пробел — блок, Shift с направлением — уклонение, Escape — пауза"></div>
         <div class="fight-round"><span id="fight-round-label"></span><p id="fight-tactic"></p><p id="fight-pressure"></p></div>
         <div class="fight-announcement" id="fight-announcement" role="status" aria-live="polite"></div>
         <div class="fight-bottom"><div class="attack-legend">${loadout.map((move, i) => `<span><kbd>${ATTACK_KEYS[i].label}</kbd><b>${moveById(move).name}</b><small>${ATTACK_SLOTS[i].stamina} выносл.</small></span>`).join('')}</div>
@@ -44,8 +44,8 @@ export class CombatView extends ScreenView {
           <button class="button secondary small-button" id="fight-pause">Пауза <kbd>Esc</kbd></button>
         </div>
       </section>`);
-    this.root.querySelector('.keyboard-hint')!.innerHTML = '<kbd>A</kbd><kbd>D</kbd> движение / разворот блока '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' атаки <kbd>Space</kbd> блок <kbd>Shift</kbd> уклонение';
-    if(this.root.dataset.touch==='true')this.root.querySelector('#combat-focus')!.setAttribute('aria-label','Поединок. Стрелки слева — движение; Q, W, E справа — атаки; нижняя круглая кнопка — уклонение. Отпусти все кнопки для автоматического блока спереди.');
+    this.root.querySelector('.keyboard-hint')!.innerHTML = '<kbd>A</kbd><kbd>D</kbd> движение / разворот блока '+ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')+' атаки <kbd>Space</kbd> блок <kbd>Shift + A/D</kbd> уклонение';
+    if(this.root.dataset.touch==='true')this.root.querySelector('#combat-focus')!.setAttribute('aria-label','Поединок. Стрелки — движение, Q W E — атаки. Для рывка удерживай «Уклонение» и стрелку одновременно. Отпусти все кнопки для автоблока спереди.');
     if (career) {
       this.root.querySelector('.streak-summary > span')!.textContent = 'СЧЁТ';
       this.root.querySelector('.fight-run-info > small')!.textContent = 'Новый раунд — полные HP и выносливость';
@@ -101,6 +101,7 @@ export class CombatView extends ScreenView {
     const data = this.root.querySelector<HTMLElement>('#combat-focus')!.dataset;
     const snapshot={ phase, playerHp:String(p.hp), enemyHp:String(e.hp), playerX:p.x.toFixed(1), enemyX:e.x.toFixed(1),
       playerAction:p.action, enemyAction:e.action, enemySkin:e.skin, enemyVariant:profile.id, botState, playerFacing:String(p.facing), enemyFacing:String(e.facing), enemyCanDodge:String(e.canDodge),
+      playerDodgeDirection:p.action==='dodge'?String(p.dodgeDirection):'', playerDodgeForward:p.action==='dodge'?String(p.dodgeForward):'',
       wins:String(wins), slot:String(p.slot), combo:String(p.combo), stamina:Math.floor(p.stamina).toString(),
       actionMs:String(Math.floor(p.elapsed)), bufferedSlot:p.buffered===null ? '' : String(p.buffered),
       roundMs:String(roundMs), remainingMs:String(remaining), enemyBoosted:String(boosted), enemyDamage:String(e.damage), mode:this.career ? 'career' : 'endless', boss:String(this.career?.boss ?? false) };
@@ -119,7 +120,7 @@ export class CombatView extends ScreenView {
         <div><span>${touch ? '<kbd>←</kbd><kbd>→</kbd>' : '<kbd>A</kbd><kbd>D</kbd>'}</span><b>Движение</b></div>
         <div><span>${ATTACK_KEYS.map(key=>`<kbd>${key.label}</kbd>`).join('')}</span><b>Три атаки</b></div>
         <div><kbd>${touch ? 'Авто' : 'Space'}</kbd><b>${touch ? 'Блок в покое' : 'Держать блок'}</b></div>
-        <div><kbd>${touch ? '↶' : 'Shift'}</kbd><b>Уклонение назад</b></div>
+        <div><kbd>${touch ? '↔ + ←/→' : 'Shift + A/D'}</kbd><b>Рывок вперёд / назад</b></div>
       </div>
       <p class="fight-combo-note">Для комбинации нажми следующую атаку в конце восстановления. В цепочке — до трёх ударов. Короткие команды у конца оглушения или уклонения также сохраняются. ${touch ? 'Отпусти все кнопки: в покое боец автоматически блокирует попадания спереди. Во время движения, атаки, уклонения и оглушения автоблок не действует.' : 'Блок защищает спереди: A/D разворачивают защиту.'} В блоке силы медленно восстанавливаются, попадание расходует немного выносливости.</p>
       <div class="fight-rule-note"><b>${COMBAT.roundDurationMs/1000} СЕКУНД НА ${this.career ? 'РАУНД' : 'СОПЕРНИКА'}</b><p>${this.career ? `Матч до ${careerWinsNeeded(this.career.id)} побед в раундах для любого бойца. Счёт ${this.score.playerRounds} : ${this.score.enemyRounds}. По времени решает процент HP. Ничья не меняет счёт. Каждый новый раунд начинается с полными HP, выносливостью и новым таймером; счёт сохраняется при выходе.` : `После первых ${COMBAT.enemyBoostAfterMs/1000} секунд — однократное усиление урона на ${boostPercent}%. Когда время выйдет, побеждает боец с большим процентом HP. Ничья или поражение завершают серию; награда за прошлые победы остаётся.`}</p></div>
