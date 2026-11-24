@@ -1,8 +1,7 @@
-import { CombatWorld, fighter } from '../combat/CombatWorld';
+import { CombatWorld, fighter, hitbox, hurtbox, intersects, type Box } from '../combat/CombatWorld';
 import { ATTACK_SLOTS, COMBAT } from '../config/combat';
 import type { PracticeStep } from './Progress';
 
-// Stay close enough for the slow kick to reach an early backward dodge.
 const DODGE_DRILL_DISTANCE = 105;
 
 /** A safe scripted partner uses the same attacks, hitboxes and resource rules as real bouts. */
@@ -22,6 +21,7 @@ export class CombatTutorial {
   spent = false;
   recovered = false;
   private coachWait = 1100;
+  private retreatStart: Box | null = null;
   constructor(step: PracticeStep) { this.step=step; this.enter(step); }
   get checks(): boolean[] {
     switch(this.step) {
@@ -48,6 +48,7 @@ export class CombatTutorial {
   enter(step: PracticeStep): void {
     this.step=step; this.left=0; this.right=0; this.strikes.clear(); this.combo=false;
     this.blocked=false; this.dodged=false; this.dashedForward=false; this.spent=false; this.recovered=false; this.coachWait=1100;
+    this.retreatStart = null;
     const playerX = 780;
     const enemyX = step === 'dodge' ? playerX + DODGE_DRILL_DISTANCE : step === 'block' ? 930 : 980;
     Object.assign(this.world.player,fighter({skin:'player',x:playerX,maxHP:100,stamina:100,damage:10,speed:COMBAT.playerSpeed,canDodge:true}));
@@ -59,6 +60,8 @@ export class CombatTutorial {
     if(this.ready || this.step==='club') { p.direction=0; p.blocking=false; e.direction=0; w.update(dt); return; }
     const before=p.x;
     const dodgeDrill = this.step === 'dodge' && !this.dodged;
+    const cued = this.dodgeCue;
+    const startingDodge = p.action === 'dodge' && p.elapsed === 0;
     if(this.step==='block' || dodgeDrill) {
       const distance=Math.abs(p.x-e.x);
       const approachDistance = dodgeDrill ? DODGE_DRILL_DISTANCE : 165;
@@ -76,11 +79,31 @@ export class CombatTutorial {
       if(event.target===p && event.type==='block') this.blocked=true;
       if(event.target===p && event.type==='dodge' && !p.dodgeForward) this.dodged=true;
     }
+    if (dodgeDrill && !this.dodged) {
+      // A buffered dodge can begin inside the update and have less than one frame of elapsed time.
+      this.checkRetreat(cued && (startingDodge || p.elapsed < dt) ? before : null);
+    }
     if(this.step==='dodge' && this.dodged && p.action==='dodge' && p.dodgeForward &&
       Math.sign(p.x-before)===p.dodgeDirection) this.dashedForward=true;
     if(p.stamina<=40) this.spent=true;
     if(this.spent && p.stamina>=80 && p.action!=='attack' && p.action!=='dodge') this.recovered=true;
     // Practice never ends in a loss, and none of these HP/stamina values enter the save.
     for(const f of [p,e]) if(f.hp<=0) { f.hp=f.maxHP; f.action='idle'; f.elapsed=0; w.clearInputBuffer(f); }
+  }
+
+  private checkRetreat(startX: number | null): void {
+    const { player, enemy } = this.world;
+    if (player.action !== 'dodge' || player.dodgeForward || enemy.action !== 'attack') {
+      this.retreatStart = null;
+      return;
+    }
+    if (startX !== null) this.retreatStart = hurtbox({ ...player, x: startX });
+    if (!this.retreatStart || player.elapsed < COMBAT.dodgeInvulnerableFrom) return;
+
+    // A long retreat can avoid a real strike without ever triggering a collision.
+    const strike = hitbox(enemy);
+    if (strike && intersects(strike, this.retreatStart) && !intersects(strike, hurtbox(player))) {
+      this.dodged = true;
+    }
   }
 }

@@ -117,7 +117,7 @@ export class CombatWorld {
       }
     } else if (f.action === 'dodge') {
       const travelMs = clamp(COMBAT.dodgeTravelMs - (f.elapsed - delta), 0, delta);
-      f.x += f.dodgeDirection * COMBAT.dodgeSpeed * travelMs / 1000;
+      f.x += f.dodgeDirection * COMBAT.dodgeDistance * travelMs / COMBAT.dodgeTravelMs;
       if (f.elapsed >= COMBAT.dodgeDuration) this.finishAction(f,other);
     } else if (f.action === 'hit') {
       if (f.elapsed >= f.stun) this.finishAction(f,other);
