@@ -1,49 +1,130 @@
-#ui[data-screen='tutorial'] .screen { height:100svh; min-height:0; overflow:hidden; padding-inline:clamp(16px,3.5vw,64px); pointer-events:none; }
-#ui[data-screen='tutorial'] .topbar { min-height:58px; padding-block:8px; pointer-events:auto; }
+#ui[data-screen='tutorial'] .screen {
+  height:100svh;
+  min-height:0;
+  overflow:hidden;
+  padding-inline:clamp(16px,3.5vw,64px);
+  pointer-events:none;
+}
+#ui[data-screen='tutorial'] .topbar { position:relative; z-index:8; min-height:58px; padding-block:8px; pointer-events:auto; }
 #ui[data-screen='tutorial'] .brand-mark { width:28px; height:31px; font-size:20px; }
 #ui[data-screen='tutorial'] .brand-name small { display:none; }
-#ui[data-screen='tutorial'] .footer { padding-block:12px; }
-.tutorial-hud { display:flex; gap:28px; align-items:center; padding-block:16px; border-bottom:1px solid #eee8d82b; }
+#ui[data-screen='tutorial'] .footer { padding-block:7px; }
+#ui[data-screen='tutorial'] .footer .keyboard-hint { display:none; }
+.tutorial-hud { position:relative; z-index:8; display:flex; gap:28px; align-items:center; padding-block:12px; border-bottom:1px solid #eee8d82b; }
 .tutorial-vital { width:220px; max-width:40%; }
-.tutorial-vital > span { display:flex; justify-content:space-between; gap:8px; font:9px var(--mono); letter-spacing:.6px; }
+.tutorial-vital > span { display:flex; justify-content:space-between; gap:8px; font:11px var(--mono); }
 .tutorial-vital b { font-weight:400; white-space:nowrap; }
-.tutorial-vital > div { height:5px; background:#eee8d82b; margin-top:9px; }
+.tutorial-vital > div { height:5px; background:#eee8d82b; margin-top:6px; }
 .tutorial-vital i { display:block; height:100%; background:var(--paper); }
 .tutorial-energy i { background:#b2c6a1; }
-.tutorial-energy [data-low='true'] i { background:#e6ac68; }
-.tutorial-safe { margin-left:auto; font:9px/1.4 var(--mono); letter-spacing:.7px; color:#c4c0b4; }
-.tutorial-safe small { display:block; margin-top:4px; font:10px/1.5 var(--body); color:#a7a69d; letter-spacing:0; }
+.tutorial-energy [data-low='true'] i { background:#ffad73; }
 .tutorial-main { flex:1; position:relative; display:flex; flex-direction:column; min-height:0; }
 #tutorial-focus { position:absolute; inset:0; pointer-events:auto; outline:none; }
-.tutorial-lesson { position:relative; z-index:1; display:grid; grid-template-columns:minmax(0,1.7fr) minmax(180px,1fr); gap:16px 30px; margin-top:18px; padding:18px 24px 20px; max-width:880px; width:100%; color:var(--ink); background:var(--paper); border-top:4px solid var(--action); box-shadow:4px 4px 0 #0007; pointer-events:auto; max-height:clamp(135px,30svh,290px); overflow:auto; overscroll-behavior:contain; }
-.tutorial-copy .eyebrow { color:#71685b; font-size:8px; }
-.tutorial-copy h1 { font:500 30px/1.13 var(--display); margin:7px 0 9px; text-transform:uppercase; }
-.tutorial-copy p { font:11px/1.7 var(--body); }
-.tutorial-lesson kbd { color:var(--ink); border-color:#17191a40; background:#17191a09; margin:0 2px; }
-.tutorial-tasks { border-left:1px solid #17191a30; padding-left:22px; align-self:center; }
-#tutorial-checks { list-style:none; padding:0; margin:0; display:grid; gap:10px; }
-#tutorial-checks li { display:flex; gap:9px; align-items:center; font:11px/1.5 var(--body); }
-#tutorial-checks i { display:grid; place-items:center; width:17px; height:17px; border:1px solid #17191a50; flex-shrink:0; font:700 13px var(--body); }
-#tutorial-checks [data-done='true'] { color:#365642; }
-#tutorial-checks [data-done='true'] i { background:#365642; color:var(--paper); border-color:#365642; }
-#tutorial-checks [data-done='true'] i::after { content:'✓'; }
-#tutorial-feedback { min-height:16px; font:600 10px/1.5 var(--body); color:#625c50; margin-top:10px; }
-#tutorial-feedback[data-cue='true'] { color:var(--action); }
-#tutorial-timing { grid-column:1 / -1; }
-#tutorial-timing > span { font:8px var(--mono); letter-spacing:.6px; }
-.tutorial-timing-track { position:relative; height:9px; margin-top:8px; background:#17191a25; }
-.tutorial-timing-window { position:absolute; right:0; height:100%; background:#b13a2e8a; }
-#tutorial-needle { position:absolute; height:15px; width:3px; top:-3px; background:var(--ink); }
-#tutorial-timing[data-open='true'] .tutorial-timing-window { background:var(--action); }
-.tutorial-actions { position:relative; margin-top:auto; padding-block:14px; display:flex; justify-content:space-between; gap:12px; pointer-events:auto; }
-.tutorial-actions button { color:var(--paper); background:#17191ae6; border-color:#eee8d859; font-size:11px; }
-.tutorial-lesson[data-lesson='club'] { max-width:900px; grid-template-columns:1fr; max-height:calc(100svh - 230px); }
-.tutorial-lesson[data-lesson='club'] .tutorial-tasks { display:none; }
-#tutorial-club { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; }
-#tutorial-club b { display:block; font:600 14px var(--display); margin-bottom:6px; }
-#tutorial-club p { font:11px/1.6 var(--body); }
-#tutorial-club .tutorial-match-rules { grid-column:1 / -1; border-top:1px solid #17191a30; padding-top:12px; }
-#tutorial-finish { grid-column:1 / -1; }
+
+.tutorial-shade {
+  position:fixed;
+  inset:0;
+  z-index:6;
+  pointer-events:none;
+  background:#090707;
+  opacity:0;
+  transition:opacity 100ms ease-out;
+}
+.tutorial-lesson {
+  position:fixed;
+  top:42%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  z-index:9;
+  width:max-content;
+  max-width:min(460px,calc(100vw - 32px));
+  padding:18px 26px;
+  border:1px solid #eedbc645;
+  border-top:3px solid #e58b64;
+  background:#171313f0;
+  color:var(--paper);
+  text-align:center;
+  box-shadow:0 6px 28px #08060570;
+  pointer-events:none;
+}
+.tutorial-lesson[data-complete] { pointer-events:auto; }
+.tutorial-keycaps { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px 12px; margin-bottom:14px; }
+.tutorial-keycaps kbd {
+  display:grid;
+  place-items:center;
+  min-width:52px;
+  min-height:50px;
+  margin:0;
+  padding:8px 12px;
+  border:1px solid #fff2dc;
+  border-bottom:4px solid #b89372;
+  border-radius:4px;
+  background:#f9e6cb;
+  color:#231917;
+  box-shadow:0 2px 0 #070504;
+  font:700 clamp(17px,2.5vw,26px)/1 var(--display);
+}
+.tutorial-keycaps > span { font:600 16px/1 var(--body); color:#e9c3a4; }
+.tutorial-lesson h1 { margin:0; font:600 clamp(24px,4vw,34px)/1.12 var(--display); }
+.tutorial-lesson p { margin:7px 0 0; color:#e5d6ca; font:13px/1.45 var(--body); }
+#tutorial-checks { display:flex; justify-content:center; gap:5px; margin-top:13px; }
+#tutorial-checks:empty { display:none; }
+#tutorial-checks i { display:block; width:18px; height:3px; background:#e9c3a44a; }
+#tutorial-checks [data-done='true'] { background:#d0e4ac; }
+#tutorial-finish { width:100%; margin-top:13px; }
+.tutorial-actions { position:relative; z-index:10; margin-top:auto; padding-block:12px; display:flex; justify-content:space-between; gap:8px; pointer-events:none; }
+.tutorial-actions button { pointer-events:auto; color:var(--paper); background:#17191ae6; border-color:#eee8d859; font-size:11px; }
+
+#ui[data-touch='true'][data-screen='tutorial'] .screen { height:100dvh; }
+#ui[data-touch='true'][data-screen='tutorial'] .topbar { min-height:42px; padding-block:4px; }
+#ui[data-touch='true'] .tutorial-hud { padding-block:7px; gap:14px; }
+#ui[data-touch='true'] .tutorial-vital { flex:1; max-width:none; }
+#ui[data-touch='true'] .tutorial-vital > span { font-size:9px; }
+#ui[data-touch='true'] .tutorial-lesson { max-width:min(300px,calc(100vw - 28px)); padding:12px 15px; }
+#ui[data-touch='true'] .tutorial-lesson h1 { font-size:clamp(18px,4vw,25px); }
+#ui[data-touch='true'] .tutorial-lesson p { font-size:12px; }
+#ui[data-touch='true'] .tutorial-keycaps { display:none; }
+#ui[data-touch='true'][data-screen='tutorial']:has(#tutorial-focus[data-step='club']) .touch-controls { visibility:hidden; }
+#ui[data-screen='tutorial'] .touch-controls:has([data-tutorial-highlight]) button:not([data-tutorial-highlight]) { opacity:.48; }
+#ui[data-screen='tutorial'] .touch-controls button[data-tutorial-highlight] {
+  opacity:1;
+  border-color:#ffc796;
+  outline:2px solid #ffc796;
+  outline-offset:3px;
+  color:#fff3db;
+  background:#71392cec;
+  box-shadow:0 0 18px #ff9b666e;
+}
+#ui[data-screen='tutorial'] .touch-controls .touch-arrow[data-tutorial-highlight] {
+  outline:0;
+  background:transparent;
+  box-shadow:none;
+  color:#ffca94;
+  filter:drop-shadow(0 0 5px #ff9b66);
+}
+#ui[data-screen='tutorial'] .touch-controls .touch-arrow[data-tutorial-highlight] path { fill:#71392ceb; }
+#ui[data-screen='tutorial'] .touch-controls button[data-tutorial-highlight][aria-pressed='true'] { background:#f7d3ac; color:#28150f; }
+#ui[data-screen='tutorial'] .touch-controls .touch-arrow[data-tutorial-highlight][aria-pressed='true'] { background:transparent; color:#ffdfba; }
+#ui[data-screen='tutorial'] .touch-controls .touch-arrow[data-tutorial-highlight][aria-pressed='true'] path { fill:#f7bb82b0; }
+
+@media (orientation:landscape) and (max-height:360px) {
+  #ui[data-touch='true'][data-screen='tutorial'] .tutorial-lesson { max-width:min(270px,45vw); padding:8px 10px; }
+  #ui[data-touch='true'] .tutorial-lesson h1 { font-size:19px; }
+  #ui[data-touch='true'] .tutorial-lesson p { margin-top:4px; font-size:11px; }
+  #ui[data-touch='true'] #tutorial-checks { margin-top:8px; }
+  #ui[data-touch='true'] #tutorial-finish { min-height:42px; padding:6px 9px; margin-top:8px; }
+}
+@media (max-width:760px) {
+  .world-actions #lobby-tutorial span { display:none; }
+  .world-actions #lobby-tutorial { min-width:32px; justify-content:center; }
+}
+@media (max-height:550px) and (min-width:761px) {
+  #ui[data-screen='tutorial'] .topbar { min-height:42px; padding-block:3px; }
+  #ui[data-screen='tutorial'] .footer { padding-block:5px; }
+  .tutorial-hud { padding-block:8px; }
+  .tutorial-actions { padding-block:7px; }
+}
+
 .world-actions #lobby-tutorial b { font:700 15px/1 var(--mono); }
 .club-guide { position:absolute; z-index:9; top:84px; right:0; width:min(410px,100%); padding:16px 20px; background:var(--paper); color:var(--ink); border-top:3px solid var(--action); box-shadow:3px 4px 0 #0007; pointer-events:auto; max-height: min(340px,45svh); overflow:auto; overscroll-behavior:contain; }
 .club-guide .eyebrow { color:#756c5c; font-size:8px; }
@@ -72,59 +153,12 @@
   .club-guide h2 { font-size:21px; }
   .club-guide > p { font-size:10px; }
 }
-@media (max-width:760px) {
-  .world-actions #lobby-tutorial span { display:none; }
-  .world-actions #lobby-tutorial { min-width:32px; justify-content:center; }
-  .tutorial-hud { gap:14px; padding-block:12px; }
-  .tutorial-vital { flex:1; max-width:none; }
-  .tutorial-safe { display:none; }
-  .tutorial-lesson { grid-template-columns:1fr; gap:12px; padding:14px 16px; margin-top:12px; max-height:clamp(160px,34svh,290px); }
-  .tutorial-copy h1 { font-size:24px; }
-  .tutorial-copy p { font-size:10px; }
-  .tutorial-tasks { border-left:0; border-top:1px solid #17191a30; padding:10px 0 0; }
-  #tutorial-checks { gap:6px; }
-  #tutorial-checks li { font-size:10px; }
-  #tutorial-club { grid-template-columns:1fr; gap:14px; }
-  .tutorial-lesson[data-lesson='club'] { max-height:calc(100svh - 210px); }
-  #ui[data-screen='tutorial'] .footer .keyboard-hint { display:none; }
-}
-@media (max-height:550px) and (min-width:761px) {
-  #ui[data-screen='tutorial'] .topbar { min-height:42px; padding-block:3px; }
-  #ui[data-screen='tutorial'] .footer { padding-block:5px; }
-  .tutorial-hud { padding-block:8px; }
-  .tutorial-lesson { margin-top:9px; padding:10px 16px; max-height:132px; gap:9px 20px; }
-  .tutorial-copy h1 { font-size:23px; margin-block:4px 6px; }
-  .tutorial-copy p { font-size:10px; }
-  .tutorial-actions { padding-block:7px; }
-  .tutorial-actions button { min-height:30px; padding-block:6px; }
-  .tutorial-lesson[data-lesson='club'] { max-height:calc(100svh - 160px); }
-}
 
-/* Phone lessons are short reading cards, not scrollable documents. */
+/* Paging is used by the separate lobby tour. */
 .lesson-reader { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .lesson-reader button { width:44px; height:36px; flex:0 0 auto; color:var(--ink); border:1px solid #17191a50; background:transparent; font:600 20px var(--body); }
 .lesson-reader button:disabled { opacity:.25; }
 .lesson-reader span { font:700 9px var(--mono); letter-spacing:.3px; }
-#ui[data-touch='true'][data-screen='tutorial'] .screen { height:100dvh; }
-#ui[data-touch='true'][data-screen='tutorial'] .topbar { min-height:42px; padding-block:4px; }
-#ui[data-touch='true'] .tutorial-hud { padding-block:8px; gap:14px; }
-#ui[data-touch='true'] .tutorial-vital { flex:1; max-width:none; }
-#ui[data-touch='true'] .tutorial-vital > span { font-size:9px; letter-spacing:0; }
-#ui[data-touch='true'] .tutorial-safe { display:none; }
-#ui[data-touch='true'] .tutorial-lesson { max-height:none; overflow:visible; display:flex; flex-direction:column; gap:8px; margin-top:8px; padding:12px 14px; }
-#ui[data-touch='true'] .tutorial-copy h1 { font-size:22px; margin:4px 0 6px; line-height:1.08; }
-#ui[data-touch='true'] .tutorial-copy .eyebrow { font-size:8px; letter-spacing:.6px; }
-#ui[data-touch='true'] .tutorial-copy p { font:12px/1.4 var(--body); min-height:3em; }
-#ui[data-touch='true'] .tutorial-tasks { padding:6px 0 0; border-left:0; border-top:1px solid #17191a30; align-self:stretch; }
-#ui[data-touch='true'] #tutorial-checks { display:flex; gap:6px 12px; flex-wrap:wrap; }
-#ui[data-touch='true'] #tutorial-checks li { font-size:10px; line-height:1.25; gap:5px; }
-#ui[data-touch='true'] #tutorial-checks i { width:14px; height:14px; }
-#ui[data-touch='true'] #tutorial-feedback { margin-top:5px; min-height:13px; font-size:10px; line-height:1.3; }
-#ui[data-touch='true'] #tutorial-timing > span { font-size:8px; }
-#ui[data-touch='true'] .tutorial-timing-track { margin-top:5px; height:6px; }
-#ui[data-touch='true'] #tutorial-club { display:block; }
-#ui[data-touch='true'] #tutorial-club > :not(#tutorial-finish) { display:none; }
-#ui[data-touch='true'] #tutorial-finish { width:100%; min-height:42px; padding:9px 12px; font-size:12px; }
 #ui[data-touch='true'] .club-guide { position:fixed; top:170px; left:14px; right:14px; width:auto; max-height:none; overflow:visible; padding:11px 14px; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px 8px; }
 #ui[data-touch='true'] .club-guide > :is(.eyebrow,h2,p,.club-guide-route) { grid-column:1 / -1; }
 #ui[data-touch='true'] .club-guide .eyebrow { font-size:8px; letter-spacing:.4px; }
@@ -134,40 +168,11 @@
 #ui[data-touch='true'] .club-guide-route { font:700 10px/1.3 var(--body); padding-top:7px; margin-top:7px; }
 #ui[data-touch='true'] .club-guide > button { margin-top:0; min-height:36px; padding:7px 8px; font-size:10px; grid-column:2; grid-row:4; }
 @media (orientation:landscape) and (max-height:550px) {
-  #ui[data-touch='true'] .tutorial-lesson { width:calc(100% - 150px); max-width:700px; gap:4px; padding:7px 10px; margin-top:4px; }
-  #ui[data-touch='true'] .tutorial-copy h1 { font-size:18px; margin:2px 0 4px; }
-  #ui[data-touch='true'] .tutorial-copy p { font-size:11px; line-height:1.3; min-height:2.6em; }
-  #ui[data-touch='true'] .tutorial-tasks { padding-top:4px; }
-  #ui[data-touch='true'] #tutorial-feedback { margin-top:3px; font-size:9px; min-height:12px; }
   #ui[data-touch='true'] .lesson-reader button { height:32px; }
-  #ui[data-touch='true'] .tutorial-lesson[data-lesson='club'] { max-width:700px; width:calc(100% - 150px); }
-  #ui[data-touch='true'] #tutorial-finish { min-height:34px; padding:6px 10px; }
   #ui[data-touch='true'] .club-guide { top:114px; left:160px; right:160px; padding:8px 12px; }
   #ui[data-touch='true'] .club-guide h2 { font-size:20px; margin:3px 0 5px; }
   #ui[data-touch='true'] .club-guide > p { font-size:11px; line-height:1.35; min-height:2.7em; }
   #ui[data-touch='true'] .club-guide .lesson-reader { margin-top:0; }
   #ui[data-touch='true'] .club-guide-route { font-size:9px; margin-top:4px; padding-top:4px; }
   #ui[data-touch='true'] .club-guide > button { margin-top:0; min-height:32px; padding:5px 8px; }
-}
-
-/* Read while the sparring is paused; practise with a small coach above the arena. */
-#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-main::before { content:''; position:fixed; inset:0; z-index:20; background:#0b1012cb; pointer-events:auto; }
-#ui[data-touch='true'][data-tutorial-reading='true'] .touch-controls { display:none; }
-#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-lesson { position:fixed; z-index:21; left:50%; top:calc(50dvh - 24px); transform:translate(-50%,-50%); width:calc(100vw - 28px); max-width:540px; margin:0; padding:18px 20px; gap:14px; }
-#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy h1 { font-size:26px; margin:7px 0 10px; line-height:1.12; }
-#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy p { font:13px/1.5 var(--body); min-height:3em; }
-#ui[data-touch='true'][data-tutorial-reading='true'] :is(.tutorial-tasks,#tutorial-timing) { display:none; }
-#ui[data-touch='true'][data-tutorial-reading='true'] .lesson-reader button { min-height:44px; }
-#ui[data-touch='true'][data-tutorial-reading='true'] #tutorial-practice { width:100%; min-height:44px; padding:9px 14px; font-size:13px; }
-#ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-actions { z-index:22; left:14px; right:14px; bottom:max(10px,env(safe-area-inset-bottom)); justify-content:space-between; }
-#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-lesson { position:relative; padding:8px 10px; gap:4px; }
-#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-copy :is(.eyebrow,p) { display:none; }
-#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-copy h1 { margin:0; padding-right:34px; font-size:17px; line-height:1.15; }
-#ui[data-touch='true'][data-tutorial-reading='false'] #tutorial-reader { display:none; }
-#ui[data-touch='true'][data-tutorial-reading='false'] #tutorial-help { position:absolute; right:4px; top:3px; width:30px; height:30px; background:transparent; color:var(--ink); border:1px solid #17191a50; font:700 15px var(--body); }
-#ui[data-touch='true'][data-tutorial-reading='false'] .tutorial-tasks { padding-top:4px; }
-@media (orientation:landscape) and (max-height:350px) {
-  #ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-lesson { max-width:510px; padding:12px 16px; gap:10px; }
-  #ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy h1 { font-size:23px; margin:4px 0 7px; }
-  #ui[data-touch='true'][data-tutorial-reading='true'] .tutorial-copy p { font-size:12px; min-height:2.7em; }
 }

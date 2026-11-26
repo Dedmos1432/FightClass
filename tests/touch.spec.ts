@@ -8,6 +8,7 @@ import { desktopViewport } from './helpers/desktopViewport';
 
 test.use({hasTouch:true,viewport:{width:844,height:390}});
 const button=(page:Page,code:string)=>page.locator(`[data-touch="${code}"]`);
+const coach=(page:Page,id:string)=>page.locator(`#tutorial-card[data-cue="${id}"]`);
 async function point(page:Page,code:string,id:number){const box=(await button(page,code).boundingBox())!;return{x:box.x+box.width/2,y:box.y+box.height/2,id};}
 async function touchWalk(page:Page,cdp:CDPSession,target:number):Promise<void>{
   const position=async()=>Number(await page.locator('#world-focus').getAttribute('data-player-x'));
@@ -79,38 +80,40 @@ test('мультитач: движение с атакой, отмена кас�
   await page.screenshot({path:'.cache/stage6/touch-lobby.png'});expect(errors).toEqual([]);
 });
 
-test('автоблок: удержание кнопок пропускает удар, отпускание защищает от настоящего попадания',async({page,context})=>{
+test('автоблок: урок ждёт отпускания кнопок и защищает от настоящего попадания',async({page,context})=>{
   await seededLesson(page,'block');const cdp=await context.newCDPSession(page),arena=page.locator('#tutorial-focus');
-  await expect(page.locator('#tutorial-description')).toContainText('Отпусти');
-  await page.locator('#tutorial-practice').tap();
   await expect(button(page,'Space')).toHaveCount(0);
-  // Both arrows cancel movement, but the player is still giving input: no automatic guard.
+  // Both arrows cancel movement, but the player is still giving input.
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(page,'KeyA',1),await point(page,'KeyD',2)]});
   await expect(button(page,'KeyA')).toHaveAttribute('aria-pressed','true');
   await expect(button(page,'KeyD')).toHaveAttribute('aria-pressed','true');
-  const hp=async()=>Number((await page.locator('#tutorial-hp-text').textContent())!.split('/')[0].trim());
-  await expect.poll(hp,{intervals:[20]}).toBeLessThan(100);
+  await expect(coach(page,'guard')).toContainText('Отпусти');
+  await expect(arena).toHaveAttribute('data-time-scale','0');
+  const windup=await arena.getAttribute('data-enemy-ms');
+  await page.waitForTimeout(750);
+  await expect(arena).toHaveAttribute('data-enemy-ms',windup!);
   await expect(arena).toHaveAttribute('data-step','block');
   await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','false');
-  const afterHit=await hp();
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   await expect(button(page,'KeyA')).toHaveAttribute('aria-pressed','false');
   await expect(button(page,'KeyD')).toHaveAttribute('aria-pressed','false');
   await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
-  expect(await hp()).toBe(afterHit);
+  await expect(page.locator('#tutorial-hp-text')).toHaveText('100 / 100');
   await expect(arena).toHaveAttribute('data-step','dodge');
 });
 
 test('новая игра: первые задания обучения выполняются сенсорными кнопками',async({page,context})=>{
   await page.goto('/');await page.locator('#start-game').tap();const arena=page.locator('#tutorial-focus');
   await expect(arena).toHaveAttribute('data-step','movement');const cdp=await context.newCDPSession(page);
-  await page.locator('#tutorial-practice').tap();
-  for(const [code,check] of [['KeyA',0],['KeyD',1]] as const){
+  for(const [code,id,check] of [['KeyA','move-left',0],['KeyD','move-right',1]] as const){
+    await expect(coach(page,id)).toBeVisible();
+    await expect(button(page,code)).toHaveAttribute('data-tutorial-highlight',/.*/);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[await point(page,code,1)]});
     try{await expect(page.locator(`[data-check="${check}"]`)).toHaveAttribute('data-done','true');}
     finally{await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
   }
-  await expect(arena).toHaveAttribute('data-step','attacks');await page.locator('#tutorial-practice').tap();await button(page,'KeyQ').tap();
+  await expect(arena).toHaveAttribute('data-step','attacks');await expect(coach(page,'strike-1')).toBeVisible();
+  await expect(button(page,'KeyQ')).toHaveAttribute('data-tutorial-highlight',/.*/);await button(page,'KeyQ').tap();
   await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
   await page.locator('#tutorial-skip').tap();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
 });
@@ -133,7 +136,7 @@ test('карьерный бой: мобильный автоблок защищ�
 
 for(const [width,height] of [[320,568],[844,390]])test(`сенсорные кнопки доступны и не пересекаются ${width}x${height}`,async({page})=>{
   await desktopViewport(page,{width,height});await page.goto('/');await page.locator('#start-game').tap();
-  await page.locator('#tutorial-practice').tap();
+  await expect(coach(page,'move-left')).toBeVisible();
   const codes=['KeyA','KeyD','ShiftLeft','KeyQ','KeyW','KeyE'];const boxes=[];
   await expect(button(page,'Space')).toHaveCount(0);
   for(const code of codes){await expect(button(page,code)).toBeInViewport();const box=(await button(page,code).boundingBox())!;expect(box.width).toBeGreaterThanOrEqual(44);expect(box.height).toBeGreaterThanOrEqual(44);boxes.push(box);}
@@ -155,7 +158,7 @@ for(const [width,height] of [[320,568],[844,390]])test(`сенсорные кн�
   await page.screenshot({path:`.cache/stage6/touch-tutorial-${width}.png`});
   const card=page.locator('#tutorial-card');
   expect(await card.evaluate(el=>el.scrollHeight<=el.clientHeight+1)).toBe(true);
-  await page.locator('#tutorial-help').tap();
-  await expect(page.locator('#tutorial-practice')).toBeInViewport();
+  await expect(card.locator('kbd')).toHaveCount(0);
+  await expect(button(page,'KeyA')).toHaveAttribute('data-tutorial-highlight',/.*/);
   await skipTutorial(page);
 });

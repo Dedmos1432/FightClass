@@ -10,6 +10,9 @@ import { COMBAT } from '../src/config/combat';
 
 const arena=(page:Page)=>page.locator('#tutorial-focus');
 const step=(page:Page,value:PracticeStep)=>expect(arena(page)).toHaveAttribute('data-step',value);
+const card=(page:Page)=>page.locator('#tutorial-card');
+const cue=(page:Page,id:string)=>expect(card(page)).toHaveAttribute('data-cue',id);
+const frozen=(page:Page)=>expect(arena(page)).toHaveAttribute('data-time-scale','0');
 const saved=(page:Page)=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)!),GAME.storage.session);
 async function seeded(page:Page,current:PracticeStep):Promise<void> {
   const saves=new SaveService(new StorageService(null));saves.startNew();
@@ -17,48 +20,67 @@ async function seeded(page:Page,current:PracticeStep):Promise<void> {
   await page.addInitScript(({key,value})=>{if(!localStorage.getItem(key))localStorage.setItem(key,JSON.stringify(value));},{key:GAME.storage.session,value:saves.current});
   await page.goto('/');await page.locator('#continue-game').click();await step(page,current);
 }
-async function walk(page:Page,key:string,check:number):Promise<void> {
+async function walk(page:Page,key:string,direction:'left'|'right',check:number):Promise<void> {
+  await cue(page,`move-${direction}`);
   await page.keyboard.down(key);
   try{await expect(page.locator(`[data-check="${check}"]`)).toHaveAttribute('data-done','true');}
   finally{await page.keyboard.up(key);}
 }
 
-test('новая игра: полное практическое обучение Q/W/E, комбинации, блока, уклонения и выносливости',async({page})=>{
+test('новая игра: визуальное обучение останавливает спарринг и проверяет движение, атаки и защиту',async({page})=>{
   test.setTimeout(120_000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto('/');await page.locator('#start-game').click();await step(page,'movement');
-  await walk(page,'a',0);await walk(page,'d',1);await step(page,'attacks');
+  await cue(page,'move-left');await expect(card(page).locator('kbd')).toHaveText(['A','←']);await frozen(page);
+  const startX=await arena(page).getAttribute('data-player-x');
+  await page.keyboard.down('ArrowRight');await page.waitForTimeout(160);await page.keyboard.up('ArrowRight');
+  await frozen(page);expect(await arena(page).getAttribute('data-player-x')).toBe(startX);
+  await walk(page,'a','left',0);await walk(page,'d','right',1);await step(page,'attacks');
+  await cue(page,'strike-1');
   for(const key of ['j','k','l'])await page.keyboard.press(key);
   await expect(arena(page)).toHaveAttribute('data-player-action','idle');
   await expect(page.locator('[data-check][data-done="true"]')).toHaveCount(0);
   await page.screenshot({path:'.cache/tutorial/attacks-desktop.png'});
   for(const [index,key] of ['q','w','e'].entries()) {
+    await cue(page,`strike-${index+1}`);
     await page.keyboard.press(key);await expect(page.locator(`[data-check="${index}"]`)).toHaveAttribute('data-done','true');
-    if(index<2)await expect(arena(page)).toHaveAttribute('data-player-action','idle');
   }
-  await step(page,'combo');await page.keyboard.press('q');
-  await expect.poll(()=>arena(page).getAttribute('data-combo-cue'),{intervals:[15]}).toBe('true');await page.keyboard.press('w');
-  await step(page,'block');await page.keyboard.down('Space');
+  await step(page,'combo');await cue(page,'combo-start');await page.keyboard.press('q');
+  await cue(page,'combo-follow');await frozen(page);
+  await page.keyboard.press('q');await frozen(page);await cue(page,'combo-follow');
+  await page.keyboard.press('w');
+  await step(page,'block');await cue(page,'guard');await frozen(page);
+  const slowing=page.waitForFunction(()=>{
+    const state=document.querySelector<HTMLElement>('#tutorial-focus')!.dataset;
+    const scale=Number(state.timeScale);
+    return state.step==='dodge'&&scale>0&&scale<1;
+  });
+  await page.keyboard.down('Space');
   try{await step(page,'dodge');}finally{await page.keyboard.up('Space');}
+  await slowing;
+  await cue(page,'evade');await frozen(page);
+  const windup=await arena(page).getAttribute('data-enemy-ms');
+  await page.waitForTimeout(180);expect(await arena(page).getAttribute('data-enemy-ms')).toBe(windup);
+  await expect(arena(page)).toHaveAttribute('data-enemy-action','attack');
   await page.keyboard.down('Shift');
   try {
-    await expect.poll(()=>arena(page).getAttribute('data-dodge-cue'),{intervals:[15]}).toBe('true');
     await expect(arena(page)).toHaveAttribute('data-player-action','idle');
     await page.keyboard.press('ArrowLeft');
   } finally { await page.keyboard.up('Shift'); }
   await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
   await expect(arena(page)).toHaveAttribute('data-player-action','idle');
-  await expect(page.locator('#tutorial-feedback')).toContainText('Shift + D / →');
+  await cue(page,'advance');await expect(card(page).locator('kbd').first()).toHaveText(/shift/i);
   await page.keyboard.down('d');
   try { await page.keyboard.press('Shift'); } finally { await page.keyboard.up('d'); }
   await expect(page.locator('[data-check="1"]')).toHaveAttribute('data-done','true');
   await step(page,'stamina');
   for(let i=0;i<8;i++){
     if(await page.locator('[data-check="0"]').getAttribute('data-done')==='true')break;
+    await cue(page,'spend');
     await page.keyboard.press('e');await expect(arena(page)).toHaveAttribute('data-player-action','attack');
     await expect(arena(page)).toHaveAttribute('data-player-action','idle');
   }
   await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
-  await step(page,'club');await expect(page.locator('#tutorial-club')).toContainText('HP между противниками не восстанавливается');
+  await cue(page,'recover');await step(page,'club');await cue(page,'finish');
   await page.locator('#tutorial-finish').click();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
   const value=await saved(page);expect(value.tutorial).toBe('complete');
   expect(value.stats).toMatchObject({maxHP:100,currentHP:100,stamina:100,damage:10});
@@ -114,18 +136,20 @@ test.describe('сенсорный урок уклонения',()=>{
       return {x:box.x+box.width/2,y:box.y+box.height/2,id};
     };
     const cdp=await context.newCDPSession(page);
-    await expect(page.locator('#tutorial-description')).toContainText('стрелку движения одновременно');
-    await page.locator('#tutorial-practice').tap();
+    const highlight=(code:string)=>page.locator(`[data-touch="${code}"][data-tutorial-highlight]`);
+    await cue(page,'evade');await frozen(page);
+    await expect(card(page).locator('kbd')).toHaveCount(0);
+    await expect(highlight('ShiftLeft')).toBeVisible();await expect(highlight('KeyA')).toBeVisible();
+    await expect(highlight('KeyD')).toHaveCount(0);
     const dodge=await point('ShiftLeft',1),back=await point('KeyA',2),forward=await point('KeyD',2);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge]});
     try {
-      await expect.poll(()=>arena(page).getAttribute('data-dodge-cue'),{intervals:[15]}).toBe('true');
       await expect(arena(page)).toHaveAttribute('data-player-action','idle');
       await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge,back]});
     } finally { await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); }
     await expect(page.locator('[data-check="0"]')).toHaveAttribute('data-done','true');
     await expect(arena(page)).toHaveAttribute('data-player-action','idle');
-    await expect(page.locator('#tutorial-feedback')).toContainText('«Уклонение» + →');
+    await cue(page,'advance');await expect(highlight('KeyD')).toBeVisible();await expect(highlight('KeyA')).toHaveCount(0);
     await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[forward]});
     try { await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[dodge,forward]}); }
     finally { await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]}); }

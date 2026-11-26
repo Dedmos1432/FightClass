@@ -22,7 +22,6 @@ export class ScreenView {
     services.audio.setEnvironment(screen);
     this.root.dataset.touch=String(navigator.maxTouchPoints>0 || window.matchMedia('(pointer: coarse)').matches);
     delete this.root.dataset.training;
-    delete this.root.dataset.tutorialReading;
     this.root.innerHTML = `
       <div class="screen ${menu ? 'title-screen' : world ? 'exploration-screen' : ''}">
         <header class="topbar">

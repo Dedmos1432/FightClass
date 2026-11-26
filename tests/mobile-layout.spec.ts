@@ -3,6 +3,8 @@ import { SaveService } from '../src/services/SaveService';
 import { StorageService } from '../src/services/StorageService';
 import { GAME } from '../src/config/game';
 import { CLUB_GUIDE_STEPS } from '../src/tutorial/ClubGuide';
+import type { PracticeStep } from '../src/tutorial/Progress';
+import type { TutorialCue } from '../src/tutorial/TutorialCoach';
 import { desktopViewport } from './helpers/desktopViewport';
 
 test.use({hasTouch:true,reducedMotion:'reduce'});
@@ -16,15 +18,15 @@ async function setup(page:Page):Promise<void>{
     (window as any).__layout={services:new core.GameServices(new storage.StorageService(localStorage)),exploration,tutorial,practice,combat,bench,ranking,moves,career,progress,guide};
   });
 }
-async function render(page:Page,kind:string):Promise<void>{
-  await page.evaluate(kind=>{
+async function render(page:Page,kind:string,cue?:TutorialCue):Promise<void>{
+  await page.evaluate(({kind,cue})=>{
     const a=(window as any).__layout;
     a.benchView?.destroy();a.benchView=null;a.view?.destroy();
     delete document.querySelector<HTMLElement>('#ui')!.dataset.clubGuide;
     a.services.saves.startNew();a.services.saves.skipTutorial();
     if(kind.startsWith('lesson:')){
       a.view=new a.tutorial.TutorialView(a.services);const step=kind.slice(7);
-      a.view.showLesson(step);a.view.update(new a.practice.CombatTutorial(step));return;
+      a.view.showLesson(step);a.view.update(new a.practice.CombatTutorial(step),cue??null,0);return;
     }
     if(['pause','result','career-result'].includes(kind)){
       a.view=new a.combat.CombatView(a.services,a.moves.defaultLoadout(),kind==='career-result'?a.career.CAREER_ROSTER[0]:undefined);
@@ -49,8 +51,18 @@ async function render(page:Page,kind:string):Promise<void>{
       if(kind==='bench-active'){a.benchView.begin();a.benchView.update('pressing',.55,12,false);}
       if(kind==='bench-result')a.benchView.end(12,true);
     }
-  },kind);
+  },{kind,cue});
 }
+
+const tutorialPrompts: ReadonlyArray<[PracticeStep, TutorialCue]> = [
+  ['movement', { id:'move-left', title:'Шаг влево', detail:'Удерживай стрелку, чтобы отойти.', keys:['A'], touch:['KeyA'], frozen:true }],
+  ['attacks', { id:'strike-1', title:'Первый удар', detail:'Ударь партнёра вблизи.', keys:['Q'], touch:['KeyQ'], frozen:true }],
+  ['combo', { id:'combo-follow', title:'Продолжи комбинацию', detail:'Нажми одну из подсвеченных атак.', keys:['W', 'E'], touch:['KeyW', 'KeyE'], frozen:true }],
+  ['block', { id:'guard', title:'Автоматический блок', detail:'Отпусти все кнопки, чтобы встретить удар в защите.', keys:[], touch:[], frozen:true }],
+  ['dodge', { id:'evade', title:'Уклонение назад', detail:'Нажми уклонение и стрелку вместе.', keys:['Shift', 'A'], touch:['ShiftLeft', 'KeyA'], frozen:true }],
+  ['stamina', { id:'recover', title:'Восстанови выносливость', detail:'Отпусти кнопки, чтобы восстановить силы.', keys:[], touch:[], frozen:false }],
+  ['club', { id:'finish', title:'Спарринг завершён', detail:'Дальше — знакомство с клубом.', keys:[], touch:[], frozen:false }],
+];
 async function fits(page:Page,selector:string):Promise<void>{
   await expect(page.locator(selector)).toBeVisible();
   const problems=await page.locator(selector).evaluate(root=>{
@@ -85,25 +97,26 @@ for(const [width,height] of [[320,568],[390,844],[568,320],[844,390]]){
       if(kind==='pause')for(const tab of ['Приёмы','Правила']){await page.getByRole('button',{name:tab,exact:true}).tap();await fits(page,selector);}
     }
   });
-  test(`все страницы обучения без прокрутки ${width}x${height}`,async({page})=>{
+  test(`визуальные подсказки обучения не перекрывают управление ${width}x${height}`,async({page})=>{
     test.setTimeout(120_000);await desktopViewport(page,{width,height});await setup(page);
-    for(const lesson of ['movement','attacks','combo','block','dodge','stamina','club']){
-      await render(page,'lesson:'+lesson);await fits(page,'#tutorial-card');
-      const next=page.locator('#tutorial-page-next');
-      for(let p=0;p<20 && await next.isEnabled();p++){await next.tap();await fits(page,'#tutorial-card');}
+    for(const [lesson,cue] of tutorialPrompts){
+      await render(page,'lesson:'+lesson,cue);await fits(page,'#tutorial-card');
       await expect(page.locator('#tutorial-skip')).toBeInViewport();
+      await expect(page.locator('#tutorial-card kbd')).toHaveCount(0);
       await page.screenshot({path:`.cache/mobile-layout/lesson-${lesson}-${width}.png`});
       if(lesson!=='club'){
-        await page.locator('#tutorial-practice').tap();await fits(page,'#tutorial-card');
         await expect(page.locator('.touch-controls')).toBeVisible();
-        const collision=await page.locator('#tutorial-card').evaluate(card=>{
-          const a=card.getBoundingClientRect();
-          return [...document.querySelectorAll<HTMLElement>('.touch-controls button')].some(button=>{
-            const b=button.getBoundingClientRect();return a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top;
-          });
-        });
-        expect(collision,'Practice card must leave both thumb zones clear').toBe(false);
-        await page.screenshot({path:`.cache/mobile-layout/practice-${lesson}-${width}.png`});
+        const highlights=page.locator('.touch-controls [data-tutorial-highlight]');
+        const codes=await highlights.evaluateAll(buttons=>buttons.map(el=>el.getAttribute('data-touch')));
+        expect(codes.sort()).toEqual([...cue.touch].sort());
+        const untouched=await highlights.evaluateAll(buttons=>buttons.every(button=>{
+          const b=button.getBoundingClientRect();
+          const element=document.elementFromPoint(b.x+b.width/2,b.y+b.height/2);
+          return element===button||button.contains(element);
+        }));
+        expect(untouched,'Highlighted actions must remain tappable').toBe(true);
+      }else{
+        await expect(page.locator('#tutorial-finish')).toBeInViewport();
       }
     }
   });

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { CombatTutorial } from '../src/tutorial/CombatTutorial';
+import { TutorialCoach } from '../src/tutorial/TutorialCoach';
 import { TUTORIAL_STEPS } from '../src/tutorial/Progress';
 import { attackDuration } from '../src/combat/CombatWorld';
 import { ATTACK_SLOTS, COMBAT, type AttackSlot } from '../src/config/combat';
@@ -12,6 +13,35 @@ class Memory implements StorageLike {
   data=new Map<string,string>();getItem(key:string){return this.data.get(key)??null;}setItem(key:string,value:string){this.data.set(key,value);}
 }
 const advance=(t:CombatTutorial,ms:number)=>{for(let i=0;i<ms;i+=8)t.update(Math.min(8,ms-i));};
+
+test('подсказка постепенно останавливает окно комбо и продолжает его после правильного удара', () => {
+  const trainer = new CombatTutorial('combo');
+  const coach = new TutorialCoach(trainer, false);
+  const player = trainer.world.player;
+  coach.attack(0);
+  advance(trainer, attackDuration(0) - COMBAT.comboBufferMs);
+  expect(coach.cue?.id).toBe('combo-follow');
+
+  const tick = () => {
+    const { timeScale } = coach.frame(20, 0, false, false);
+    if (timeScale > 0) trainer.update(20 * timeScale);
+    return timeScale;
+  };
+  const first = tick();
+  expect(first).toBeGreaterThan(0);
+  expect(first).toBeLessThan(1);
+  for(let frame = 0; frame < 20; frame++) tick();
+  const frozenAt = player.elapsed;
+  coach.attack(0);
+  expect(tick()).toBe(0);
+  expect(player.elapsed).toBe(frozenAt);
+  expect(player.buffered).toBeNull();
+
+  coach.attack(1);
+  expect(tick()).toBe(1);
+  for(let frame = 0; frame < 25 && !trainer.combo; frame++) tick();
+  expect(trainer.combo).toBe(true);
+});
 
 test('новая игра начинает обучение, завершённые уроки восстанавливаются, старая версия сохранения продолжает лобби',()=>{
   const memory=new Memory(),saves=new SaveService(new StorageService(memory));saves.startNew();
