@@ -18,6 +18,7 @@ import './ui/mobile.css';
 import './ui/mobile-training.css';
 import './ui/orientation.css';
 import './ui/main-menu.css';
+import './ui/lettering.css';
 import { OrientationPrompt } from './ui/OrientationPrompt';
 import { browserStorage, StorageService } from './services/StorageService';
 import { deadline, initializeYandex } from './platform/YandexPlatform';

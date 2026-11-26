@@ -77,17 +77,11 @@
 .menu-main { width: fit-content; max-width: 100%; }
 
 #game-title {
-  width: fit-content;
-  margin-left: -.045em;
-  font: 700 clamp(82px, min(12vw, 20svh), 200px)/.81 var(--display);
-  letter-spacing: -.055em;
-  transform: skewX(-8deg);
-  transform-origin: left bottom;
-  text-shadow: .026em .031em 0 #120f0e;
+  width: clamp(264px, min(33vw, 57svh), 528px);
+  max-width: 100%;
 }
 
-#game-title span { display: block; }
-#game-title span + span { color: var(--title-red); margin-top: .09em; }
+#game-title svg { display: block; width: 100%; height: auto; }
 
 .menu-buttons {
   display: grid;
@@ -111,13 +105,19 @@
 
 .menu-button:first-child { border-top: 1px solid #f6ead646; }
 .menu-button[data-primary] { background: var(--title-paper); color: var(--title-ink); }
-.menu-button .button-text { font: 600 19px/1.16 var(--body); }
+.menu-button .button-text {
+  font: 700 24px/1.08 var(--display);
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
 
 .menu-button small {
   display: block;
   margin-top: 4px;
   color: #bcafa5;
   font: 400 11px/1.25 var(--body);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .menu-button[data-primary] small { color: #55483e; }
@@ -145,6 +145,14 @@
 .title-screen .version { display: inline; margin-left: auto; }
 .title-screen .keyboard-hint { color: #d8caba; }
 
+#ui[data-screen='menu'] .dialog h2 { font-weight: 700; line-height: 1.05; }
+#ui[data-screen='menu'] .dialog .button {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 900px) {
   #ui > .title-screen { --title-gutter: clamp(22px, 5vw, 48px); }
 }
@@ -153,7 +161,7 @@
   .title-screen > .topbar { min-height: 58px; }
   .menu-layout { align-items: end; padding-block: 14px 22px; }
   .menu-main { width: 100%; max-width: 400px; }
-  #game-title { font-size: clamp(64px, min(20vw, 15svh), 140px); }
+  #game-title { width: clamp(196px, min(66vw, 44svh), 390px); }
   .menu-buttons { width: 100%; margin-top: 22px; }
   .menu-button { min-height: 52px; padding: 8px 15px; }
   .menu-art { inset: 0 0 30% 0; }
@@ -166,10 +174,10 @@
   #ui > .title-screen { --title-gutter: clamp(20px, 4.2vw, 52px); }
   #ui[data-screen='menu'] .title-screen > .topbar { min-height: 50px; }
   .menu-layout { padding-block: 4px; }
-  #game-title { font-size: clamp(50px, min(9.5vw, 21svh), 105px); }
+  #game-title { width: clamp(162px, min(28vw, 54svh), 245px); }
   .menu-buttons { width: clamp(208px, 32vw, 294px); margin-top: clamp(15px, 5svh, 22px); }
   .menu-button { min-height: 44px; padding: 5px 12px; }
-  .menu-button .button-text { font-size: 15px; }
+  .menu-button .button-text { font-size: 19px; }
   .menu-button small { margin-top: 3px; font-size: 10px; }
   .menu-art { inset-inline-start: 24%; }
   .menu-art img { object-position: 62% 53%; }
@@ -179,12 +187,11 @@
 
 @media (orientation: landscape) and (max-height: 350px) {
   .menu-layout { padding-block: 0; }
-  #game-title { font-size: clamp(46px, min(8.7vw, 17svh), 65px); }
+  #game-title { width: clamp(140px, min(27vw, 45svh), 172px); }
   .menu-buttons { margin-top: 12px; }
 }
 
 @media (orientation: landscape) and (max-height: 295px) {
-  #game-title { font-size: clamp(35px, 6.8vw, 61px); }
-  #game-title span { display: inline; }
+  #game-title { width: clamp(116px, 44svh, 142px); }
   .title-screen > .footer { display: none; }
 }

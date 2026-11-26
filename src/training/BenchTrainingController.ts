@@ -8,6 +8,7 @@ import { pressTexture } from '../assets/gymAssets';
 import { BenchPressQte } from './BenchPressQte';
 import { inputSuspended } from '../input/VirtualInput';
 import { textureRef } from '../assets/deliveryAssets';
+import { worldLettering } from '../ui/worldLettering';
 
 export class BenchTrainingController {
   private phase: BenchPhase = 'idle';
@@ -33,7 +34,7 @@ export class BenchTrainingController {
     const bench=textureRef('gym-bench'), prepare=textureRef('gym-prepare_00');
     this.empty = scene.add.image(BENCH.x, WORLD.floorY, bench.key, bench.frame).setOrigin(0.5, BENCH.footOrigin).setScale(BENCH.scale).setDepth(4);
     this.combined = scene.add.image(BENCH.x, WORLD.floorY, prepare.key, prepare.frame).setOrigin(0.5, BENCH.footOrigin).setScale(BENCH.scale).setDepth(6).setVisible(false);
-    scene.add.text(BENCH.x, WORLD.floorY - 415, 'ЖИМ ЛЁЖА', { fontFamily: 'Consolas, monospace', fontSize: '22px', color: '#e1e8c4', backgroundColor: '#182016bb', padding: { x: 15, y: 9 } }).setOrigin(0.5).setDepth(2);
+    worldLettering(scene, BENCH.x, WORLD.floorY - 415, 'ЖИМ ЛЁЖА', { fontSize: '22px', backgroundColor: '#181510df', padding: { x: 15, y: 9 } }).setOrigin(0.5).setDepth(2);
     this.ui = new BenchTrainingView(view, () => this.tap(), () => this.stop());
     document.addEventListener('keydown', this.onKey, { signal: this.events.signal });
     window.addEventListener('blur', () => { this.pausedByFocus = true; }, { signal: this.events.signal });

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { CAREER_ARENA_KEY } from '../assets/careerAssets';
 import { WORLD } from '../config/lobby';
+import { worldLettering } from '../ui/worldLettering';
 
 type Point = { x: number; y: number };
 
@@ -51,8 +52,8 @@ export class CareerBackdrop {
     }
     g.lineStyle(12, 0x1b2123).lineBetween(110, 975, 390, 1055).lineBetween(390, 1055, 1530, 1055).lineBetween(1530, 1055, 1810, 975);
     g.lineStyle(2, 0xaaa18e, .45).lineBetween(390, 1049, 1530, 1049);
-    scene.add.text(960, 874, 'FIGHT CLASS', {
-      fontFamily: 'Oswald, sans-serif', fontSize: '38px', fontStyle: 'bold', color: '#c5bba6',
+    worldLettering(scene, 960, 874, 'FIGHT CLASS', {
+      fontSize: '38px', color: '#c5bba6', strokeThickness: 0,
     }).setOrigin(.5).setScale(1, .42).setAlpha(.32).setDepth(3);
   }
 

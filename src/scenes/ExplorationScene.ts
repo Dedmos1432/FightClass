@@ -7,6 +7,7 @@ import { createPlayerAnimations, preloadExploration, type RoomId } from '../asse
 import { ExplorationPlayer } from '../characters/ExplorationPlayer';
 import { ExplorationInput } from '../input/ExplorationInput';
 import { ExplorationView } from '../ui/ExplorationView';
+import { worldLettering } from '../ui/worldLettering';
 import { showRanking } from '../ui/RankingView';
 import { RoomBackdrop } from './RoomBackdrop';
 import { preloadGym } from '../assets/gymAssets';
@@ -67,8 +68,8 @@ export class ExplorationScene extends Phaser.Scene {
       if (this.room === 'dojo') {
         this.markers.set('start', this.add.ellipse(COMBAT.centerX, WORLD.floorY + 3, 290, 42, 0xd8e391, 0.08)
           .setStrokeStyle(2, 0xd8e391, 0.65).setDepth(3));
-        this.add.text(COMBAT.centerX, WORLD.floorY - 440, 'E · БЕСКОНЕЧНАЯ СЕРИЯ', {
-          fontFamily: 'Consolas, monospace', fontSize: '24px', color: '#e4eac9', backgroundColor: '#182016bb', padding: { x: 16, y: 12 },
+        worldLettering(this, COMBAT.centerX, WORLD.floorY - 440, 'E · БЕСКОНЕЧНАЯ СЕРИЯ', {
+          fontSize: '24px', backgroundColor: '#181510df', padding: { x: 16, y: 12 },
         }).setOrigin(0.5).setDepth(2);
       }
     }
@@ -131,9 +132,8 @@ export class ExplorationScene extends Phaser.Scene {
     for(const [thickness,alpha] of [[22,.06],[12,.12],[5,.3],[2,.95]])
       this.boardHighlight.lineStyle(thickness,0x68e88b,alpha).strokeRect(left,top,width,height);
     for (const object of LOBBY_OBJECTS) {
-      this.add.text(object.x, backdrop.wallY(object.labelY), object.label, {
-        fontFamily: 'Consolas, monospace', fontSize: object.id === 'dojo' ? '16px' : '20px',
-        fontStyle: 'bold', color: '#e2dfc4', stroke: '#24271f', strokeThickness: 2,
+      worldLettering(this, object.x, backdrop.wallY(object.labelY), object.label, {
+        fontSize: object.id === 'dojo' ? '16px' : '20px',
       }).setOrigin(0.5).setDepth(2);
       this.markers.set(object.id, this.add.ellipse(object.x, WORLD.floorY + 4, 185, 25, 0xd8e391, 0.09)
         .setStrokeStyle(2, 0xd8e391, 0.7).setDepth(3).setVisible(false));
@@ -144,7 +144,7 @@ export class ExplorationScene extends Phaser.Scene {
   private addExitMarker(): void {
     const marker = this.add.ellipse(160, WORLD.floorY + 4, 150, 25, 0xd8e391, 0.1).setDepth(3).setStrokeStyle(2, 0xd8e391, 0.8);
     this.markers.set('exit', marker);
-    this.add.text(160, 750, '← В ЛОББИ', { fontFamily: 'Consolas, monospace', fontSize: '23px', color: '#e4eac9', backgroundColor: '#182016bb', padding: { x: 15, y: 9 } }).setOrigin(0.5).setDepth(2);
+    worldLettering(this, 160, 750, '← В ЛОББИ', { fontSize: '23px', backgroundColor: '#181510df', padding: { x: 15, y: 9 } }).setOrigin(0.5).setDepth(2);
   }
 
   private refreshInteraction(): void {

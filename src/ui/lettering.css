@@ -1,0 +1,50 @@
+/* Display lettering follows the title art. Reading text and key names retain their own roles. */
+:is(.screen, .dialog) :is(h1, h2, h3),
+#orientation-prompt h1,
+:is(.fight-announcement, .brand-name, .fight-name strong, .bench-title, .style-choice strong, .style-picker strong),
+.career-ranking .career-fighter-title h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+:is(.fight-announcement, .location-heading h1, .tutorial-lesson h1, .ranking-heading h2, .dialog:not(.career-ranking) > h2) {
+  font-style: oblique 8deg;
+  font-synthesis: style;
+  letter-spacing: .012em;
+  text-shadow: .032em .04em 0 #5a382e40;
+}
+
+.fight-announcement {
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+}
+
+#ui :is(.button, .ranking-tab, .touch-room-actions button span, .touch-combat-actions button span, .pause-tabs button, .interaction-button) {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: .028em;
+  text-transform: uppercase;
+}
+
+:is(.ranking-tab, .style-picker) > span {
+  letter-spacing: 0;
+}
+
+.ranking-tab > span { text-transform: none; }
+kbd { font-family: var(--display); font-weight: 600; }
+
+:is(.streak-card > time, .fight-name b, .fighter-class > b, .stat-meter strong, .damage-stat strong, .bench-rep-line strong, .bench-result-count strong, .career-final-score strong) {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+:is(.eyebrow, .build-label, .fight-corner-label, .fight-timer-label, .tutorial-vital > span, .career-fight-record, .board-roster-label, .club-guide-route) {
+  font-family: var(--body);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .045em;
+}
+
+:is(.dialog-description, .settings-note, .opponent-tactic, .style-info, .style-rules dd) {
+  color: #4e463d;
+}

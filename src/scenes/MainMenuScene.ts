@@ -5,6 +5,7 @@ import { ScreenView } from '../ui/ScreenView';
 import { icons } from '../ui/icons';
 import { clubGuideRoom } from '../tutorial/ClubGuide';
 import titleArt from '../../assets/menu/before-the-bell.webp?url';
+import titleWordmark from '../../assets/menu/fight-class-wordmark.svg?raw';
 
 export class MainMenuScene extends Phaser.Scene {
   constructor(private readonly services: GameServices) {
@@ -21,7 +22,7 @@ export class MainMenuScene extends Phaser.Scene {
           <img src="${titleArt}" alt="" width="1536" height="1024" fetchpriority="high" decoding="async" draggable="false" />
         </div>
         <div class="menu-main">
-          <h1 id="game-title" aria-label="${GAME.title}"><span>FIGHT</span> <span>CLASS</span></h1>
+          <h1 id="game-title"><span class="sr-only">${GAME.title}</span>${titleWordmark}</h1>
           <nav class="menu-buttons" aria-label="Главное меню">
             <button class="menu-button" id="start-game" type="button" ${saved ? '' : 'data-primary'}>
               <span class="button-text">Новая игра</span><span class="button-arrow" aria-hidden="true">${icons.arrow}</span>
