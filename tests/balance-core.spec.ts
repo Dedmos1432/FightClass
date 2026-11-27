@@ -12,7 +12,7 @@ const seeded=(seed:number)=>()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;r
 test('баланс: 108 полных раундов против всех карьерных ботов, три уровня тренировки, конечные ресурсы и работающая защита',()=>{
   // An identical AI controller stands in for the player to compare stat curves, not human win rates.
   const samples:{effort:number;opponent:string;victories:number;draws:number;meanSeconds:number}[]=[];
-  let invalid=false,totalBlocks=0,totalDodges=0;
+  let invalid=false,totalBlocks=0,totalDodges=0,totalEvadedHits=0;
   for(const effort of [0,100,400])for(const opponent of CAREER_ROSTER){
     let victories=0,draws=0,elapsed=0;
     for(const seed of [11,92,641]){
@@ -22,8 +22,11 @@ test('баланс: 108 полных раундов против всех кар
       const enemy=new BotBrain(opponent,seeded(seed)),controller=new BotBrain({...CAREER_ROSTER[2],canDodge:true},seeded(seed+1));
       let ms=0;
       for(;ms<COMBAT.roundDurationMs&&!world.over;ms+=16){
+        const playerWasDodging=p.action==='dodge',enemyWasDodging=e.action==='dodge';
         enemy.update(world,16);controller.update(reverse,16);world.update(16);
-        for(const event of world.events){if(event.type==='block')totalBlocks++;if(event.type==='dodge')totalDodges++;}
+        if(!playerWasDodging && p.action==='dodge')totalDodges++;
+        if(!enemyWasDodging && e.action==='dodge')totalDodges++;
+        for(const event of world.events){if(event.type==='block')totalBlocks++;if(event.type==='dodge')totalEvadedHits++;}
         for(const f of [p,e])if(![f.x,f.hp,f.stamina].every(Number.isFinite)||f.hp<0||f.hp>f.maxHP||f.stamina<0||f.stamina>f.maxStamina||f.x<COMBAT.minX||f.x>COMBAT.maxX)invalid=true;
       }
       const outcome=roundOutcome(Math.min(ms,COMBAT.roundDurationMs),p,e);expect(outcome).not.toBeNull();
@@ -32,6 +35,6 @@ test('баланс: 108 полных раундов против всех кар
     samples.push({effort,opponent:opponent.name,victories,draws,meanSeconds:Math.round(elapsed/3/100)/10});
   }
   expect(invalid).toBe(false);expect(totalBlocks).toBeGreaterThan(0);expect(totalDodges).toBeGreaterThan(0);
-  mkdirSync('.cache/stage6',{recursive:true});writeFileSync('.cache/stage6/balance.json',JSON.stringify({rounds:108,totalBlocks,totalDodges,samples},null,2));
+  mkdirSync('.cache/stage6',{recursive:true});writeFileSync('.cache/stage6/balance.json',JSON.stringify({rounds:108,totalBlocks,totalDodges,totalEvadedHits,samples},null,2));
   console.log('Training comparison:',[0,100,400].map(effort=>({effort,wins:samples.filter(s=>s.effort===effort).reduce((sum,s)=>sum+s.victories,0),rounds:36})));
 });

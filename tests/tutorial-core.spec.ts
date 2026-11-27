@@ -18,8 +18,17 @@ test('подсказка постепенно останавливает окн�
   const trainer = new CombatTutorial('combo');
   const coach = new TutorialCoach(trainer, false);
   const player = trainer.world.player;
+  expect(coach.cue?.id).toBe('combo-demo');
   coach.attack(0);
-  advance(trainer, attackDuration(0) - COMBAT.comboBufferMs);
+  advance(trainer, attackDuration(0));
+  expect(coach.cue?.id).toBe('combo-repeat');
+  coach.attack(0);
+  advance(trainer, attackDuration(0));
+  expect(trainer.repeatBlocked).toBe(true);
+  expect(trainer.world.enemy.hp).toBe(90);
+  expect(coach.cue?.id).toBe('combo-start');
+  coach.attack(0);
+  advance(trainer, ATTACK_SLOTS[0].startup);
   expect(coach.cue?.id).toBe('combo-follow');
 
   const tick = () => {
@@ -39,8 +48,13 @@ test('подсказка постепенно останавливает окн�
 
   coach.attack(1);
   expect(tick()).toBe(1);
+  for(let frame = 0; frame < 25 && coach.cue?.id !== 'combo-finish'; frame++) tick();
+  expect(coach.cue?.id).toBe('combo-finish');
+  expect(trainer.combo).toBe(false);
+  coach.attack(2);
   for(let frame = 0; frame < 25 && !trainer.combo; frame++) tick();
   expect(trainer.combo).toBe(true);
+  expect(trainer.world.enemy.hp).toBe(58.5);
 });
 
 test('новая игра начинает обучение, завершённые уроки восстанавливаются, старая версия сохранения продолжает лобби',()=>{
@@ -193,13 +207,6 @@ test('три удара: промахи не засчитываются, нуж�
   w.player.x=780;
   for(const slot of [0,1,2] as AttackSlot[]) {expect(w.attack(w.player,slot)).toBe(true);advance(t,attackDuration(slot)+16);}
   expect(t.checks).toEqual([true,true,true]);expect(t.ready).toBe(true);
-});
-
-test('комбинация требует попадания продолжением в настоящее окно восстановления',()=>{
-  const t=new CombatTutorial('combo'),w=t.world;
-  w.attack(w.player,0);advance(t,100);expect(w.attack(w.player,1)).toBe(false);expect(t.ready).toBe(false);
-  advance(t,attackDuration(0)-COMBAT.comboBufferMs-70);expect(w.attack(w.player,1)).toBe(true);
-  advance(t,1200);expect(t.combo).toBe(true);
 });
 
 test('блок: нажатие без удара не засчитывается, учебный удар использует обычную защиту',()=>{

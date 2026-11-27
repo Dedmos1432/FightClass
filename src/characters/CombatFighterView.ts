@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { combatManifest } from '../assets/combatAssets';
-import { attackDuration, type Fighter } from '../combat/CombatWorld';
+import { attackStartup, type Fighter } from '../combat/CombatWorld';
 import type { Loadout } from '../combat/moves';
 import { COMBAT, ATTACK_SLOTS } from '../config/combat';
 
@@ -36,10 +36,10 @@ export class CombatFighterView {
     if (!clip) throw new Error(`Missing animation ${f.skin}/${action}`);
     let progress: number;
     if (f.action === 'attack') {
-      const spec = ATTACK_SLOTS[f.slot], activeEnd = spec.startup + spec.active;
-      progress = f.elapsed < spec.startup ? f.elapsed / spec.startup * 0.34
-        : f.elapsed < activeEnd ? 0.34 + (f.elapsed - spec.startup) / spec.active * 0.28
-        : 0.62 + (f.elapsed - activeEnd) / (attackDuration(f.slot) - activeEnd) * 0.38;
+      const spec = ATTACK_SLOTS[f.slot], startup = attackStartup(f.slot, f.combo), activeEnd = startup + spec.active;
+      progress = f.elapsed < startup ? f.elapsed / startup * 0.34
+        : f.elapsed < activeEnd ? 0.34 + (f.elapsed - startup) / spec.active * 0.28
+        : 0.62 + (f.elapsed - activeEnd) / spec.recovery * 0.38;
     } else if (f.action === 'ko') progress = Math.min(1, f.elapsed / 1100);
     else if (f.action === 'hit') progress = Math.min(1, f.elapsed / f.stun);
     else if (f.action === 'dodge') progress = Math.min(1, f.elapsed / COMBAT.dodgeDuration);

@@ -57,7 +57,7 @@ async function render(page:Page,kind:string,cue?:TutorialCue):Promise<void>{
 const tutorialPrompts: ReadonlyArray<[PracticeStep, TutorialCue]> = [
   ['movement', { id:'move-left', title:'Шаг влево', detail:'Удерживай стрелку, чтобы отойти.', keys:['A'], touch:['KeyA'], frozen:true }],
   ['attacks', { id:'strike-1', title:'Первый удар', detail:'Ударь партнёра вблизи.', keys:['Q'], touch:['KeyQ'], frozen:true }],
-  ['combo', { id:'combo-follow', title:'Продолжи комбинацию', detail:'Нажми одну из подсвеченных атак.', keys:['W', 'E'], touch:['KeyW', 'KeyE'], frozen:true }],
+  ['combo', { id:'combo-follow', title:'Свяжи второй удар', detail:'Следующее попадание даст +5% урона.', keys:['Q','→','W','→','E'], touch:['KeyW'], frozen:true }],
   ['block', { id:'guard', title:'Автоматический блок', detail:'Отпусти все кнопки, чтобы встретить удар в защите.', keys:[], touch:[], frozen:true }],
   ['dodge', { id:'evade', title:'Уклонение назад', detail:'Нажми уклонение и стрелку вместе.', keys:['Shift', 'A'], touch:['ShiftLeft', 'KeyA'], frozen:true }],
   ['stamina', { id:'recover', title:'Восстанови выносливость', detail:'Отпусти кнопки, чтобы восстановить силы.', keys:[], touch:[], frozen:false }],

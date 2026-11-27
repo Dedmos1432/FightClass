@@ -1,4 +1,4 @@
-import { attackDuration } from '../combat/CombatWorld';
+import { canLinkAttack } from '../combat/CombatWorld';
 import { ATTACK_SLOTS, COMBAT, type AttackSlot, type DodgeDirection } from '../config/combat';
 import { ATTACK_KEYS } from '../config/controls';
 import type { CombatTutorial } from './CombatTutorial';
@@ -10,6 +10,7 @@ export interface TutorialCue {
   keys: readonly string[];
   touch: readonly string[];
   frozen: boolean;
+  currentKey?: string;
 }
 
 const SLOWDOWN_MS = 260;
@@ -47,10 +48,15 @@ export class TutorialCoach {
           ['Первый удар', 'Второй удар', 'Третий удар'][slot], 'Попади по партнёру.');
       }
       case 'combo':
-        if (player.action === 'idle') return this.strike(0, 'combo-start', 'Начни комбинацию', 'Нанеси первый удар.');
-        if (player.action === 'attack' && player.combo === 1 && player.buffered === null &&
-          player.elapsed >= attackDuration(player.slot) - COMBAT.comboBufferMs) {
-          return this.prompt('combo-follow', 'Продолжи комбинацию', 'Введи второй удар до конца первого.', ['W', 'или', 'E'], ['KeyW', 'KeyE']);
+        if (player.action === 'idle') {
+          if (t.repeatBlocked) return this.comboStrike(0, 'combo-start', 'Начни связку', 'Партнёр прочитал повтор. Попади и смени удар.');
+          if (t.strikes.has(0)) return this.strike(0, 'combo-repeat', 'Повтори удар', 'Смотри, как ответит партнёр.');
+          return this.strike(0, 'combo-demo', 'Одиночный удар', 'Попади по партнёру.');
+        }
+        if (t.repeatBlocked && canLinkAttack(player) && player.buffered === null) {
+          return player.combo === 1
+            ? this.comboStrike(1, 'combo-follow', 'Свяжи второй удар', `Следующее попадание даст +${COMBAT.comboBonuses[1]}% урона.`)
+            : this.comboStrike(2, 'combo-finish', 'Заверши связку', `Третье попадание даст +${COMBAT.comboBonuses[2]}% урона.`);
         }
         return null;
       case 'block':
@@ -73,9 +79,7 @@ export class TutorialCoach {
   }
 
   attack(slot: AttackSlot): void {
-    const id = this.cue?.id;
-    if (id === `strike-${slot + 1}` || (id === 'combo-start' && slot === 0) ||
-      (id === 'combo-follow' && slot !== 0) || id === 'spend') {
+    if (this.cue?.touch.includes(ATTACK_KEYS[slot].code)) {
       this.trainer.world.attack(this.trainer.world.player, slot);
     }
   }
@@ -105,6 +109,12 @@ export class TutorialCoach {
   private strike(slot: AttackSlot, id: string, title: string, detail: string): TutorialCue {
     const key = ATTACK_KEYS[slot];
     return this.prompt(id, title, detail, [key.label], [key.code]);
+  }
+
+  private comboStrike(slot: AttackSlot, id: string, title: string, detail: string): TutorialCue {
+    const [first, second, third] = ATTACK_KEYS;
+    return { ...this.prompt(id, title, detail, [first.label, '→', second.label, '→', third.label], [ATTACK_KEYS[slot].code]),
+      currentKey: ATTACK_KEYS[slot].label };
   }
 
   private prompt(id: string, title: string, detail: string, keys: string[], touch: string[], frozen = true): TutorialCue {

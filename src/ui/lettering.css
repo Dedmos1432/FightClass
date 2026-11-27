@@ -1,50 +1,72 @@
-/* Display lettering follows the title art. Reading text and key names retain their own roles. */
+/* The same condensed lettering carries titles, panel copy and combat readouts. */
 :is(.screen, .dialog) :is(h1, h2, h3),
 #orientation-prompt h1,
-:is(.fight-announcement, .brand-name, .fight-name strong, .bench-title, .style-choice strong, .style-picker strong),
-.career-ranking .career-fighter-title h3 {
-  font-family: var(--display);
+.career-ranking .career-fighter-title h3,
+:is(.loading-screen h1, .loading-screen p, .fight-announcement, .brand-name, .fight-name strong, .bench-title, .style-choice strong, .style-picker strong, #platform-pause b) {
   font-weight: 700;
   text-transform: uppercase;
 }
 
-:is(.fight-announcement, .location-heading h1, .tutorial-lesson h1, .ranking-heading h2, .dialog:not(.career-ranking) > h2) {
-  font-style: oblique 8deg;
+:is(.fight-announcement, .location-heading h1, .tutorial-lesson h1, .ranking-heading h2, .dialog > h2, .career-ranking .career-fighter-title h3, .loading-screen h1, .loading-screen p, #orientation-prompt h1, #platform-pause b) {
+  --lettering-shadow: #38241d6b;
+  font-style: oblique 10deg;
   font-synthesis: style;
-  letter-spacing: .012em;
-  text-shadow: .032em .04em 0 #5a382e40;
+  letter-spacing: -.008em;
+  word-spacing: .065em;
+  text-shadow: .044em .052em 0 var(--lettering-shadow);
+}
+
+:is(.fight-announcement, .location-heading h1, .tutorial-lesson h1, .ranking-heading h2, .loading-screen h1, .loading-screen p, #orientation-prompt h1) {
+  --lettering-shadow: #110e0ce6;
+}
+
+/* Tiny cutouts are confined to the headline ink on larger panels. */
+@supports (mask-composite: intersect) {
+  @media (min-width: 760px) and (min-height: 520px) {
+    :is(.location-heading h1, .ranking-heading h2, .dialog > h2, .loading-screen h1, .loading-screen p) {
+      mask-image:
+        radial-gradient(ellipse at 29% 67%, #0002 0 .65px, #000 1.2px),
+        radial-gradient(ellipse at 81% 19%, #0003 0 .42px, #000 .94px),
+        radial-gradient(ellipse at 9% 49%, #0005 0 .85px, #000 1.38px);
+      mask-size: 13px 17px, 23px 11px, 31px 29px;
+      mask-composite: intersect;
+    }
+  }
 }
 
 .fight-announcement {
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
 }
 
-#ui :is(.button, .ranking-tab, .touch-room-actions button span, .touch-combat-actions button span, .pause-tabs button, .interaction-button) {
-  font-family: var(--display);
+#ui :is(.button, .ranking-tab, .touch-room-actions button span, .touch-combat-actions button span, .pause-tabs button, .interaction-button, .style-mobile-tabs button, #career-profile-notes) {
   font-weight: 700;
-  letter-spacing: .028em;
+  letter-spacing: .04em;
   text-transform: uppercase;
 }
 
-:is(.ranking-tab, .style-picker) > span {
-  letter-spacing: 0;
-}
+.menu-button .button-text { font-style: oblique 10deg; font-synthesis: style; }
+.ranking-tab > span { letter-spacing: .015em; text-transform: none; }
+kbd { font-weight: 650; }
 
-.ranking-tab > span { text-transform: none; }
-kbd { font-family: var(--display); font-weight: 600; }
-
-:is(.streak-card > time, .fight-name b, .fighter-class > b, .stat-meter strong, .damage-stat strong, .bench-rep-line strong, .bench-result-count strong, .career-final-score strong) {
+:is(.streak-card > time, .fight-name b, .fighter-class > b, .stat-meter strong, .damage-stat strong, .bench-rep-line strong, .bench-result-count strong, .career-final-score strong, .opponent-stats dd, .opponent-row > b, .volume-row output) {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-:is(.eyebrow, .build-label, .fight-corner-label, .fight-timer-label, .tutorial-vital > span, .career-fight-record, .board-roster-label, .club-guide-route) {
-  font-family: var(--body);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: .045em;
+:is(.streak-card > time, .fighter-class > b, .bench-rep-line strong, .bench-result-count strong, .career-final-score strong) {
+  font-style: oblique 8deg;
+  font-synthesis: style;
 }
 
-:is(.dialog-description, .settings-note, .opponent-tactic, .style-info, .style-rules dd) {
-  color: #4e463d;
+:is(.eyebrow, .build-label, .fight-corner-label, .fight-timer-label, .tutorial-vital > span, .career-fight-record, .board-roster-label, .club-guide-route, .orientation-caption) {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .075em;
 }
+
+:is(.dialog-description, .settings-note, .opponent-tactic, .style-info, .style-rules dd, .tutorial-copy p, #toast, .orientation-content p) {
+  font-weight: 450;
+  letter-spacing: .017em;
+}
+
+:is(.dialog-description, .settings-note, .opponent-tactic, .style-info, .style-rules dd) { color: #4e463d; }

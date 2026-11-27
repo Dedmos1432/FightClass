@@ -62,13 +62,6 @@ test('нехватка выносливости запрещает атаку и
   advance(w,1000); expect(w.player.stamina).toBeGreaterThan(14);
   w.player.action='hit'; expect(w.attack(w.player,0)).toBe(false); expect(w.dodge(w.player)).toBe(false);
 });
-test('буфер позволяет последовательную комбинацию, четвёртый удар цепочки не принимается',() => {
-  const w=battle(); w.attack(w.player,0); advance(w,attackDuration(0)-100);
-  expect(w.attack(w.player,1)).toBe(true); advance(w,101); expect(w.player.slot).toBe(1); expect(w.player.combo).toBe(2);
-  advance(w,attackDuration(1)-100); expect(w.attack(w.player,2)).toBe(true); advance(w,100);
-  expect(w.player.combo).toBe(3); advance(w,attackDuration(2)-100);
-  expect(w.attack(w.player,0)).toBe(false);
-});
 test('15 самостоятельных профилей используют все шесть обычных бойцов без боссов, выбор стабилен, сложность растёт',() => {
   expect(ROSTER).toHaveLength(15); expect(new Set(ROSTER.map(r=>r.id)).size).toBe(15);
   expect(new Set(ROSTER.map(r=>JSON.stringify([r.aggression,r.defense,r.preferredRange,r.dodgePreference,r.reserve]))).size).toBe(15);
@@ -148,6 +141,25 @@ function thinking(w:CombatWorld,brain:BotBrain,ms:number):void {
 function tacticalWorld(profile:ReturnType<typeof opponentAt>):CombatWorld {
   const w=battle(); w.enemy=enemyFighter(profile); w.enemy.x=920; return w;
 }
+test('ИИ готовит блок после трёх одинаковых наблюдаемых ударов и сбрасывает ожидание при смене слота', () => {
+  const profile = { ...opponentAt(0), skin: 'kim' as const, canDodge: false, preferredRange: 305,
+    defense: 0, aggression: 0, counterPreference: 0, skill: .3, reactionMs: 120 };
+  const w = tacticalWorld(profile), brain = new BotBrain(profile, () => .32);
+  w.enemy.x = w.player.x + 305;
+  for (let repeat = 0; repeat < 2; repeat++) {
+    expect(w.attack(w.player, 0)).toBe(true);
+    thinking(w, brain, attackDuration(0) + 64);
+    expect(w.enemy.action).toBe('idle');
+  }
+  expect(w.attack(w.player, 0)).toBe(true);
+  thinking(w, brain, 96);
+  expect(w.enemy.action).toBe('idle');
+  thinking(w, brain, attackDuration(0) - 96);
+  expect(w.enemy.action).toBe('block');
+  expect(w.attack(w.player, 1)).toBe(true);
+  thinking(w, brain, 260);
+  expect(w.enemy.action).not.toBe('block');
+});
 test('ИИ видит атаку с задержкой, умеет уклониться от медленного удара, Kim вместо этого блокирует',() => {
   for(const canDodge of [true,false]) {
     const profile={...opponentAt(canDodge?4:0),defense:1,dodgePreference:1,skill:.98,reactionMs:100,canDodge};

@@ -65,6 +65,8 @@
   font:700 clamp(17px,2.5vw,26px)/1 var(--display);
 }
 .tutorial-keycaps > span { font:600 16px/1 var(--body); color:#e9c3a4; }
+.tutorial-keycaps:has([data-current]) kbd:not([data-current]) { opacity:.54; }
+.tutorial-keycaps kbd[data-current] { color:#fff3dc; background:#8f3829; border-color:#ffc28e; box-shadow:0 0 13px #ff98585e; }
 .tutorial-lesson h1 { margin:0; font:600 clamp(24px,4vw,34px)/1.12 var(--display); }
 .tutorial-lesson p { margin:7px 0 0; color:#e5d6ca; font:13px/1.45 var(--body); }
 #tutorial-checks { display:flex; justify-content:center; gap:5px; margin-top:13px; }

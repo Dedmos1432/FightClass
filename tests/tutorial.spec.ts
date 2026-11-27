@@ -44,10 +44,14 @@ test('новая игра: визуальное обучение останав�
     await cue(page,`strike-${index+1}`);
     await page.keyboard.press(key);await expect(page.locator(`[data-check="${index}"]`)).toHaveAttribute('data-done','true');
   }
-  await step(page,'combo');await cue(page,'combo-start');await page.keyboard.press('q');
+  await step(page,'combo');await cue(page,'combo-demo');await page.keyboard.press('q');
+  await cue(page,'combo-repeat');await page.keyboard.press('q');
+  await expect(arena(page)).toHaveAttribute('data-enemy-action','block');
+  await cue(page,'combo-start');await expect(card(page).locator('kbd')).toHaveText(['Q','W','E']);await page.keyboard.press('q');
   await cue(page,'combo-follow');await frozen(page);
   await page.keyboard.press('q');await frozen(page);await cue(page,'combo-follow');
   await page.keyboard.press('w');
+  await cue(page,'combo-finish');await expect(card(page)).toContainText('+10%');await page.keyboard.press('e');
   await step(page,'block');await cue(page,'guard');await frozen(page);
   const slowing=page.waitForFunction(()=>{
     const state=document.querySelector<HTMLElement>('#tutorial-focus')!.dataset;

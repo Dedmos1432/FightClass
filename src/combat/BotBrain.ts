@@ -1,10 +1,10 @@
 import { ATTACK_SLOTS, COMBAT, guardStaminaCost, type AttackSlot } from '../config/combat';
-import { attackDuration, type CombatWorld, type Fighter, type FighterAction } from './CombatWorld';
+import { attackDuration, attackStartup, canLinkAttack, type CombatWorld, type Fighter, type FighterAction } from './CombatWorld';
 import type { Opponent } from './Opponents';
 
 interface Observation {
   at: number; x: number; action: FighterAction; elapsed: number; slot: AttackSlot;
-  facing: -1 | 1; stamina: number; maxStamina: number; hp: number; maxHP: number;
+  facing: -1 | 1; stamina: number; maxStamina: number; hp: number; maxHP: number; combo: number;
 }
 type BotProfile = Opponent & { career?: boolean; boss?: boolean };
 const ready = (f: Fighter): boolean => ['idle','walk','retreat','block'].includes(f.action);
@@ -34,6 +34,10 @@ export class BotBrain {
   private nextGuardFlank = 0;
   private lastAttackAt = 0;
   private attackRhythm = 0;
+  private repeatedStrikes = 0;
+  private checkedRepeatAt = 0;
+  private spamRetreatUntil = 0;
+  private spamGuardUntil = 0;
   state: 'approach' | 'recover' | 'defend' | 'attack' | 'space' | 'counter' | 'pressure' | 'flank' | 'bait' | 'cutoff' = 'approach';
 
   constructor(private readonly profile: BotProfile, private readonly random: () => number = Math.random, private readonly priorRoundMs = 0) {}
@@ -56,13 +60,13 @@ export class BotBrain {
     if (this.clock >= this.nextSample) {
       this.nextSample = this.clock + (this.profile.career ? 24 : 35);
       this.observations.push({ at:this.clock,x:p.x,action:p.action,elapsed:p.elapsed,slot:p.slot,
-        facing:p.facing,stamina:p.stamina,maxStamina:p.maxStamina,hp:p.hp,maxHP:p.maxHP });
+        facing:p.facing,stamina:p.stamina,maxStamina:p.maxStamina,hp:p.hp,maxHP:p.maxHP,combo:p.combo });
     }
     while (this.observations.length && this.observations[0].at <= this.clock - reaction) {
       const seen = this.observations.shift()!;
       this.remember(seen); this.previous = this.perceived; this.perceived = seen;
     }
-    f.blocking = this.clock < this.guardUntil;
+    f.blocking = this.clock < Math.max(this.guardUntil, this.spamGuardUntil);
     const seen = this.perceived;
     if (!seen || this.clock < this.nextDecision) return;
     this.nextDecision = this.clock + (this.profile.career ? 40 + (1 - skill) * 70 + this.random() * 25 : 65 + (1 - skill) * 95 + this.random() * 45);
@@ -77,12 +81,15 @@ export class BotBrain {
     if (ready(f)) f.facing = toward;
     const elapsed = seen.elapsed + age;
     const spec = ATTACK_SLOTS[seen.slot];
-    const attackVisible = seen.action === 'attack' && elapsed < attackDuration(seen.slot);
-    const incoming = attackVisible && elapsed < spec.startup + spec.active
+    const startup = attackStartup(seen.slot, seen.combo);
+    const attackVisible = seen.action === 'attack' && elapsed < attackDuration(seen.slot, seen.combo);
+    const incoming = attackVisible && elapsed < startup + spec.active
       && seen.facing === -toward && distance < spec.range + COMBAT.bodyHalfWidth + 15;
     const canRetreat = f.facing > 0 ? f.x-COMBAT.minX>115 : COMBAT.maxX-f.x>115;
     const habits = this.habits;
     f.direction = 0;
+
+    if (ready(f) && this.defendAgainstRepeat(f, p.damage, skill, distance, toward, canRetreat)) return;
 
     if (this.profile.career) {
       this.careerDecision(world, seen, skill, age, velocity, targetX, canRetreat);
@@ -91,9 +98,10 @@ export class BotBrain {
 
     if (f.action === 'attack') {
       const reserve = this.profile.reserve * (1 - skill * .35);
-      if (distance < ATTACK_SLOTS[2].range + COMBAT.bodyHalfWidth && f.stamina > reserve
+      if (canLinkAttack(f) && f.buffered === null && f.stamina > reserve
         && this.random() < this.profile.comboChance + skill * .12) {
-        world.attack(f,this.chooseSlot(distance,f.stamina,seen.action==='block',false));
+        const slot = this.chooseSlot(distance, f.stamina, seen.action === 'block', false, f.slot);
+        if (slot !== null) world.attack(f, slot);
       }
       return;
     }
@@ -103,12 +111,12 @@ export class BotBrain {
       if (this.random() < defense) {
         this.state = 'defend';
         // A quick jab seen too late is blocked; a slower windup leaves time to evade.
-        const enoughTime = spec.startup - elapsed >= COMBAT.dodgeInvulnerableFrom + 12;
+        const enoughTime = startup - elapsed >= COMBAT.dodgeInvulnerableFrom + 12;
         if (f.canDodge && canRetreat && enoughTime && f.stamina >= COMBAT.dodgeCost + 8
           && this.random() < this.profile.dodgePreference * (.5 + skill * .5) && world.dodge(f)) {
           this.guardUntil=0; return;
         }
-        if (f.stamina >= guardStaminaCost(p.damage)) { this.guardUntil=this.clock + Math.max(150,spec.startup+spec.active-elapsed+65); f.blocking=true; return; }
+        if (f.stamina >= guardStaminaCost(p.damage)) { this.guardUntil=this.clock + Math.max(150,startup+spec.active-elapsed+65); f.blocking=true; return; }
         if (canRetreat) { f.direction=-toward; return; }
       }
     }
@@ -121,7 +129,7 @@ export class BotBrain {
       f.direction=canRetreat ? -toward : distance < 150 ? toward : 0;
       return;
     }
-    const recovery = attackVisible && elapsed >= spec.startup + spec.active;
+    const recovery = attackVisible && elapsed >= startup + spec.active;
     const vulnerable = seen.action === 'hit' || seen.action === 'dodge' && elapsed > COMBAT.dodgeInvulnerableTo
       || seen.stamina < 18 || recovery;
     if (vulnerable && this.random() < this.profile.counterPreference * (.45+skill*.55)) {
@@ -133,12 +141,6 @@ export class BotBrain {
     if (skill>.5 && attackVisible && distance<175 && this.random()<skill*(this.profile.id==='flanker'?.85:.2)) {
       this.state='flank'; this.flankUntil=this.clock+450; this.flankDirection=toward; f.direction=toward; return;
     }
-    // Repeated strikes cause anticipation, based on history rather than unrevealed input.
-    if (habits.repetition>=.66 && seen.stamina>20 && distance<275 && this.random()<habits.repetition*skill*.32) {
-      this.state='defend';
-      if (f.canDodge && canRetreat && this.random()<this.profile.dodgePreference && world.dodge(f)) return;
-      this.guardUntil=this.clock+180; f.blocking=true; return;
-    }
     const pressure = seen.action==='block' && habits.blockRate>.4 || seen.hp<seen.maxHP*.3 || seen.stamina<25;
     const attackChance = Math.min(.98,this.profile.aggression*(.65+skill*.4)+(pressure?.15:0));
     if (this.random()<attackChance && this.strike(world,distance,seen,false)) {
@@ -149,6 +151,9 @@ export class BotBrain {
   private remember(seen: Observation): void {
     const old = this.perceived;
     if (seen.action==='attack' && (!old || old.action!=='attack' || seen.elapsed<old.elapsed || seen.slot!==old.slot)) {
+      const repeated = this.attacks.at(-1) === seen.slot && seen.at - this.lastAttackAt < 1350;
+      this.repeatedStrikes = repeated ? this.repeatedStrikes + 1 : 1;
+      if (!repeated) { this.spamRetreatUntil = 0; this.spamGuardUntil = 0; }
       this.attacks.push(seen.slot); if (this.attacks.length>(this.profile.career ? this.profile.boss ? 24 : 16 : 8)) this.attacks.shift();
       if (this.lastAttackAt > 0) {
         const interval = seen.at - this.lastAttackAt;
@@ -162,25 +167,46 @@ export class BotBrain {
     this.retreatSamples = this.retreatSamples * .975 + Number(seen.action==='retreat');
     this.crossingSamples = this.crossingSamples * .975 + Number(Boolean(old && seen.facing !== old.facing));
   }
+  /** Prepare after observing three repeated commitments, with one decision per observed strike. */
+  private defendAgainstRepeat(f: Fighter, damage: number, skill: number, distance: number, toward: number, canRetreat: boolean): boolean {
+    if (this.clock < this.spamRetreatUntil && canRetreat) {
+      this.state = 'space'; f.blocking = false; f.direction = -toward; return true;
+    }
+    if (this.clock < this.spamGuardUntil) { this.state = 'defend'; return true; }
+    if (this.repeatedStrikes < 3 || this.checkedRepeatAt === this.lastAttackAt ||
+      this.clock - this.lastAttackAt > 900 || distance > 340) return false;
+    this.checkedRepeatAt = this.lastAttackAt;
+    if (this.random() >= .36 + skill * .5) return false;
+    const canBlock = f.stamina >= guardStaminaCost(damage);
+    if (canRetreat && (!canBlock || this.random() < .28)) {
+      this.state = 'space'; this.guardUntil = 0; f.blocking = false; f.direction = -toward;
+      this.spamRetreatUntil = this.clock + 210; return true;
+    }
+    if (!canBlock) return false;
+    this.state = 'defend'; f.blocking = true;
+    this.spamGuardUntil = this.clock + clamp(this.attackRhythm || 420, 260, 620);
+    return true;
+  }
   /** Career opponents plan from delayed public poses; no keyboard state or future action is available. */
   private careerDecision(world: CombatWorld, seen: Observation, skill: number, age: number, velocity: number, targetX: number, canRetreat: boolean): void {
     const f = world.enemy, boss = Boolean(this.profile.boss), habits = this.habits;
     const toward = targetX >= f.x ? 1 : -1, distance = Math.abs(targetX - f.x);
     const elapsed = seen.elapsed + age, spec = ATTACK_SLOTS[seen.slot];
-    const committed = seen.action === 'attack' && elapsed < attackDuration(seen.slot);
-    const incoming = committed && elapsed < spec.startup + spec.active && seen.facing === -toward
+    const startup = attackStartup(seen.slot, seen.combo);
+    const committed = seen.action === 'attack' && elapsed < attackDuration(seen.slot, seen.combo);
+    const incoming = committed && elapsed < startup + spec.active && seen.facing === -toward
       && distance <= spec.range + COMBAT.bodyHalfWidth + 12;
     const guardCost = guardStaminaCost(world.player.damage);
     const reserve = Math.max(guardCost + 6, this.profile.reserve * (boss ? .8 : .9));
     const playerSpent = seen.stamina < ATTACK_SLOTS[0].stamina;
     const playerBack = seen.facing === toward;
-    const playerRecovering = committed && elapsed >= spec.startup + spec.active;
+    const playerRecovering = committed && elapsed >= startup + spec.active;
     const dodgeRecovering = seen.action === 'dodge' && elapsed >= COMBAT.dodgeInvulnerableTo;
     const critical = f.hp / f.maxHP < .24;
 
     if (f.action === 'attack') {
       // Commit to a chain only at the buffer window, with enough stamina left to defend.
-      if (f.elapsed >= attackDuration(f.slot) - COMBAT.comboBufferMs && f.combo < COMBAT.maxCombo) {
+      if (canLinkAttack(f) && f.buffered === null) {
         const slot = this.careerSlot(f, seen, targetX, velocity, reserve, false);
         if (slot !== null && (!incoming || playerSpent || playerBack)
           && this.random() < Math.min(.97, this.profile.comboChance + (playerSpent ? .15 : 0))) world.attack(f, slot);
@@ -198,7 +224,7 @@ export class BotBrain {
     // At point-blank range a long windup can be crossed before its forward hitbox activates.
     // Use the observed windup, movement speed and required clearance, rather than a teleport.
     const crossingTime = (distance + 18) / (f.speed / 1000) + 25;
-    if (committed && distance < 75 && spec.startup - elapsed > crossingTime
+    if (committed && distance < 75 && startup - elapsed > crossingTime
       && this.random() < (boss ? .55 : .22)) {
       this.flankUntil = this.clock + crossingTime + 270; this.flankDirection = toward;
       this.state = 'flank'; this.guardUntil = 0; f.blocking = false; f.direction = toward; return;
@@ -208,7 +234,7 @@ export class BotBrain {
       const defense = Math.min(.98, this.profile.defense * (.9 + skill * .1) + habits.repetition * .08 + (critical ? .04 : 0));
       if (this.random() < defense) {
         this.state = 'defend';
-        const windupLeft = spec.startup - elapsed;
+        const windupLeft = startup - elapsed;
         // Evade slower commitments; a late block is safer than an invulnerability window that starts too late.
         if (f.canDodge && canRetreat && windupLeft >= COMBAT.dodgeInvulnerableFrom + 15
           && f.stamina >= COMBAT.dodgeCost + guardCost
@@ -216,7 +242,7 @@ export class BotBrain {
           this.guardUntil = 0; return;
         }
         if (f.stamina >= guardCost) {
-          this.guardUntil = this.clock + Math.max(75, spec.startup + spec.active - elapsed + 30);
+          this.guardUntil = this.clock + Math.max(75, startup + spec.active - elapsed + 30);
           f.blocking = true; return;
         }
         // An exhausted guard breaks. Leave the range or cross a very close, committed strike instead.
@@ -303,41 +329,39 @@ export class BotBrain {
   private careerSlot(f: Fighter, seen: Observation, targetX: number, velocity: number, reserve: number, punish: boolean): AttackSlot | null {
     const toward = targetX >= f.x ? 1 : -1;
     const elapsed = seen.elapsed + this.clock - seen.at;
-    const recoveryLeft = seen.action === 'attack' ? attackDuration(seen.slot) - elapsed : Infinity;
+    const recoveryLeft = seen.action === 'attack' ? attackDuration(seen.slot, seen.combo) - elapsed : Infinity;
     const valid: AttackSlot[] = [];
     for (const slot of [0, 1, 2] as const) {
+      if (f.action === 'attack' && slot === f.slot) continue;
       const spec = ATTACK_SLOTS[slot];
       if (f.stamina < spec.stamina + reserve) continue;
       // Predict only measured motion, with uncertainty margin for late changes of direction.
-      const travel = velocity * spec.startup * (this.profile.boss ? .8 : .65);
+      const startup = attackStartup(slot, f.action === 'attack' ? f.combo + 1 : 1);
+      const travel = velocity * startup * (this.profile.boss ? .8 : .65);
       const futureX = clamp(targetX + travel, COMBAT.minX, COMBAT.maxX);
       const forwardDistance = (futureX - f.x) * toward;
       if (forwardDistance < 90 || forwardDistance >= spec.range + COMBAT.bodyHalfWidth - 24) continue;
-      if (punish && seen.action === 'attack' && recoveryLeft < spec.startup - 35 && seen.stamina >= 14) continue;
+      if (punish && seen.action === 'attack' && recoveryLeft < startup - 35 && seen.stamina >= 14) continue;
       // When a habitual dodger is already airborne, save the attack until the vulnerable frames.
-      if (seen.action === 'dodge' && elapsed + spec.startup < COMBAT.dodgeInvulnerableTo + 25) continue;
+      if (seen.action === 'dodge' && elapsed + startup < COMBAT.dodgeInvulnerableTo + 25) continue;
       valid.push(slot);
     }
     if (!valid.length) return null;
     if (punish || seen.action === 'block' || seen.action === 'attack' || this.habits.crossingRate > .06) return valid[0];
-    // Within a safe opening, change the animation/tempo of a chain rather than always selecting jab.
-    // Expensive windups are used only with a healthy reserve; they still receive no damage bonus.
-    const varied = valid.filter(slot => slot !== f.slot && f.stamina >= ATTACK_SLOTS[slot].stamina + reserve + 14);
-    if (f.action === 'attack' && varied.length) return varied[Math.min(varied.length - 1, Math.floor(this.random() * varied.length))];
     if (valid.length > 1 && f.stamina > reserve + 45 && this.random() > .55) {
       return valid[1 + Math.min(valid.length - 2, Math.floor(this.random() * (valid.length - 1)))];
     }
     return valid[0];
   }
-  private chooseSlot(distance: number, stamina: number, guarding: boolean, punish: boolean): AttackSlot {
-    const valid = ([0,1,2] as AttackSlot[]).filter(slot => distance < ATTACK_SLOTS[slot].range + COMBAT.bodyHalfWidth - 16 && stamina>=ATTACK_SLOTS[slot].stamina);
-    if (!valid.length) return 2;
+  private chooseSlot(distance: number, stamina: number, guarding: boolean, punish: boolean, exclude?: AttackSlot): AttackSlot | null {
+    const valid = ([0,1,2] as AttackSlot[]).filter(slot => slot !== exclude && distance < ATTACK_SLOTS[slot].range + COMBAT.bodyHalfWidth - 16 && stamina>=ATTACK_SLOTS[slot].stamina);
+    if (!valid.length) return null;
     if (punish || guarding) return valid[0];
     return valid[Math.min(valid.length-1,Math.floor(this.random()*valid.length))];
   }
   private strike(world: CombatWorld, distance: number, seen: Observation, punish: boolean): boolean {
     const f=world.enemy, slot=this.chooseSlot(distance,f.stamina,seen.action==='block',punish);
-    if (distance<105 || distance>=ATTACK_SLOTS[slot].range+COMBAT.bodyHalfWidth-16) return false;
+    if (slot === null || distance<105 || distance>=ATTACK_SLOTS[slot].range+COMBAT.bodyHalfWidth-16) return false;
     this.guardUntil=0; f.blocking=false; return world.attack(f,slot);
   }
   private space(f: Fighter, toward: number, distance: number, canRetreat: boolean, pressure: boolean): void {

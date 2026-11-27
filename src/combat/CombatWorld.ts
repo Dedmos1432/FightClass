@@ -5,29 +5,39 @@ export type FighterAction = 'idle' | 'walk' | 'retreat' | 'block' | 'dodge' | 'a
 export interface Fighter {
   skin: FighterSkin; autoFace: boolean; x: number; facing: -1 | 1; hp: number; maxHP: number;
   stamina: number; maxStamina: number; damage: number; speed: number; canDodge: boolean;
-  action: FighterAction; elapsed: number; slot: AttackSlot; hitLanded: boolean; combo: number;
+  action: FighterAction; elapsed: number; slot: AttackSlot; hitLanded: boolean; combo: number; confirmedAt: number | null;
   buffered: AttackSlot | null; bufferedDodge: DodgeDirection | null; bufferMs: number;
   dodgeDirection: DodgeDirection; dodgeForward: boolean;
   direction: number; blocking: boolean; autoGuard: boolean; guardMs: number; stun: number;
 }
-export interface CombatEvent { type: 'hit' | 'block' | 'guard-break' | 'dodge'; target: Fighter; source: Fighter; damage: number }
+export interface CombatEvent {
+  type: 'hit' | 'block' | 'guard-break' | 'dodge'; target: Fighter; source: Fighter; damage: number;
+  slot: AttackSlot; combo: number; bonus: number;
+}
 export function fighter(values: Pick<Fighter, 'skin' | 'maxHP' | 'damage' | 'speed' | 'canDodge'> & { stamina: number; x: number; hp?: number; facing?: -1 | 1; autoFace?: boolean }): Fighter {
   return { ...values, autoFace: values.autoFace ?? true, hp: values.hp ?? values.maxHP, maxStamina: values.stamina, facing: values.facing ?? 1,
-    action: 'idle', elapsed: 0, slot: 0, hitLanded: false, combo: 0, buffered: null, bufferedDodge: null, bufferMs: 0,
+    action: 'idle', elapsed: 0, slot: 0, hitLanded: false, combo: 0, confirmedAt: null, buffered: null, bufferedDodge: null, bufferMs: 0,
     dodgeDirection: values.facing === -1 ? 1 : -1, dodgeForward: false,
     direction: 0, blocking: false, autoGuard: false, guardMs: 0, stun: COMBAT.hitStun };
 }
 export function enemyFighter(profile: Opponent): Fighter {
   return fighter({ ...profile, x: COMBAT.enemyStart, facing: -1, autoFace: false });
 }
-export function attackDuration(slot: AttackSlot): number {
-  const spec = ATTACK_SLOTS[slot]; return spec.startup + spec.active + spec.recovery;
+export function attackStartup(slot: AttackSlot, combo = 1): number {
+  return ATTACK_SLOTS[slot].startup * (combo > 1 ? COMBAT.comboStartupScale : 1);
+}
+export function attackDuration(slot: AttackSlot, combo = 1): number {
+  const spec = ATTACK_SLOTS[slot]; return attackStartup(slot, combo) + spec.active + spec.recovery;
+}
+export function canLinkAttack(f: Fighter): boolean {
+  return f.action === 'attack' && f.confirmedAt !== null && f.combo < COMBAT.comboBonuses.length;
 }
 export interface Box { x: number; y: number; width: number; height: number }
 export function hurtbox(f: Fighter): Box { return { x: f.x - COMBAT.bodyHalfWidth, y: COMBAT.floorY - 310, width: COMBAT.bodyHalfWidth * 2, height: 310 }; }
 export function hitbox(f: Fighter): Box | null {
   const spec = ATTACK_SLOTS[f.slot];
-  if (f.action !== 'attack' || f.elapsed < spec.startup || f.elapsed >= spec.startup + spec.active || f.hitLanded) return null;
+  const startup = attackStartup(f.slot, f.combo);
+  if (f.action !== 'attack' || f.elapsed < startup || f.elapsed >= startup + spec.active || f.hitLanded) return null;
   return { x: f.facing > 0 ? f.x + 45 : f.x - spec.range, y: COMBAT.floorY - 290, width: spec.range - 45, height: 240 };
 }
 export const intersects = (a: Box, b: Box): boolean => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
@@ -48,10 +58,9 @@ export class CombatWorld {
   attack(f: Fighter, slot: AttackSlot): boolean {
     if (f.hp <= 0 || this.over) return false;
     if (f.action === 'attack') {
-      if (f.elapsed >= attackDuration(f.slot) - COMBAT.comboBufferMs && f.combo < COMBAT.maxCombo) {
-        return this.queue(f,slot,attackDuration(f.slot)-f.elapsed);
-      }
-      return false;
+      if (slot === f.slot || f.combo >= COMBAT.comboBonuses.length) return false;
+      const remaining = attackDuration(f.slot, f.combo) - f.elapsed;
+      return (canLinkAttack(f) || remaining <= COMBAT.comboBufferMs) && this.queue(f, slot, remaining);
     }
     if (!free(f)) {
       const remaining=f.action==='hit' ? f.stun-f.elapsed : f.action==='dodge' ? COMBAT.dodgeDuration-f.elapsed : Infinity;
@@ -59,14 +68,14 @@ export class CombatWorld {
     }
     if (f.stamina < ATTACK_SLOTS[slot].stamina) return false;
     f.action = 'attack'; f.elapsed = 0; f.slot = slot; f.stamina -= ATTACK_SLOTS[slot].stamina;
-    f.hitLanded = false; this.clearInputBuffer(f); f.combo = Math.max(1, f.combo);
+    f.hitLanded = false; f.confirmedAt = null; this.clearInputBuffer(f); f.combo = 1;
     f.blocking = false; f.guardMs = 0;
     return true;
   }
   dodge(f: Fighter, direction: DodgeDirection = f.facing === 1 ? -1 : 1): boolean {
     if (!f.canDodge || f.hp<=0 || f.stamina < COMBAT.dodgeCost || this.over) return false;
     if(!free(f)) {
-      const remaining=f.action==='attack' ? attackDuration(f.slot)-f.elapsed : f.action==='hit' ? f.stun-f.elapsed
+      const remaining=f.action==='attack' ? attackDuration(f.slot,f.combo)-f.elapsed : f.action==='hit' ? f.stun-f.elapsed
         : f.action==='dodge' ? COMBAT.dodgeDuration-f.elapsed : Infinity;
       return remaining>=0 && remaining<=COMBAT.inputBufferMs && this.queue(f,{ dodge: direction },remaining);
     }
@@ -76,7 +85,7 @@ export class CombatWorld {
     }
     f.dodgeDirection = direction;
     f.dodgeForward = f.skin === 'player' && direction === f.facing;
-    f.stamina -= COMBAT.dodgeCost; f.action = 'dodge'; f.elapsed = 0; this.clearInputBuffer(f); f.combo = 0; f.blocking = false; f.guardMs = 0;
+    f.stamina -= COMBAT.dodgeCost; f.action = 'dodge'; f.elapsed = 0; this.clearInputBuffer(f); f.combo = 0; f.confirmedAt = null; f.blocking = false; f.guardMs = 0;
     return true;
   }
   get over(): boolean { return this.player.hp <= 0 || this.enemy.hp <= 0; }
@@ -90,8 +99,8 @@ export class CombatWorld {
       // Collect hits before applying them so simultaneous attacks can trade.
       const hits = [[this.player, this.enemy], [this.enemy, this.player]].filter(([a,b]) => {
         const box = hitbox(a); return box !== null && intersects(box, hurtbox(b));
-      });
-      for (const [source,target] of hits) this.resolve(source, target);
+      }).map(([source,target]) => ({ source, target, combo: source.combo, slot: source.slot }));
+      for (const hit of hits) this.resolve(hit);
     }
   }
   private advance(f: Fighter, other: Fighter, delta: number): void {
@@ -122,25 +131,31 @@ export class CombatWorld {
       if (f.elapsed >= COMBAT.dodgeDuration) this.finishAction(f,other);
     } else if (f.action === 'hit') {
       if (f.elapsed >= f.stun) this.finishAction(f,other);
-    } else if (f.action === 'attack' && f.elapsed >= attackDuration(f.slot)) {
-      this.finishAction(f,other,f.combo);
+    } else if (f.action === 'attack') {
+      const link = canLinkAttack(f);
+      const cancelAt = f.confirmedAt === null ? Infinity : f.confirmedAt + COMBAT.comboCancelMs;
+      if (f.elapsed >= attackDuration(f.slot, f.combo) ||
+        (link && f.buffered !== null && f.elapsed >= cancelAt)) {
+        this.finishAction(f, other, link ? f.combo : 0);
+      }
     }
     if (free(f)) f.stamina = Math.min(f.maxStamina, f.stamina + (f.action === 'block' ? COMBAT.blockRegen : COMBAT.staminaRegen) * delta / 1000);
     f.x = clamp(f.x, COMBAT.minX, COMBAT.maxX);
   }
   private finishAction(f: Fighter, other: Fighter, chain=0): void {
     const slot=f.buffered,dodge=f.bufferedDodge,live=f.bufferMs>0;
-    f.action='idle'; f.elapsed=0; f.combo=0; f.guardMs=0; this.clearInputBuffer(f);
+    f.action='idle'; f.elapsed=0; f.combo=0; f.confirmedAt=null; f.guardMs=0; this.clearInputBuffer(f);
     // A new commitment may face the enemy; an active strike remains locked.
     if(f.autoFace && (!f.blocking || live) && Math.abs(other.x-f.x)>1) f.facing=other.x>f.x ? 1 : -1;
     if(!live) return;
     if(dodge!==null) this.dodge(f,dodge);
-    else if(slot!==null && chain<COMBAT.maxCombo && this.attack(f,slot)) f.combo=chain+1;
+    else if(slot!==null && this.attack(f,slot)) f.combo=chain+1;
   }
-  private resolve(source: Fighter, target: Fighter): void {
+  private resolve({ source, target, slot, combo }: Pick<CombatEvent, 'source' | 'target' | 'slot' | 'combo'>): void {
+    const broken = { source, target, slot, damage: 0, combo: 0, bonus: 0 };
     source.hitLanded = true;
     if (target.action === 'dodge' && target.elapsed >= COMBAT.dodgeInvulnerableFrom && target.elapsed < COMBAT.dodgeInvulnerableTo) {
-      this.events.push({ type: 'dodge', source, target, damage: 0 }); return;
+      this.events.push({ ...broken, type: 'dodge' }); return;
     }
     const facingAttack=target.facing === (source.x > target.x ? 1 : -1);
     // Mobile guard is a reaction to contact, never a way to cancel a committed action.
@@ -149,13 +164,20 @@ export class CombatWorld {
     const defending = target.action === 'block' && facingAttack;
     const guardCost = guardStaminaCost(source.damage);
     if (defending && target.stamina >= guardCost) {
-      target.stamina -= guardCost; this.events.push({ type: 'block', source, target, damage: 0 }); return;
+      target.stamina -= guardCost;
+      const direction = source.x > target.x ? -1 : 1;
+      target.x = clamp(target.x + direction * COMBAT.guardPushDefender, COMBAT.minX, COMBAT.maxX);
+      source.x = clamp(source.x - direction * COMBAT.guardPushAttacker, COMBAT.minX, COMBAT.maxX);
+      this.events.push({ ...broken, type: 'block' }); return;
     }
-    target.hp = Math.max(0, target.hp - source.damage);
+    const bonus = defending ? 0 : COMBAT.comboBonuses[combo - 1] ?? 0;
+    const damage = source.damage * (100 + bonus) / 100;
+    if (!defending && source.action === 'attack') source.confirmedAt = source.elapsed;
+    target.hp = Math.max(0, target.hp - damage);
     target.action = target.hp <= 0 ? 'ko' : 'hit'; target.elapsed = 0;
     target.stun = defending ? COMBAT.guardBreakStun : COMBAT.hitStun;
     if (defending) target.stamina = 0;
-    this.clearInputBuffer(target); target.combo = 0; target.blocking = false; target.guardMs = 0;
-    this.events.push({ type: defending ? 'guard-break' : 'hit', source, target, damage: source.damage });
+    this.clearInputBuffer(target); target.combo = 0; target.confirmedAt = null; target.blocking = false; target.guardMs = 0;
+    this.events.push(defending ? { ...broken, type: 'guard-break', damage } : { ...broken, type: 'hit', combo, damage, bonus });
   }
 }

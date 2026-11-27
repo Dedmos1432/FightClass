@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { ATTACK_SLOTS, COMBAT, guardStaminaCost } from '../src/config/combat';
-import { attackDuration, CombatWorld, fighter } from '../src/combat/CombatWorld';
+import { attackDuration, attackStartup, CombatWorld, fighter } from '../src/combat/CombatWorld';
 
 const battle=(x=700,enemyX=920)=>new CombatWorld(
   fighter({skin:'player',x,maxHP:200,stamina:150,damage:10,speed:340,canDodge:true}),
@@ -31,6 +31,12 @@ test('standing guard regenerates slowly and a blocked impact spends only a small
   expect(hit.enemy.hp).toBe(200);
   expect(hit.enemy.stamina).toBeCloseTo(50+COMBAT.blockRegen*ATTACK_SLOTS[0].startup/1000-guardStaminaCost(10));
   expect(guardStaminaCost(10)).toBeLessThan(ATTACK_SLOTS[0].stamina/3);
+  expect(hit.player.x).toBe(700 - COMBAT.guardPushAttacker);
+  expect(hit.enemy.x).toBe(920 + COMBAT.guardPushDefender);
+  advance(hit, attackDuration(0));
+  expect(hit.attack(hit.player, 0)).toBe(true);
+  advance(hit, ATTACK_SLOTS[0].startup);
+  expect(hit.events).toEqual([]); // The same attack now falls short.
 });
 
 test('a held guard stays directional; A/D can turn it without moving, release restores auto-facing',()=>{
@@ -75,18 +81,54 @@ test('a new hit clears the pending attack rather than carrying it through the ne
   advance(w,COMBAT.hitStun+300); expect(p.action).toBe('idle'); expect(p.stamina).toBe(150);
 });
 
-test('the wider combo window accepts short taps but still caps a chain at three attacks',()=>{
-  const w=battle(300,1400),p=w.player;
-  w.attack(p,0);
-  for(const slot of [1,2] as const) {
-    advance(w,attackDuration(p.slot)-COMBAT.comboBufferMs+8-p.elapsed);
-    expect(w.attack(p,slot)).toBe(true);
-    advance(w,attackDuration(p.slot)-p.elapsed);
-    expect(p.action).toBe('attack'); expect(p.slot).toBe(slot); expect(p.combo).toBe(slot+1);
+test('Q → W → Q links early, rewards confirmed hits, and caps the series equally for both fighters', () => {
+  for (const side of ['player', 'enemy'] as const) {
+    const w = battle(), source = w[side], target = side === 'player' ? w.enemy : w.player;
+    expect(w.attack(source, 0)).toBe(true);
+    advance(w, ATTACK_SLOTS[0].startup);
+    expect(w.events).toMatchObject([{ type: 'hit', combo: 1, damage: 10, bonus: 0 }]);
+    for (const [slot, combo, bonus] of [[1, 2, 5], [0, 3, 10]] as const) {
+      expect(w.attack(source, source.slot)).toBe(false);
+      expect(w.attack(source, slot)).toBe(true);
+      advance(w, COMBAT.comboCancelMs);
+      expect(source).toMatchObject({ action: 'attack', slot, combo });
+      expect(attackStartup(slot, combo)).toBeLessThan(ATTACK_SLOTS[slot].startup);
+      advance(w, attackStartup(slot, combo));
+      expect(w.events).toMatchObject([{ type: 'hit', combo, damage: 10 + bonus / 10, bonus }]);
+    }
+    expect(target.hp).toBe(168.5);
+    expect(w.attack(source, 2)).toBe(false);
+    advance(w, attackDuration(0, 3));
+    expect(source).toMatchObject({ action: 'idle', combo: 0 });
+    expect(w.attack(source, 0)).toBe(true);
+    advance(w, ATTACK_SLOTS[0].startup);
+    expect(w.events).toMatchObject([{ type: 'hit', combo: 1, damage: 10, bonus: 0 }]);
   }
-  advance(w,attackDuration(p.slot)-100-p.elapsed);
-  expect(w.attack(p,0)).toBe(false);
-  advance(w,101); expect(p.action).toBe('idle'); expect(p.combo).toBe(0);
+});
+
+test('a block or whiff ends the combo even with another attack in the input buffer', () => {
+  for (const blocked of [true, false]) {
+    const w = battle(), { player, enemy } = w;
+    expect(w.attack(player, 0)).toBe(true);
+    advance(w, ATTACK_SLOTS[0].startup);
+    expect(w.attack(player, 1)).toBe(true);
+    advance(w, COMBAT.comboCancelMs);
+    enemy.action = 'idle';
+    enemy.blocking = blocked;
+    if (!blocked) enemy.x = 1400;
+    advance(w, attackStartup(1, 2));
+    if (blocked) expect(w.events).toMatchObject([{ type: 'block', combo: 0, bonus: 0 }]);
+    else expect(w.events).toEqual([]);
+    expect(player.confirmedAt).toBeNull();
+    advance(w, attackDuration(1, 2) - player.elapsed - 100);
+    expect(w.attack(player, 2)).toBe(true);
+    advance(w, 100);
+    expect(player).toMatchObject({ action: 'attack', slot: 2, combo: 1 });
+    enemy.blocking = false;
+    enemy.x = player.x + 220;
+    advance(w, ATTACK_SLOTS[2].startup);
+    expect(w.events).toMatchObject([{ type: 'hit', combo: 1, damage: 10, bonus: 0 }]);
+  }
 });
 
 test('the last buffered command wins; dodge begins after recovery and pays its cost only once',()=>{

@@ -118,6 +118,19 @@ test('новая игра: первые задания обучения выпо
   await page.locator('#tutorial-skip').tap();await expect(page.locator('#ui')).toHaveAttribute('data-screen','lobby');
 });
 
+test('урок комбо подсвечивает по одной сенсорной кнопке и принимает Q → W → E', async ({ page }) => {
+  await seededLesson(page, 'combo');
+  for (const [id, key] of [['combo-demo', 'KeyQ'], ['combo-repeat', 'KeyQ'], ['combo-start', 'KeyQ'],
+    ['combo-follow', 'KeyW'], ['combo-finish', 'KeyE']] as const) {
+    await expect(coach(page, id)).toBeVisible();
+    await expect(page.locator('.tutorial-keycaps')).toBeHidden();
+    await expect(page.locator('[data-tutorial-highlight]')).toHaveCount(1);
+    await expect(button(page, key)).toHaveAttribute('data-tutorial-highlight', /.*/);
+    await button(page, key).tap();
+  }
+  await expect(page.locator('#tutorial-focus')).toHaveAttribute('data-step', 'block');
+});
+
 test('карьерный бой: мобильный автоблок защищает от бота, пауза объясняет новое управление',async({page})=>{
   const saves=new SaveService(new StorageService(null));saves.startNew();saves.skipTutorial();
   const run=saves.beginCareer('kim')!;

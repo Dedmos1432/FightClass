@@ -1,6 +1,5 @@
 import type { GameServices } from '../core/GameServices';
-import { COMBAT } from '../config/combat';
-import { attackDuration } from '../combat/CombatWorld';
+import { canLinkAttack } from '../combat/CombatWorld';
 import type { CombatTutorial } from '../tutorial/CombatTutorial';
 import type { TutorialCue } from '../tutorial/TutorialCoach';
 import type { PracticeStep } from '../tutorial/Progress';
@@ -101,9 +100,10 @@ export class TutorialView extends ScreenView {
       this.detail.textContent = cue.detail;
       if (!this.touch) {
         this.keys.replaceChildren(...cue.keys.map(key => {
-          const separator = key === '+' || key === '/' || key === 'или';
+          const separator = key === '+' || key === '/' || key === 'или' || (key === '→' && cue.currentKey !== undefined);
           const cap = document.createElement(separator ? 'span' : 'kbd');
           cap.textContent = key;
+          if (key === cue.currentKey) cap.setAttribute('data-current', '');
           return cap;
         }));
         this.keys.hidden = cue.keys.length === 0;
@@ -142,9 +142,6 @@ export class TutorialView extends ScreenView {
       (this.checks.children[index] as HTMLElement).dataset.done = String(done);
     });
 
-    const comboOpen = player.action === 'attack'
-      && player.elapsed >= attackDuration(player.slot) - COMBAT.comboBufferMs
-      && player.combo < COMBAT.maxCombo;
     Object.assign(this.arena.dataset, {
       step: trainer.step,
       playerX: player.x.toFixed(1),
@@ -157,7 +154,7 @@ export class TutorialView extends ScreenView {
       stamina: String(Math.floor(player.stamina)),
       ready: String(trainer.ready),
       dodgeCue: String(trainer.dodgeCue),
-      comboCue: String(comboOpen),
+      comboCue: String(canLinkAttack(player)),
       paused: String(this.hasDialog),
       timeScale: String(timeScale),
     });

@@ -4,13 +4,6 @@
   font-weight: 200 700;
   font-display: swap;
 }
-@font-face {
-  font-family: 'Golos Text';
-  src: url('./assets/fonts/GolosText-Variable.woff2') format('woff2');
-  font-weight: 400 900;
-  font-display: swap;
-}
-
 :root {
   --paper: #eee8d8;
   --ink: #17191a;
@@ -18,10 +11,12 @@
   --action: #bc352a;
   --muted: #92938e;
   --line: #ffffff26;
-  --body: 'Golos Text', Arial, sans-serif;
-  --display: 'Oswald', 'Arial Narrow', sans-serif;
-  --mono: 'Courier New', monospace;
+  --body: 'Oswald', Arial, sans-serif;
+  --display: var(--body);
+  --mono: var(--body);
   font-family: var(--body);
+  font-weight: 450;
+  letter-spacing: .012em;
   color: var(--paper);
   background: #121415;
   color-scheme: dark;

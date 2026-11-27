@@ -34,12 +34,12 @@ test('реальные клавиши: удержанный блок медле�
   const spent=ready-Number(await arena.getAttribute('data-stamina'));
   expect(spent).toBeGreaterThanOrEqual(ATTACK_SLOTS[0].stamina-1);expect(spent).toBeLessThanOrEqual(ATTACK_SLOTS[0].stamina);
 });
-test('короткая команда связывает удары, а пауза очищает очередь вместо отложенной атаки',async({page})=>{
+test('короткая команда после промаха запускает одиночный удар, а пауза очищает очередь',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await start(page,90);const arena=page.locator('#combat-focus');
   await page.keyboard.press('q');await expect(arena).toHaveAttribute('data-player-action','attack');
   await bufferWindow(page);await page.keyboard.press('w');
-  await expect(arena).toHaveAttribute('data-slot','1');await expect(arena).toHaveAttribute('data-combo','2');
+  await expect(arena).toHaveAttribute('data-slot','1');await expect(arena).toHaveAttribute('data-combo','1');
   await expect(arena).toHaveAttribute('data-player-action','idle');
   await page.keyboard.press('q');await bufferWindow(page);await page.keyboard.press('w');
   await expect(arena).toHaveAttribute('data-buffered-slot','1');

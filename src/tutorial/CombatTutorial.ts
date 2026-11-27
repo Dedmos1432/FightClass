@@ -3,18 +3,21 @@ import { ATTACK_SLOTS, COMBAT } from '../config/combat';
 import type { PracticeStep } from './Progress';
 
 const DODGE_DRILL_DISTANCE = 105;
+const PLAYER_START = 780;
+const PARTNER_START = 980;
 
 /** A safe scripted partner uses the same attacks, hitboxes and resource rules as real bouts. */
 export class CombatTutorial {
   readonly world = new CombatWorld(
-    fighter({skin:'player',x:780,maxHP:100,stamina:100,damage:10,speed:COMBAT.playerSpeed,canDodge:true}),
-    fighter({skin:'kim',x:980,maxHP:100,stamina:100,damage:4,speed:250,canDodge:false,facing:-1}),
+    fighter({skin:'player',x:PLAYER_START,maxHP:100,stamina:100,damage:10,speed:COMBAT.playerSpeed,canDodge:true}),
+    fighter({skin:'kim',x:PARTNER_START,maxHP:100,stamina:100,damage:4,speed:250,canDodge:false,facing:-1}),
   );
   step: PracticeStep;
   readonly strikes = new Set<number>();
   left = 0;
   right = 0;
   combo = false;
+  repeatBlocked = false;
   blocked = false;
   dodged = false;
   dashedForward = false;
@@ -22,6 +25,7 @@ export class CombatTutorial {
   recovered = false;
   private coachWait = 1100;
   private retreatStart: Box | null = null;
+  private resetComboSpacing = false;
   constructor(step: PracticeStep) { this.step=step; this.enter(step); }
   get checks(): boolean[] {
     switch(this.step) {
@@ -46,12 +50,12 @@ export class CombatTutorial {
     return this.dodged ? toward : toward === 1 ? -1 : 1;
   }
   enter(step: PracticeStep): void {
-    this.step=step; this.left=0; this.right=0; this.strikes.clear(); this.combo=false;
+    this.step=step; this.left=0; this.right=0; this.strikes.clear(); this.combo=false; this.repeatBlocked=false;
     this.blocked=false; this.dodged=false; this.dashedForward=false; this.spent=false; this.recovered=false; this.coachWait=1100;
     this.retreatStart = null;
-    const playerX = 780;
-    const enemyX = step === 'dodge' ? playerX + DODGE_DRILL_DISTANCE : step === 'block' ? 930 : 980;
-    Object.assign(this.world.player,fighter({skin:'player',x:playerX,maxHP:100,stamina:100,damage:10,speed:COMBAT.playerSpeed,canDodge:true}));
+    this.resetComboSpacing = false;
+    const enemyX = step === 'dodge' ? PLAYER_START + DODGE_DRILL_DISTANCE : step === 'block' ? 930 : PARTNER_START;
+    Object.assign(this.world.player,fighter({skin:'player',x:PLAYER_START,maxHP:100,stamina:100,damage:10,speed:COMBAT.playerSpeed,canDodge:true}));
     Object.assign(this.world.enemy,fighter({skin:'kim',x:enemyX,maxHP:100,stamina:100,damage:4,speed:250,canDodge:false,facing:-1}));
     this.world.events.length=0;
   }
@@ -70,14 +74,22 @@ export class CombatTutorial {
       this.coachWait-=dt;
       if(distance<=attackDistance && this.coachWait<=0 && w.attack(e,2)) this.coachWait=2300;
     } else e.direction=0;
+    e.blocking = this.step === 'combo' && !this.repeatBlocked && this.strikes.has(0) && p.action === 'attack' && p.slot === 0 && !p.hitLanded;
     w.update(dt);
     this.left+=Math.max(0,before-p.x); this.right+=Math.max(0,p.x-before);
     for(const event of w.events) {
       if(event.source===p && event.type==='hit') {
-        this.strikes.add(p.slot); if(p.combo>=2) this.combo=true;
+        this.strikes.add(event.slot); if(event.combo===COMBAT.comboBonuses.length) this.combo=true;
+      }
+      if(this.step==='combo' && event.source===p && event.type==='block') {
+        this.repeatBlocked = true;
+        this.resetComboSpacing = true;
       }
       if(event.target===p && event.type==='block') this.blocked=true;
       if(event.target===p && event.type==='dodge' && !p.dodgeForward) this.dodged=true;
+    }
+    if(this.resetComboSpacing && p.action==='idle') {
+      p.x=PLAYER_START; e.x=PARTNER_START; this.resetComboSpacing=false;
     }
     if (dodgeDrill && !this.dodged) {
       // A buffered dodge can begin inside the update and have less than one frame of elapsed time.
