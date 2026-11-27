@@ -44,7 +44,7 @@ async function fight(page:Page):Promise<void>{
 }
 
 test.describe('телефон: просьба повернуть устройство',()=>{
-  test.use({hasTouch:true,isMobile:true,screen:{width:390,height:844},viewport:{width:390,height:844},reducedMotion:'no-preference'});
+  test.use({hasTouch:true,isMobile:true,deviceScaleFactor:3,screen:{width:390,height:844},viewport:{width:390,height:844},reducedMotion:'no-preference'});
   test('при запуске: анимация, заблокированный ввод и автоматическое продолжение после поворота',async({page})=>{
     const errors:string[]=[];page.on('pageerror',error=>errors.push(error.message));await mockSdk(page);await page.goto('/');
     await expect(overlay(page)).toBeVisible();await expect(overlay(page)).toContainText('Поверни телефон');
@@ -57,6 +57,12 @@ test.describe('телефон: просьба повернуть устройс�
     expect(await page.evaluate(key=>localStorage.getItem(key),GAME.storage.session)).toBeNull();
     await page.screenshot({path:'.cache/orientation/phone-390.png'});
     await landscape(page);await expect(ui(page)).not.toHaveAttribute('inert','');
+    const canvas = page.locator('#game canvas');
+    await expect(canvas).toHaveAttribute('width', '1688');
+    await expect(canvas).toHaveAttribute('height', '780');
+    await expect(canvas).toHaveCSS('width', '844px');
+    await expect(canvas).toHaveCSS('height', '390px');
+    await expect(canvas).toHaveCSS('image-rendering', 'auto');
     await page.locator('#settings').tap();await expect(page.locator('.settings-dialog')).toBeVisible();
     await portrait(page);await page.keyboard.press('Escape');await expect(page.locator('.settings-dialog')).toBeVisible();
     await landscape(page);await expect(page.locator('.settings-dialog')).toBeVisible();

@@ -26,7 +26,7 @@ export class CombatView extends ScreenView {
   constructor(services: GameServices, readonly loadout: Loadout, private readonly career?: CareerOpponent) {
     super(services, career ? 'career-fight' : 'fight', `
       <section class="fight-hud" aria-label="Показатели поединка">
-        <div class="fight-card player-card"><div class="fight-corner-label"><span>ТВОЙ УГОЛ</span><span>HP</span></div><div class="fight-name"><strong>ТВОЙ БОЕЦ</strong><span>${getStyle(services.saves.lobbyState.style).name}</span></div>
+        <div class="fight-card player-card"><div class="fight-corner-label"><span>ТВОЙ УГОЛ</span><span>HP</span></div><div class="fight-name"><strong>Ju Ji-tae</strong><span>${getStyle(services.saves.lobbyState.style).name}</span></div>
           <div class="fight-health" role="progressbar" aria-label="HP игрока" aria-valuemin="0"><span></span><b id="fight-player-hp"></b></div>
           <div class="fight-stamina" role="progressbar" aria-label="Выносливость игрока" aria-valuemin="0"><span></span></div>
         </div>

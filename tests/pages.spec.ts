@@ -43,6 +43,7 @@ test('GitHub Pages: меню, комнаты, бой и все атласы до
   await walkTo(page,WORLD.width/2); await page.keyboard.press('e');
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','fight');
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting',{timeout:25000});
+  await expect(page.locator('.player-card .fight-name strong')).toHaveText('Ju Ji-tae');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeVisible();
   await page.screenshot({path:'test-results/pages/fight-pages.png'});
@@ -56,6 +57,7 @@ test('GitHub Pages: меню, комнаты, бой и все атласы до
   await page.locator('#career-start').click();
   await expect(page.locator('#ui')).toHaveAttribute('data-screen','career-fight');
   await expect(page.locator('#combat-focus')).toHaveAttribute('data-phase','fighting');
+  await expect(page.locator('.player-card .fight-name strong')).toHaveText('Ju Ji-tae');
   await expect(page.locator('#enemy-name')).toHaveText('Kim Dong-won');
   await page.screenshot({path:'.cache/stage5/career-pages.png'});
   await page.keyboard.press('Escape');
