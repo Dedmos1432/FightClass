@@ -25,9 +25,14 @@ async function bufferWindow(page:Page):Promise<void> {
 test('реальные клавиши: удержанный блок медленно восстанавливает силы, удар тратит уменьшенную стоимость',async({page})=>{
   await start(page);const arena=page.locator('#combat-focus');
   await page.keyboard.down('Space');await expect(arena).toHaveAttribute('data-player-action','block');
-  const before=Number(await arena.getAttribute('data-stamina'));
-  await page.waitForTimeout(1100);
-  const restored=Number(await arena.getAttribute('data-stamina'));
+  const { before, roundMs } = await arena.evaluate(el => ({
+    before: Number(el.getAttribute('data-stamina')), roundMs: Number(el.getAttribute('data-round-ms')),
+  }));
+  const staminaAtThreshold = await page.waitForFunction(threshold => {
+    const state = document.querySelector<HTMLElement>('#combat-focus')?.dataset;
+    return Number(state?.roundMs) >= threshold ? Number(state?.stamina) : false;
+  }, roundMs + 1000);
+  const restored = Number(await staminaAtThreshold.jsonValue());
   expect(restored-before).toBeGreaterThanOrEqual(4);expect(restored-before).toBeLessThanOrEqual(7);
   await page.keyboard.up('Space');const ready=Number(await arena.getAttribute('data-stamina'));
   await page.keyboard.press('q');await expect(arena).toHaveAttribute('data-player-action','attack');
